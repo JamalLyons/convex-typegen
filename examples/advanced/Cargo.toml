@@ -1,0 +1,13 @@
+[package]
+name = "advanced"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+convex = "0.10.4"
+dotenvy = "0.15.7"
+tokio = { version = "1.52.3", features = ["full"] }
+convex-typegen = { path = "../../" }
+
+[build-dependencies]
+convex-typegen = { path = "../../" }

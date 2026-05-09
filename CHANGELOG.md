@@ -2,57 +2,6 @@
 
 All notable changes to this project will be documented in this file.
 
-[//]: # (## [Unreleased])
-
-[//]: # (### Added)
-
-[//]: # (- Description of new features or changes.)
-
-[//]: # ()
-[//]: # (### Changed)
-
-[//]: # (- Description of changes to existing features.)
-
-[//]: # ()
-[//]: # (### Fixed)
-
-[//]: # (- Description of bug fixes.)
-
-## [0.2.0] - 2025-01-16
-### Added
-- Added this changelog file for all releases.
-- Added `ConvexValueExt` trait to the [convex::Value](https://docs.rs/convex/0.9.0/convex/enum.Value.html) type.
-
-### Changed
-- Updated from convex version [0.8.1](https://docs.rs/convex/0.8.1/convex/index.html) to [0.9.0](https://docs.rs/convex/0.9.0/convex/index.html)
-- Bumped [oxc](https://oxc.rs) to version 0.46.0
-- Removed the use of `.unwrap()` in the typegen crate's own Rust sources (generated output still used `unwrap` until 0.3.0).
-
-### Fixed
-- Test generation scripts not deleting generated files.
-
-## [0.1.1] - 2024-11-14
-### Fixed
-- Cleaned unnecessary documentation comments.
-- Removed unused library's dependencies.
-
-## [0.1.0] - 2024-11-13
-### Added
-- Initial release of the project.
-
-## [0.2.0] - 2025-01-16
-### Added
-- Added this changelog file for all releases.
-- Added `ConvexValueExt` trait to the [convex::Value](https://docs.rs/convex/0.9.0/convex/enum.Value.html) type.
-
-### Changed
-- Updated from convex version [0.8.1](https://docs.rs/convex/0.8.1/convex/index.html) to [0.9.0](https://docs.rs/convex/0.9.0/convex/index.html)
-- Bumped [oxc](https://oxc.rs) to version 0.46.0
-- Removed the use of `.unwrap()` in the typegen crate's own Rust sources (generated output still used `unwrap` until 0.3.0).
-
-### Fixed
-- Test generation scripts not deleting generated files.
-
 ## [0.3.0] - 2026-05-09
 Version 0.3.0 is a major release that improves the stability and consistency across the library. Major bug fixes, and refactorings have been made to the codebase.
 
@@ -61,6 +10,10 @@ Version 0.3.0 is a major release that improves the stability and consistency acr
 - Added `prelude` module that re-exports the most commonly used types and traits for convenience.
 - README.md for basic example directory.
 - Added documentation for the architecture of the library.
+- **Schema parsing — `defineTable` builder chains:** `parse_schema_ast` peels `defineTable({ ... })` followed by `.index`, `.searchIndex`, or `.vectorIndex` (any depth of those three) before reading column validators, so schemas match common Convex patterns without stripping indexes.
+- **`examples/advanced`:** Convex sample with indexes on all tables and handlers that use `withIndex` (including compound `by_team_status` for `teamId` + `status`); slug uniqueness uses `by_slug`.
+- **Tests:** `generate` coverage with inline TypeScript in tempdirs for chained `.index()` on `defineTable` and for duplicate function export names across modules; synthetic ESTree test `parses_single_string_column_through_chained_index` in `parse_schema_ast` tests.
+- **Documentation:** `docs/architecture.md` updated for peeled `defineTable` chains; advanced example readme files describe indexes and `withIndex`.
 
 ### Changed
 - Dependency version updates for [convex](https://docs.rs/convex/latest/convex/), [oxc](https://oxc.rs), [serde](https://serde.rs), and [serde_json](https://serde.rs/json.html).
@@ -76,3 +29,26 @@ Version 0.3.0 is a major release that improves the stability and consistency acr
 - `v.object({ ... })` types: heterogeneous objects (fields that do not share one Rust value type) are no longer mis-typed as `BTreeMap<String, T>` from a single sampled field; they are emitted as `serde_json::Value` until dedicated structs exist.
 - Function `args` parsing: accept ESTree `Property` nodes (Oxc) in addition to Babel-style `ObjectProperty` for each field inside the `args` object, so non-empty `args` blocks no longer fail with “Invalid argument property structure” depending on serializer shape.
 - Generated `TryFrom` for function arguments: top-level `v.optional(...)` parameters omit the key entirely when the Rust field is `None`, instead of serializing JSON `null`, which Convex rejects (`v.optional` means absent, not null).
+
+## [0.2.0] - 2025-01-16
+### Added
+- Added this changelog file for all releases.
+- Added `ConvexValueExt` trait to the [convex::Value](https://docs.rs/convex/0.9.0/convex/enum.Value.html) type.
+
+### Changed
+- Updated from convex version [0.8.1](https://docs.rs/convex/0.8.1/convex/index.html) to [0.9.0](https://docs.rs/convex/0.9.0/convex/index.html)
+- Bumped [oxc](https://oxc.rs) to version 0.46.0
+- Removed the use of `.unwrap()` in the typegen crate's own Rust sources (generated output still used `unwrap` until 0.3.0).
+
+### Fixed
+- Test generation scripts not deleting generated files.
+
+
+## [0.1.1] - 2024-11-14
+### Fixed
+- Cleaned unnecessary documentation comments.
+- Removed unused library's dependencies.
+
+## [0.1.0] - 2024-11-13
+### Added
+- Initial release of the project.

@@ -46,7 +46,8 @@ pub use crate::convex::ConvexClientExt;
 ///
 /// Surfaced as [`error::ConvexTypeGeneratorError`]: missing paths, Oxc parse/semantic errors, schema
 /// shapes we do not recognize, IO, or JSON deserialization of the ESTree payload.
-pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError> {
+pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError>
+{
     if !config.schema_path.exists() {
         return Err(ConvexTypeGeneratorError::MissingSchemaFile);
     }
@@ -72,7 +73,8 @@ pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError> {
 }
 
 #[cfg(test)]
-mod generate_tests {
+mod generate_tests
+{
     use std::fs;
 
     use tempdir::TempDir;
@@ -81,7 +83,8 @@ mod generate_tests {
     use crate::config::Configuration;
 
     #[test]
-    fn generate_errors_when_schema_path_missing() {
+    fn generate_errors_when_schema_path_missing()
+    {
         let tmp = TempDir::new("ctg_no_schema").unwrap();
         let cfg = Configuration {
             schema_path: tmp.path().join("nope/schema.ts"),
@@ -92,30 +95,99 @@ mod generate_tests {
         assert!(matches!(err, crate::error::ConvexTypeGeneratorError::MissingSchemaFile));
     }
 
+    /// Chained `.index()` / `.searchIndex()` / `.vectorIndex()` on `defineTable` is peeled before
+    /// reading column validators; codegen should still see `users.email`.
     #[test]
-    fn generate_writes_output_for_minimal_project() {
-        let tmp = TempDir::new("ctg_ok").unwrap();
-        let convex = tmp.path().join("convex");
-        let schema = convex.join("schema.ts");
-        let api = convex.join("api.ts");
-        fs::create_dir_all(&convex).unwrap();
-        fs::write(&schema, include_str!("testdata/minimal_schema.ts")).unwrap();
-        fs::write(&api, include_str!("testdata/minimal_api.ts")).unwrap();
+    fn generate_accepts_define_table_with_chained_index()
+    {
+        const SCHEMA: &str = r#"
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
 
-        let out = tmp.path().join("out/convex_types.rs");
+export default defineSchema({
+    users: defineTable({ email: v.string() }).index("by_email", ["email"]),
+});
+"#;
+
+        let tmp = TempDir::new("ctg_chained_index").unwrap();
+        let convex = tmp.path().join("convex");
+        fs::create_dir_all(&convex).unwrap();
+        let schema = convex.join("schema.ts");
+        fs::write(&schema, SCHEMA).unwrap();
+
+        let out = tmp.path().join("out.rs");
+        let cfg = Configuration {
+            schema_path: schema.clone(),
+            out_file: out.clone(),
+            convex_dir: convex,
+            function_paths: Vec::new(),
+        };
+
+        generate(cfg).unwrap();
+        let body = fs::read_to_string(&out).unwrap();
+        assert!(body.contains("UsersTable"), "expected table struct: {body}");
+        assert!(body.contains("pub email: String,"), "expected email column: {body}");
+    }
+
+    /// Codegen names args structs from the **export identifier** only (`ListArgs`), so the same
+    /// name in two modules produces **duplicate** Rust items; `generate` still succeeds.
+    #[test]
+    fn generate_duplicate_export_names_produce_duplicate_args_structs()
+    {
+        const SCHEMA: &str = r#"
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+
+export default defineSchema({
+    games: defineTable({ n: v.number() }),
+});
+"#;
+
+        const MOD_A: &str = r#"
+import { query } from "./_generated/server";
+import { v } from "convex/values";
+
+export const list = query({
+    args: { a: v.number() },
+    handler: async (_ctx, _args) => null,
+});
+"#;
+
+        const MOD_B: &str = r#"
+import { query } from "./_generated/server";
+import { v } from "convex/values";
+
+export const list = query({
+    args: { b: v.string() },
+    handler: async (_ctx, _args) => null,
+});
+"#;
+
+        let tmp = TempDir::new("ctg_dup_exports").unwrap();
+        let convex = tmp.path().join("convex");
+        fs::create_dir_all(&convex).unwrap();
+        let schema = convex.join("schema.ts");
+        fs::write(&schema, SCHEMA).unwrap();
+        fs::write(convex.join("mod_a.ts"), MOD_A).unwrap();
+        fs::write(convex.join("mod_b.ts"), MOD_B).unwrap();
+
+        let out = tmp.path().join("out.rs");
         fs::create_dir_all(out.parent().unwrap()).unwrap();
         let cfg = Configuration {
             schema_path: schema,
             out_file: out.clone(),
-            convex_dir: convex.clone(),
-            function_paths: vec![api],
+            convex_dir: convex,
+            function_paths: Vec::new(),
         };
 
         generate(cfg).unwrap();
-
         let body = fs::read_to_string(&out).unwrap();
-        assert!(body.contains("GamesTable"));
-        assert!(body.contains("getGame"));
-        assert!(body.contains("FUNCTION_PATH"));
+        let struct_defs = body.matches("pub struct ListArgs").count();
+        assert_eq!(
+            struct_defs, 2,
+            "expected two `pub struct ListArgs` from mod_a:list and mod_b:list; got {struct_defs}"
+        );
+        assert!(body.contains("\"mod_a:list\""), "expected first module path in emitted Rust");
+        assert!(body.contains("\"mod_b:list\""), "expected second module path in emitted Rust");
     }
 }

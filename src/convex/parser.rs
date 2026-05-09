@@ -3,9 +3,9 @@
 //! ## Schema
 //!
 //! Expects `export default defineSchema({ ... })` (or an equivalent top-level `defineSchema` call).
-//! Table bodies are `defineTable({ ... })` with `v.string()`-style validators. We normalize each
-//! column into a small JSON object with a `"type"` discriminator (`"union"`, `"optional"`, …) so
-//! [`crate::convex::codegen`] can pattern-match without re-parsing TS.
+//! Table bodies are `defineTable({ ... })` optionally followed by Convex builder chains such as
+//! `.index(...)`, `.searchIndex(...)`, or `.vectorIndex(...)`. We peel those calls to reach the
+//! inner `defineTable` and read column validators from its first argument.
 //!
 //! ## Functions
 //!
@@ -33,6 +33,56 @@ pub(crate) const VALID_CONVEX_TYPES: &[&str] = &[
     "id", "null", "int64", "number", "boolean", "string", "bytes", "array", "object", "record", "union", "literal",
     "optional", "any",
 ];
+
+/// `MemberExpression.property` may be an `Identifier` (`obj.index`) or a `Literal` (`obj["index"]`).
+fn member_property_name(property: &JsonValue) -> Option<&str>
+{
+    match property.get("type").and_then(|t| t.as_str()) {
+        Some("Identifier") => property.get("name").and_then(|n| n.as_str()),
+        Some("Literal") => property.get("value").and_then(|v| v.as_str()),
+        _ => None,
+    }
+}
+
+/// Unwraps `defineTable({ ... }).index(...).searchIndex(...)` (etc.) to the inner `defineTable` call.
+fn peel_to_define_table_call<'a>(expr: &'a JsonValue, table_name: &str) -> Result<&'a JsonValue, ConvexTypeGeneratorError>
+{
+    let ctx = format!("table_{table_name}");
+    let mut cur = expr;
+
+    loop {
+        if cur.get("type").and_then(|t| t.as_str()) != Some("CallExpression") {
+            return Err(ConvexTypeGeneratorError::InvalidSchema {
+                context: ctx,
+                details: "Table value must be a CallExpression (defineTable or chained .index / …)".to_string(),
+            });
+        }
+
+        let callee = &cur["callee"];
+
+        if callee.get("type").and_then(|t| t.as_str()) == Some("Identifier")
+            && callee.get("name").and_then(|n| n.as_str()) == Some("defineTable")
+        {
+            return Ok(cur);
+        }
+
+        if callee.get("type").and_then(|t| t.as_str()) == Some("MemberExpression") {
+            let prop = member_property_name(&callee["property"]);
+            let known = matches!(prop, Some("index") | Some("searchIndex") | Some("vectorIndex"));
+            if known {
+                cur = &callee["object"];
+                continue;
+            }
+        }
+
+        return Err(ConvexTypeGeneratorError::InvalidSchema {
+            context: ctx,
+            details: "Unsupported table expression: expected defineTable(...) or a chain of .index / .searchIndex / \
+                      .vectorIndex after defineTable"
+                .to_string(),
+        });
+    }
+}
 
 /// Extract tables and columns from a schema program JSON value.
 pub(crate) fn parse_schema_ast(ast: JsonValue) -> Result<ConvexSchema, ConvexTypeGeneratorError>
@@ -81,13 +131,15 @@ pub(crate) fn parse_schema_ast(ast: JsonValue) -> Result<ConvexSchema, ConvexTyp
                 details: "Invalid table name".to_string(),
             })?;
 
+        let table_expr = peel_to_define_table_call(&table_prop["value"], table_name)?;
+
         // Get the defineTable call arguments
         let define_table_args =
-            table_prop["value"]["arguments"]
+            table_expr["arguments"]
                 .as_array()
                 .ok_or_else(|| ConvexTypeGeneratorError::InvalidSchema {
-                    context: context.to_string(),
-                    details: "Invalid table definition".to_string(),
+                    context: format!("table_{table_name}"),
+                    details: "Invalid table definition (defineTable has no arguments array)".to_string(),
                 })?;
 
         // Get the first argument which contains column definitions
@@ -95,7 +147,7 @@ pub(crate) fn parse_schema_ast(ast: JsonValue) -> Result<ConvexSchema, ConvexTyp
             .first()
             .and_then(|arg| arg["properties"].as_array())
             .ok_or_else(|| ConvexTypeGeneratorError::InvalidSchema {
-                context: context.to_string(),
+                context: format!("table_{table_name}"),
                 details: "Missing column definitions".to_string(),
             })?;
 
@@ -651,6 +703,34 @@ mod parse_schema_ast_tests
         })
     }
 
+    /// `defineTable({ ... }).index("name", ["field"])` as emitted by Oxc for real Convex schemas.
+    fn table_with_index_chain(name: &str, columns: Vec<serde_json::Value>) -> serde_json::Value
+    {
+        json!({
+            "type": "ObjectProperty",
+            "key": { "type": "Identifier", "name": name },
+            "value": {
+                "type": "CallExpression",
+                "callee": {
+                    "type": "MemberExpression",
+                    "object": {
+                        "type": "CallExpression",
+                        "callee": { "type": "Identifier", "name": "defineTable" },
+                        "arguments": [{
+                            "type": "ObjectExpression",
+                            "properties": columns
+                        }]
+                    },
+                    "property": { "type": "Identifier", "name": "index" }
+                },
+                "arguments": [
+                    { "type": "Literal", "value": "by_email" },
+                    { "type": "ArrayExpression", "elements": [] }
+                ]
+            }
+        })
+    }
+
     #[test]
     fn missing_body_errors()
     {
@@ -676,6 +756,18 @@ mod parse_schema_ast_tests
         assert_eq!(schema.tables.len(), 1);
         assert_eq!(schema.tables[0].name, "users");
         assert_eq!(schema.tables[0].columns.len(), 1);
+        assert_eq!(schema.tables[0].columns[0].name, "email");
+        assert_eq!(schema.tables[0].columns[0].data_type["type"], "string");
+    }
+
+    #[test]
+    fn parses_single_string_column_through_chained_index()
+    {
+        let ast = export_default_define_schema(vec![table_with_index_chain(
+            "users",
+            vec![col("email", v_member_call("string", vec![]))],
+        )]);
+        let schema = parse_schema_ast(ast).unwrap();
         assert_eq!(schema.tables[0].columns[0].name, "email");
         assert_eq!(schema.tables[0].columns[0].data_type["type"], "string");
     }

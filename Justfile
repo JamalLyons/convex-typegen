@@ -27,10 +27,15 @@ check: lint test
 
 install-example-deps:
     cd examples/basic && bun install
+    cd examples/advanced && pnpm install
 
 # Build and run the `basic` example (Convex URL / keys typically come from `.env` via dotenvy).
 example *ARGS:
     cargo run --manifest-path examples/basic/Cargo.toml {{ ARGS }}
+
+# Richer Convex surface + Rust smoke test (`examples/advanced/readme.md`).
+example-advanced *ARGS:
+    cargo run --manifest-path examples/advanced/Cargo.toml {{ ARGS }}
 
 doc:
     cargo doc --all-features --no-deps --open

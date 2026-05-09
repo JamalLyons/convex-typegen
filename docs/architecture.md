@@ -103,7 +103,7 @@ The parser does **not** use a typed ESTree crate. It uses **ad hoc `serde_json::
 - Find a **`CallExpression`** whose callee is the identifier **`defineSchema`**:
   - Either under `ExportDefaultDeclaration.declaration`, or as a top-level call (see `find_define_schema`).
 - First argument: **`ObjectExpression`** whose `properties` are **tables**.
-- Each table property’s `value`: **`CallExpression`** to **`defineTable`**, first argument an object of **columns**.
+- Each table property’s `value`: a **`CallExpression`** chain whose base is **`defineTable`**, optionally followed by Convex builder calls (`.index`, `.searchIndex`, `.vectorIndex`). The parser peels that chain to the inner `defineTable` and reads the first argument as the object of **columns**.
 - Each column property’s `value`: a **`CallExpression`** representing **`v.<validator>(...)`**:
   - The code reads **`value.callee.property.name`** as the Convex validator name (e.g. `string`, `optional`, `union`).
   - That name must be in **`VALID_CONVEX_TYPES`** or you get `InvalidType`.

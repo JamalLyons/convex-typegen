@@ -242,26 +242,28 @@ fn generate_function_code(function: ConvexFunction) -> String
     code.push_str(&format!("\"{}:{}\";\n", function.file_name, function.name));
     code.push_str("}\n\n");
 
-    // Generate From implementation to convert to BTreeMap
+    // Fallible conversion: serde_json::to_value can fail (e.g. non-finite f64).
     code.push_str(&format!(
-        "impl From<{}> for std::collections::BTreeMap<String, serde_json::Value> {{\n",
+        "impl std::convert::TryFrom<{}> for std::collections::BTreeMap<String, serde_json::Value> {{\n",
         struct_name
     ));
-    code.push_str(&format!("    fn from(_args: {}) -> Self {{\n", struct_name));
+    code.push_str("    type Error = serde_json::Error;\n\n");
+    code.push_str(&format!(
+        "    fn try_from(_args: {}) -> Result<Self, Self::Error> {{\n",
+        struct_name
+    ));
 
-    // Only create map and insert values if there are parameters
     if function.params.is_empty() {
-        code.push_str("        std::collections::BTreeMap::new()\n");
+        code.push_str("        Ok(std::collections::BTreeMap::new())\n");
     } else {
         code.push_str("        let mut map = std::collections::BTreeMap::new();\n");
-        // Convert each field to a serde_json::Value and insert into map
         for param in &function.params {
             code.push_str(&format!(
-                "        map.insert(\"{}\".to_string(), serde_json::to_value(_args.{}).unwrap());\n",
+                "        map.insert(\"{}\".to_string(), serde_json::to_value(_args.{})?);\n",
                 param.name, param.name
             ));
         }
-        code.push_str("        map\n");
+        code.push_str("        Ok(map)\n");
     }
 
     code.push_str("    }\n");

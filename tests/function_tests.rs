@@ -53,6 +53,18 @@ export const testQuery = query({
 
     let result = generate(config);
     assert!(result.is_ok(), "Expected Ok result, got {:?}", result);
+
+    let generated = fs::read_to_string(temp_dir.path().join("types.rs")).expect("read types.rs");
+    assert!(
+        generated.contains("impl std::convert::TryFrom<TestQueryArgs>"),
+        "expected fallible TryInto map conversion, got snippet: {}",
+        &generated[..generated.len().min(2000)]
+    );
+    assert!(generated.contains("type Error = serde_json::Error"));
+    assert!(
+        !generated.contains(".unwrap()"),
+        "generated bindings should not use unwrap(); use fallible conversion instead"
+    );
 }
 
 #[test]

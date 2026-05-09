@@ -26,7 +26,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Updated from convex version [0.8.1](https://docs.rs/convex/0.8.1/convex/index.html) to [0.9.0](https://docs.rs/convex/0.9.0/convex/index.html)
 - Bumped [oxc](https://oxc.rs) to version 0.46.0
-- Removed the use of `.unwrap()` in the codebase.
+- Removed the use of `.unwrap()` in the typegen crate's own Rust sources (generated output still used `unwrap` until 0.3.0).
 
 ### Fixed
 - Test generation scripts not deleting generated files.
@@ -48,7 +48,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Updated from convex version [0.8.1](https://docs.rs/convex/0.8.1/convex/index.html) to [0.9.0](https://docs.rs/convex/0.9.0/convex/index.html)
 - Bumped [oxc](https://oxc.rs) to version 0.46.0
-- Removed the use of `.unwrap()` in the codebase.
+- Removed the use of `.unwrap()` in the typegen crate's own Rust sources (generated output still used `unwrap` until 0.3.0).
 
 ### Fixed
 - Test generation scripts not deleting generated files.
@@ -60,7 +60,9 @@ Version 0.3.0 is a major release that improves the stability and consistency acr
 
 ### Changed
 - Dependency version updates for [convex](https://docs.rs/convex/latest/convex/), [oxc](https://oxc.rs), [serde](https://serde.rs), and [serde_json](https://serde.rs/json.html).
+- **Breaking:** Generated `*Args` types implement `TryFrom<Self> for BTreeMap<String, serde_json::Value>` (with `type Error = serde_json::Error`) instead of infallible `From`, so `serde_json::to_value` failures are not hidden behind `unwrap()`. `ConvexClientExt::prepare_args` now returns `Result<BTreeMap<String, convex::Value>, serde_json::Error>`.
 
 ### Fixed
 - Stable ordering of generated function argument types and `FUNCTION_PATH` blocks: function ASTs are keyed by canonicalized source paths and collected in a `BTreeMap`, so output no longer depends on hash iteration order (cleaner diffs and a clearer `cargo:rerun-if-changed` story).
 - Function AST map keys are unique per file: canonical absolute paths prevent two different modules with the same basename (for example `convex/a/foo.ts` and `convex/b/foo.ts`) from colliding or replacing each other.
+- Generated args-to-JSON conversion no longer uses `serde_json::to_value(...).unwrap()`, avoiding panics when a field cannot serialize to JSON.

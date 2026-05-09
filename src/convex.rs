@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::convert::TryFrom;
 use std::path::PathBuf;
 
 use convex::Value as ConvexValue;
@@ -784,10 +785,16 @@ impl ConvexValueExt for ConvexValue
 /// Extension trait for ConvexClient to provide a more ergonomic API
 pub trait ConvexClientExt
 {
-    /// Convert function arguments into Convex-compatible format
-    fn prepare_args<T: Into<BTreeMap<String, JsonValue>>>(args: T) -> BTreeMap<String, ConvexValue>
+    /// Convert function arguments into Convex-compatible format.
+    ///
+    /// Uses [`TryFrom`] on the generated args type; serialization errors
+    /// (for example non-finite floats) are returned as [`serde_json::Error`].
+    fn prepare_args<T>(args: T) -> Result<BTreeMap<String, ConvexValue>, serde_json::Error>
+    where
+        BTreeMap<String, JsonValue>: TryFrom<T, Error = serde_json::Error>,
     {
-        args.into().into_iter().map(|(k, v)| (k, v.into_convex_value())).collect()
+        let map = BTreeMap::try_from(args)?;
+        Ok(map.into_iter().map(|(k, v)| (k, v.into_convex_value())).collect())
     }
 }
 

@@ -20,9 +20,11 @@ impl GetGameArgs {
     pub const FUNCTION_PATH: &'static str = "games:getGame";
 }
 
-impl From<GetGameArgs> for std::collections::BTreeMap<String, serde_json::Value> {
-    fn from(_args: GetGameArgs) -> Self {
-        std::collections::BTreeMap::new()
+impl std::convert::TryFrom<GetGameArgs> for std::collections::BTreeMap<String, serde_json::Value> {
+    type Error = serde_json::Error;
+
+    fn try_from(_args: GetGameArgs) -> Result<Self, Self::Error> {
+        Ok(std::collections::BTreeMap::new())
     }
 }
 
@@ -34,9 +36,11 @@ impl WinGameArgs {
     pub const FUNCTION_PATH: &'static str = "games:winGame";
 }
 
-impl From<WinGameArgs> for std::collections::BTreeMap<String, serde_json::Value> {
-    fn from(_args: WinGameArgs) -> Self {
-        std::collections::BTreeMap::new()
+impl std::convert::TryFrom<WinGameArgs> for std::collections::BTreeMap<String, serde_json::Value> {
+    type Error = serde_json::Error;
+
+    fn try_from(_args: WinGameArgs) -> Result<Self, Self::Error> {
+        Ok(std::collections::BTreeMap::new())
     }
 }
 
@@ -48,9 +52,11 @@ impl LossGameArgs {
     pub const FUNCTION_PATH: &'static str = "games:lossGame";
 }
 
-impl From<LossGameArgs> for std::collections::BTreeMap<String, serde_json::Value> {
-    fn from(_args: LossGameArgs) -> Self {
-        std::collections::BTreeMap::new()
+impl std::convert::TryFrom<LossGameArgs> for std::collections::BTreeMap<String, serde_json::Value> {
+    type Error = serde_json::Error;
+
+    fn try_from(_args: LossGameArgs) -> Result<Self, Self::Error> {
+        Ok(std::collections::BTreeMap::new())
     }
 }
 

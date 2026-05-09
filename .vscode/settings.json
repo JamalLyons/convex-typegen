@@ -1,6 +1,7 @@
 {
     "rust-analyzer.linkedProjects": [
         "./Cargo.toml",
-        "./examples/basic/Cargo.toml"
+        "./examples/basic/Cargo.toml",
+        "./examples/advanced/Cargo.toml"
     ]
 } 

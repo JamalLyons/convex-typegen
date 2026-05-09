@@ -3,13 +3,72 @@
 
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
+#![allow(dead_code)]
 
 use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Clone)]
+pub enum TestSimple_union {
+    String(String),
+    Number(f64),
+}
+
+#[derive(Debug, Clone)]
+pub enum TestComplex_union {
+    String(String),
+    Number(f64),
+    Boolean(bool),
+    Null(()),
+    Array(Vec<String>),
+}
+
+#[derive(Debug, Clone)]
+pub enum TestLiteral_union {
+    Draft,
+    Published,
+    Archived,
+}
+
+#[derive(Debug, Clone)]
+pub enum TestOptionalOptional_union {
+    String(String),
+    Number(f64),
+}
 
 #[derive(Debug, Clone)]
 pub struct GamesTable {
     pub win_count: f64,
     pub loss_count: f64,
+}
+
+#[derive(Debug, Clone)]
+pub struct TestTable {
+    pub id: String,
+    pub null: (),
+    pub int64: i64,
+    pub float64: f64,
+    pub boolean: bool,
+    pub string: String,
+    pub bytes: Vec<u8>,
+    pub simple_array: Vec<String>,
+    pub number_array: Vec<f64>,
+    pub mixed_array: Vec<serde_json::Value>,
+    pub nested_array: Vec<Vec<String>>,
+    pub deep_nested_array: Vec<Vec<Vec<f64>>>,
+    pub simple_object: std::collections::BTreeMap<String, String>,
+    pub complex_object: serde_json::Value,
+    pub nested_object: std::collections::BTreeMap<String, std::collections::BTreeMap<String, std::collections::BTreeMap<String, String>>>,
+    pub string_record: std::collections::HashMap<String, String>,
+    pub number_record: std::collections::HashMap<String, f64>,
+    pub complex_record: std::collections::HashMap<String, serde_json::Value>,
+    pub simple_union: TestSimple_union,
+    pub complex_union: TestComplex_union,
+    pub literal_union: TestLiteral_union,
+    pub optional_string: Option<String>,
+    pub optional_object: Option<std::collections::BTreeMap<String, String>>,
+    pub optional_union: Option<TestOptionalOptional_union>,
+    pub optional_array: Option<Vec<String>>,
+    pub complex_nested: serde_json::Value,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

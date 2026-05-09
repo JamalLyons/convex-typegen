@@ -1,12 +1,12 @@
 use std::io::{Seek, SeekFrom, Write};
+use std::path::PathBuf;
 
 use serde_json::Value as JsonValue;
 
 use crate::convex::{ConvexFunction, ConvexFunctions, ConvexSchema, ConvexTable};
 use crate::errors::ConvexTypeGeneratorError;
 
-pub(crate) fn generate_code(path: &str, data: (ConvexSchema, ConvexFunctions)) -> Result<(), ConvexTypeGeneratorError>
-{
+pub(crate) fn generate_code(path: &PathBuf, data: (ConvexSchema, ConvexFunctions)) -> Result<(), ConvexTypeGeneratorError> {
     let mut file = std::fs::File::create(path)?;
 
     // Clear the file
@@ -18,6 +18,7 @@ pub(crate) fn generate_code(path: &str, data: (ConvexSchema, ConvexFunctions)) -
 
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
+#![allow(dead_code)]
 
 use serde::{Serialize, Deserialize};
 
@@ -49,8 +50,7 @@ use serde::{Serialize, Deserialize};
 }
 
 /// Generate enums for a table's union types
-fn generate_table_enums(table: &ConvexTable) -> String
-{
+fn generate_table_enums(table: &ConvexTable) -> String {
     let mut code = String::new();
 
     for column in &table.columns {
@@ -121,8 +121,7 @@ fn generate_table_enums(table: &ConvexTable) -> String
 }
 
 /// Generate the code for a table.
-fn generate_table_code(table: ConvexTable) -> String
-{
+fn generate_table_code(table: ConvexTable) -> String {
     let mut code = String::new();
 
     let table_struct_name = format!("{}Table", capitalize_first_letter(&table.name));
@@ -154,8 +153,7 @@ fn generate_table_code(table: ConvexTable) -> String
 /// cannot be represented as `BTreeMap<String, T>` for a single `T`. Those
 /// shapes are emitted as [`serde_json::Value`] until named structs are
 /// generated for each object shape.
-fn convex_type_to_rust_type(data_type: &JsonValue, table_name: Option<&str>, field_name: Option<&str>) -> String
-{
+fn convex_type_to_rust_type(data_type: &JsonValue, table_name: Option<&str>, field_name: Option<&str>) -> String {
     // Get the base type from the "type" field
     let type_str = data_type["type"].as_str().unwrap_or("unknown");
 
@@ -236,8 +234,7 @@ fn convex_type_to_rust_type(data_type: &JsonValue, table_name: Option<&str>, fie
 }
 
 /// Generate the code for a function.
-fn generate_function_code(function: ConvexFunction) -> String
-{
+fn generate_function_code(function: ConvexFunction) -> String {
     let mut code = String::new();
 
     // Generate the args struct name
@@ -292,8 +289,7 @@ fn generate_function_code(function: ConvexFunction) -> String
 }
 
 /// Capitalize the first letter of a string
-fn capitalize_first_letter(s: &str) -> String
-{
+fn capitalize_first_letter(s: &str) -> String {
     // If the string is empty, return an empty string
     if s.is_empty() {
         return String::new();
@@ -308,8 +304,7 @@ fn capitalize_first_letter(s: &str) -> String
     first_char.to_uppercase().to_string() + &rest
 }
 
-fn to_pascal_case(s: &str) -> String
-{
+fn to_pascal_case(s: &str) -> String {
     s.split(|c: char| !c.is_alphanumeric())
         .filter(|s| !s.is_empty())
         .map(|word| {

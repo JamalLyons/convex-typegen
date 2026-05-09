@@ -48,7 +48,7 @@ export const testQuery = query({
     let config = Configuration {
         schema_path,
         function_paths: vec![function_path],
-        out_file: temp_dir.path().join("types.rs").to_string_lossy().to_string(),
+        out_file: temp_dir.path().join("types.rs"),
     };
 
     let result = generate(config);
@@ -92,7 +92,7 @@ fn test_invalid_function_args()
     let config = Configuration {
         schema_path,
         function_paths: vec![function_path],
-        out_file: temp_dir.path().join("types.rs").to_string_lossy().to_string(),
+        out_file: temp_dir.path().join("types.rs"),
     };
 
     match generate(config) {

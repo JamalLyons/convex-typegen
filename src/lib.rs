@@ -15,7 +15,7 @@ pub struct Configuration {
     pub schema_path: PathBuf,
 
     /// Output file path for generated Rust types (default: "src/convex_types.rs")
-    pub out_file: String,
+    pub out_file: PathBuf,
 
     /// Paths to Convex function files for generating function argument types
     pub function_paths: Vec<PathBuf>,
@@ -25,7 +25,7 @@ impl Default for Configuration {
     fn default() -> Self {
         Self {
             schema_path: PathBuf::from("convex/schema.ts"),
-            out_file: "src/convex_types.rs".to_string(),
+            out_file: PathBuf::from("src/convex_types.rs"),
             function_paths: Vec::new(),
         }
     }

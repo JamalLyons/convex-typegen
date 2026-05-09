@@ -29,6 +29,7 @@ convex = "0.10.4"
 oxc = { version = "0.129.0", features = ["semantic", "serialize"], default-features = false}
 serde = { version = "1.0.228", features = ["std", "derive"], default-features = false }
 serde_json = "1.0.149"
+thiserror = "2.0.18"
 
 [dev-dependencies]
 tempdir = "0.3"

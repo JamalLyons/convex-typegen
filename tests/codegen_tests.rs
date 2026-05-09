@@ -38,7 +38,7 @@ fn test_generated_types()
     let (_temp_dir, schema_path, output_path) = setup_test_env(schema_content);
     let config = Configuration {
         schema_path,
-        out_file: output_path.to_string_lossy().to_string(),
+        out_file: output_path.clone(),
         ..Default::default()
     };
 
@@ -73,7 +73,7 @@ fn test_heterogeneous_object_field_is_serde_json_value()
     let (_temp_dir, schema_path, output_path) = setup_test_env(schema_content);
     let config = Configuration {
         schema_path,
-        out_file: output_path.to_string_lossy().to_string(),
+        out_file: output_path.clone(),
         ..Default::default()
     };
 

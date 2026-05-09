@@ -466,7 +466,7 @@ fn extract_function_params(
                 if let Some(args_props) = prop["value"]["properties"].as_array() {
                     for arg_prop in args_props {
                         // Validate argument property structure
-                        if !arg_prop["type"].as_str().map_or(false, |t| t == "ObjectProperty") {
+                        if arg_prop["type"].as_str() != Some("ObjectProperty") {
                             return Err(ConvexTypeGeneratorError::InvalidSchema {
                                 context: format!("file_{}", file_name),
                                 details: "Invalid argument property structure".to_string(),
@@ -507,7 +507,12 @@ fn extract_function_params(
 ///
 /// Primary diagnostic text from Oxc (`Display` is the message; `Debug` is noisier).
 fn join_oxc_diagnostic_messages(errors: &[OxcDiagnostic]) -> String {
-    errors.iter().map(ToString::to_string).filter(|s| !s.is_empty()).collect::<Vec<_>>().join("; ")
+    errors
+        .iter()
+        .map(ToString::to_string)
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join("; ")
 }
 
 fn parsing_failure_details(summary: &str, errors: &[OxcDiagnostic]) -> String {

@@ -1,17 +1,19 @@
 mod convex_types;
 
 use std::io::{self, Write};
+use std::path::Path;
 
 use convex::{ConvexClient, Value as ConvexValue};
 use convex_typegen::convex::ConvexClientExt;
 use convex_types::{GetGameArgs, LossGameArgs, WinGameArgs};
 use rand::Rng;
 
-const CONVEX_URL: &str = "https://notable-orca-705.convex.cloud";
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = ConvexClient::new(CONVEX_URL).await?;
+    // Resolve next to this crate’s `Cargo.toml`, not the shell’s cwd (e.g. `just example` from repo root).
+    dotenvy::from_filename(Path::new(env!("CARGO_MANIFEST_DIR")).join(".env.local"))?;
+
+    let mut client = ConvexClient::new(&std::env::var("CONVEX_URL")?).await?;
 
     // Get current game stats using the extension trait
     let game_stats = client

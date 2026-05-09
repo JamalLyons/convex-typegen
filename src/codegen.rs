@@ -148,7 +148,12 @@ fn generate_table_code(table: ConvexTable) -> String
     code
 }
 
-/// Convert a Convex type to its corresponding Rust type
+/// Convert a Convex type to its corresponding Rust type.
+///
+/// Convex `v.object({ ... })` values with **different** per-field Rust types
+/// cannot be represented as `BTreeMap<String, T>` for a single `T`. Those
+/// shapes are emitted as [`serde_json::Value`] until named structs are
+/// generated for each object shape.
 fn convex_type_to_rust_type(data_type: &JsonValue, table_name: Option<&str>, field_name: Option<&str>) -> String
 {
     // Get the base type from the "type" field
@@ -170,12 +175,26 @@ fn convex_type_to_rust_type(data_type: &JsonValue, table_name: Option<&str>, fie
 
         "object" => {
             if let Some(props) = data_type["properties"].as_object() {
-                let value_type = props
-                    .values()
-                    .next()
-                    .map(|v| convex_type_to_rust_type(v, None, None))
-                    .unwrap_or_else(|| "serde_json::Value".to_string());
-                format!("std::collections::BTreeMap<String, {}>", value_type)
+                if props.is_empty() {
+                    return "serde_json::Value".to_string();
+                }
+
+                let mut keys: Vec<&String> = props.keys().collect();
+                keys.sort();
+
+                // Property types use `None` context so nested shapes (e.g. optional
+                // unions inside an object) do not pick up the parent column's enum names.
+                let mut rust_types = keys.iter().map(|k| {
+                    let v = props.get(*k).expect("key from props.keys()");
+                    convex_type_to_rust_type(v, None, None)
+                });
+
+                let first = rust_types.next().expect("non-empty props");
+                if rust_types.all(|t| t == first) {
+                    format!("std::collections::BTreeMap<String, {}>", first)
+                } else {
+                    "serde_json::Value".to_string()
+                }
             } else {
                 "serde_json::Value".to_string()
             }

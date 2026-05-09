@@ -52,6 +52,7 @@ You can watch a demo video [here](https://youtu.be/42-Ihov48AU) to learn more.
 - **Complex Types**: `array`, `object`, `record`, `union`, `optional`
 - **Special Types**: `any`, `literal`, `id`
 - **Custom Types**: Automatic enum generation for union types
+- **`v.object({ ... })`**: If every field maps to the same Rust type (for example all `v.number()` → `BTreeMap<String, f64>`), that map type is used. If fields would need different Rust types, the column or arg is emitted as `serde_json::Value` so the binding stays honest; per-shape structs may be added later.
 
 ## Acknowledgments
 

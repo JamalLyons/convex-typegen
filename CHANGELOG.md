@@ -66,3 +66,4 @@ Version 0.3.0 is a major release that improves the stability and consistency acr
 - Stable ordering of generated function argument types and `FUNCTION_PATH` blocks: function ASTs are keyed by canonicalized source paths and collected in a `BTreeMap`, so output no longer depends on hash iteration order (cleaner diffs and a clearer `cargo:rerun-if-changed` story).
 - Function AST map keys are unique per file: canonical absolute paths prevent two different modules with the same basename (for example `convex/a/foo.ts` and `convex/b/foo.ts`) from colliding or replacing each other.
 - Generated args-to-JSON conversion no longer uses `serde_json::to_value(...).unwrap()`, avoiding panics when a field cannot serialize to JSON.
+- `v.object({ ... })` types: heterogeneous objects (fields that do not share one Rust value type) are no longer mis-typed as `BTreeMap<String, T>` from a single sampled field; they are emitted as `serde_json::Value` until dedicated structs exist.

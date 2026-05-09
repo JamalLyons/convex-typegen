@@ -53,3 +53,35 @@ fn test_generated_types()
     assert!(generated_code.contains("pub tags: Vec<String>"));
     assert!(generated_code.contains("pub metadata: std::collections::BTreeMap<String, f64>"));
 }
+
+#[test]
+fn test_heterogeneous_object_field_is_serde_json_value()
+{
+    let schema_content = r#"
+        import { defineSchema, defineTable } from "convex/schema";
+
+        export default defineSchema({
+            docs: defineTable({
+                payload: v.object({
+                    title: v.string(),
+                    score: v.number(),
+                }),
+            }),
+        });
+    "#;
+
+    let (_temp_dir, schema_path, output_path) = setup_test_env(schema_content);
+    let config = Configuration {
+        schema_path,
+        out_file: output_path.to_string_lossy().to_string(),
+        ..Default::default()
+    };
+
+    assert!(generate(config).is_ok());
+    let generated_code = fs::read_to_string(output_path).expect("Failed to read generated code");
+    assert!(
+        generated_code.contains("pub payload: serde_json::Value"),
+        "mixed field types must not use a homogeneous BTreeMap; got:\n{}",
+        &generated_code[..generated_code.len().min(2500)]
+    );
+}

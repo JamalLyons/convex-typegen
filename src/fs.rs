@@ -93,16 +93,17 @@ fn walk_ts_files(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), ConvexTypeGen
 }
 
 #[cfg(test)]
-mod tests
+mod find_convex_function_source_paths_tests
 {
+    use std::fs;
     use std::io::Write;
 
     use tempdir::TempDir;
 
-    use super::*;
+    use super::find_convex_function_source_paths;
 
     #[test]
-    fn discover_skips_generated_schema_and_d_ts()
+    fn skips_generated_schema_and_d_ts_and_sorts()
     {
         let tmp = TempDir::new("convex_discover").unwrap();
         let convex = tmp.path().join("convex");
@@ -125,5 +126,112 @@ mod tests
         let paths = find_convex_function_source_paths(&convex, &schema).unwrap();
         let names: Vec<_> = paths.iter().map(|p| p.file_name().unwrap().to_str().unwrap()).collect();
         assert_eq!(names, vec!["api.ts", "foo.ts"]);
+    }
+
+    #[test]
+    fn missing_convex_dir_yields_empty_vec()
+    {
+        let tmp = TempDir::new("no_convex").unwrap();
+        let convex = tmp.path().join("nope");
+        let schema = tmp.path().join("schema.ts");
+        assert!(find_convex_function_source_paths(&convex, &schema).unwrap().is_empty());
+    }
+
+    #[test]
+    fn convex_dir_not_directory_returns_invalid_path()
+    {
+        let tmp = TempDir::new("convex_file").unwrap();
+        let convex = tmp.path().join("convex");
+        fs::write(&convex, b"not a dir").unwrap();
+        let schema = tmp.path().join("schema.ts");
+        let err = find_convex_function_source_paths(&convex, &schema).unwrap_err();
+        assert!(matches!(err, crate::error::ConvexTypeGeneratorError::InvalidPath(_)));
+    }
+}
+
+#[cfg(test)]
+mod rcfp_tests
+{
+    use std::fs;
+
+    use tempdir::TempDir;
+
+    use super::rcfp;
+    use crate::config::Configuration;
+
+    #[test]
+    fn returns_config_function_paths_when_non_empty_without_walking()
+    {
+        let tmp = TempDir::new("rcfp_explicit").unwrap();
+        let a = tmp.path().join("a.ts");
+        let b = tmp.path().join("b.ts");
+        fs::write(&a, "//").unwrap();
+        fs::write(&b, "//").unwrap();
+        let cfg = Configuration {
+            function_paths: vec![a.clone(), b.clone()],
+            ..Default::default()
+        };
+        let got = rcfp(&cfg).unwrap();
+        assert_eq!(got, vec![a, b]);
+    }
+
+    #[test]
+    fn delegates_to_discovery_when_function_paths_empty()
+    {
+        let tmp = TempDir::new("rcfp_walk").unwrap();
+        let convex = tmp.path().join("convex");
+        fs::create_dir_all(&convex).unwrap();
+        let schema = convex.join("schema.ts");
+        fs::write(&schema, "export default {}\n").unwrap();
+        let api = convex.join("z.ts");
+        fs::write(&api, "export const x = 1;\n").unwrap();
+
+        let cfg = Configuration {
+            convex_dir: convex.clone(),
+            schema_path: schema,
+            function_paths: Vec::new(),
+            ..Default::default()
+        };
+
+        let names: Vec<_> = rcfp(&cfg)
+            .unwrap()
+            .into_iter()
+            .map(|p| p.file_name().unwrap().to_string_lossy().into_owned())
+            .collect();
+        assert_eq!(names, vec!["z.ts"]);
+    }
+}
+
+#[cfg(test)]
+mod walk_ts_files_tests
+{
+    use std::fs;
+
+    use tempdir::TempDir;
+
+    use super::walk_ts_files;
+
+    #[test]
+    fn collects_ts_recursively_skipping_named_dirs()
+    {
+        let tmp = TempDir::new("walk_ts").unwrap();
+        let root = tmp.path();
+        fs::create_dir_all(root.join("node_modules/pkg")).unwrap();
+        fs::create_dir_all(root.join("_generated")).unwrap();
+        fs::create_dir_all(root.join("nested")).unwrap();
+
+        fs::write(root.join("root.ts"), "//\n").unwrap();
+        fs::write(root.join("nested/inner.ts"), "//\n").unwrap();
+        fs::write(root.join("node_modules/pkg/ignored.ts"), "//\n").unwrap();
+        fs::write(root.join("_generated/x.ts"), "//\n").unwrap();
+
+        let mut out = Vec::new();
+        walk_ts_files(root, &mut out).unwrap();
+        out.sort();
+        let rel: Vec<_> = out
+            .into_iter()
+            .map(|p| p.strip_prefix(root).unwrap().to_string_lossy().into_owned())
+            .collect();
+        assert_eq!(rel, vec!["nested/inner.ts", "root.ts"]);
     }
 }

@@ -1,8 +1,16 @@
+import { v } from "convex/values";
 import { mutation, query, type QueryCtx } from "./_generated/server";
 
 export const getGame = query({
-    handler: async (ctx) => {
-        return await getGameData(ctx);
+    args: {
+        logData: v.optional(v.boolean()),
+    },
+    handler: async (ctx, { logData }) => {
+        const data = await getGameData(ctx);
+        if (logData) {
+            console.log("Log data:", data);
+        }
+        return data;
     },
 });
 

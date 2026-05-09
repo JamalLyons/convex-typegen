@@ -109,3 +109,74 @@ impl ConvexTypeGeneratorError
         }
     }
 }
+
+#[cfg(test)]
+mod with_file_context_tests
+{
+    use std::io::Error as IoError;
+
+    use super::*;
+
+    #[test]
+    fn attaches_path_to_io_error()
+    {
+        let err = ConvexTypeGeneratorError::IOError {
+            file: String::new(),
+            error: IoError::other("boom"),
+        };
+        let wrapped = err.with_file_context("/tmp/x.ts");
+        assert!(matches!(wrapped, ConvexTypeGeneratorError::IOError { ref file, .. } if file == "/tmp/x.ts"));
+    }
+
+    #[test]
+    fn leaves_non_io_variants_unchanged()
+    {
+        let err = ConvexTypeGeneratorError::MissingSchemaFile;
+        assert!(matches!(
+            err.with_file_context("nope"),
+            ConvexTypeGeneratorError::MissingSchemaFile
+        ));
+    }
+}
+
+#[cfg(test)]
+mod from_io_error_tests
+{
+    use std::io::Error as IoError;
+
+    use super::*;
+
+    #[test]
+    fn maps_std_io_to_io_error_with_empty_file()
+    {
+        let e: ConvexTypeGeneratorError = IoError::other("read fail").into();
+        match e {
+            ConvexTypeGeneratorError::IOError { file, .. } => assert!(file.is_empty()),
+            other => panic!("expected IOError, got {other:?}"),
+        }
+    }
+}
+
+#[cfg(test)]
+mod display_tests
+{
+    use super::*;
+
+    #[test]
+    fn missing_schema_file_message()
+    {
+        let s = ConvexTypeGeneratorError::MissingSchemaFile.to_string();
+        assert!(s.contains("Schema"));
+    }
+
+    #[test]
+    fn invalid_type_lists_known_validators()
+    {
+        let e = ConvexTypeGeneratorError::InvalidType {
+            found: "bogus".into(),
+            valid_types: vec!["string".into()],
+        };
+        let s = e.to_string();
+        assert!(s.contains("bogus") && s.contains("string"));
+    }
+}

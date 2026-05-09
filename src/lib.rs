@@ -32,6 +32,7 @@ pub mod prelude;
 pub use serde;
 /// Crate-root re-export for generated `TryFrom` impls and `ConvexJsonValue` aliases.
 pub use serde_json;
+
 /// Ergonomic helpers for the official Convex Rust client (see [`prelude`]).
 pub use crate::convex::ConvexClientExt;
 
@@ -45,8 +46,7 @@ pub use crate::convex::ConvexClientExt;
 ///
 /// Surfaced as [`error::ConvexTypeGeneratorError`]: missing paths, Oxc parse/semantic errors, schema
 /// shapes we do not recognize, IO, or JSON deserialization of the ESTree payload.
-pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError>
-{
+pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError> {
     if !config.schema_path.exists() {
         return Err(ConvexTypeGeneratorError::MissingSchemaFile);
     }
@@ -69,4 +69,53 @@ pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError>
     run_codegen(&config.out_file, (parsed_schema, parsed_functions))?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod generate_tests {
+    use std::fs;
+
+    use tempdir::TempDir;
+
+    use super::generate;
+    use crate::config::Configuration;
+
+    #[test]
+    fn generate_errors_when_schema_path_missing() {
+        let tmp = TempDir::new("ctg_no_schema").unwrap();
+        let cfg = Configuration {
+            schema_path: tmp.path().join("nope/schema.ts"),
+            out_file: tmp.path().join("out.rs"),
+            ..Default::default()
+        };
+        let err = generate(cfg).unwrap_err();
+        assert!(matches!(err, crate::error::ConvexTypeGeneratorError::MissingSchemaFile));
+    }
+
+    #[test]
+    fn generate_writes_output_for_minimal_project() {
+        let tmp = TempDir::new("ctg_ok").unwrap();
+        let convex = tmp.path().join("convex");
+        let schema = convex.join("schema.ts");
+        let api = convex.join("api.ts");
+        fs::create_dir_all(&convex).unwrap();
+        fs::write(&schema, include_str!("testdata/minimal_schema.ts")).unwrap();
+        fs::write(&api, include_str!("testdata/minimal_api.ts")).unwrap();
+
+        let out = tmp.path().join("out/convex_types.rs");
+        fs::create_dir_all(out.parent().unwrap()).unwrap();
+        let cfg = Configuration {
+            schema_path: schema,
+            out_file: out.clone(),
+            convex_dir: convex.clone(),
+            function_paths: vec![api],
+        };
+
+        generate(cfg).unwrap();
+
+        let body = fs::read_to_string(&out).unwrap();
+        assert!(body.contains("GamesTable"));
+        assert!(body.contains("getGame"));
+        assert!(body.contains("FUNCTION_PATH"));
+    }
 }

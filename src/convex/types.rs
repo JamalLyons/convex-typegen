@@ -61,3 +61,47 @@ pub(crate) struct ConvexFunctionParam
     pub name: String,
     pub data_type: JsonValue,
 }
+
+#[cfg(test)]
+mod serde_roundtrip_tests
+{
+    use serde_json::json;
+
+    use super::{ConvexColumn, ConvexFunction, ConvexFunctionParam, ConvexSchema, ConvexTable};
+
+    #[test]
+    fn schema_tables_columns_roundtrip()
+    {
+        let schema = ConvexSchema {
+            tables: vec![ConvexTable {
+                name: "t".into(),
+                columns: vec![ConvexColumn {
+                    name: "c".into(),
+                    data_type: json!({ "type": "string" }),
+                }],
+            }],
+        };
+        let s = serde_json::to_string(&schema).unwrap();
+        let back: ConvexSchema = serde_json::from_str(&s).unwrap();
+        assert_eq!(back.tables.len(), 1);
+        assert_eq!(back.tables[0].columns[0].data_type["type"], "string");
+    }
+
+    #[test]
+    fn convex_function_roundtrip()
+    {
+        let f = ConvexFunction {
+            name: "q".into(),
+            params: vec![ConvexFunctionParam {
+                name: "x".into(),
+                data_type: json!({ "type": "number" }),
+            }],
+            type_: "query".into(),
+            file_name: "api".into(),
+        };
+        let s = serde_json::to_string(&f).unwrap();
+        let back: ConvexFunction = serde_json::from_str(&s).unwrap();
+        assert_eq!(back.type_, "query");
+        assert_eq!(back.file_name, "api");
+    }
+}

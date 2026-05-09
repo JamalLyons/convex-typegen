@@ -38,3 +38,32 @@ impl Default for Configuration
         }
     }
 }
+
+#[cfg(test)]
+mod default_tests
+{
+    use super::*;
+
+    #[test]
+    fn default_paths_match_convex_layout_convention()
+    {
+        let c = Configuration::default();
+        assert_eq!(c.schema_path, PathBuf::from("convex/schema.ts"));
+        assert_eq!(c.out_file, PathBuf::from("src/convex_types.rs"));
+        assert_eq!(c.convex_dir, PathBuf::from("convex"));
+        assert!(c.function_paths.is_empty());
+    }
+
+    #[test]
+    fn configuration_clone_roundtrip()
+    {
+        let c = Configuration {
+            schema_path: PathBuf::from("a/schema.ts"),
+            out_file: PathBuf::from("b/out.rs"),
+            convex_dir: PathBuf::from("c"),
+            function_paths: vec![PathBuf::from("d/e.ts")],
+        };
+        assert_eq!(c.clone().schema_path, c.schema_path);
+        assert_eq!(c.clone().function_paths, c.function_paths);
+    }
+}

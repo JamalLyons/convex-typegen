@@ -506,6 +506,12 @@ pub(crate) fn parse_function_ast(ast_map: BTreeMap<String, JsonValue>) -> Result
     Ok(convex_functions)
 }
 
+/// ESTree / Oxc object literal member: either Babel-style `ObjectProperty` or spec `Property`.
+fn is_estree_object_property_like(node: &JsonValue) -> bool
+{
+    matches!(node["type"].as_str(), Some("ObjectProperty") | Some("Property"))
+}
+
 /// Helper function to extract function parameters from the function configuration
 fn extract_function_params(config: &JsonValue, file_name: &str)
     -> Result<Vec<ConvexFunctionParam>, ConvexTypeGeneratorError>
@@ -527,21 +533,25 @@ fn extract_function_params(config: &JsonValue, file_name: &str)
                 // Get the args object value
                 if let Some(args_props) = prop["value"]["properties"].as_array() {
                     for arg_prop in args_props {
-                        // Validate argument property structure
-                        if arg_prop["type"].as_str() != Some("ObjectProperty") {
+                        // Oxc ESTree JSON uses `ObjectProperty` (Babel-style) or standard `Property` for
+                        // `{ key: value }` entries; both carry `key` + `value` like our schema walk expects.
+                        if !is_estree_object_property_like(arg_prop) {
+                            let got = arg_prop["type"].as_str().unwrap_or("<missing type>");
                             return Err(ConvexTypeGeneratorError::InvalidSchema {
                                 context: format!("file_{}", file_name),
-                                details: "Invalid argument property structure".to_string(),
+                                details: format!(
+                                    "Invalid argument property structure (expected ObjectProperty or Property, got {got})"
+                                ),
                             });
                         }
 
-                        // Get parameter name
+                        // Get parameter name (identifier keys only for generated Rust field names)
                         let param_name =
                             arg_prop["key"]["name"]
                                 .as_str()
                                 .ok_or_else(|| ConvexTypeGeneratorError::InvalidSchema {
                                     context: format!("file_{}", file_name),
-                                    details: "Invalid parameter name".to_string(),
+                                    details: "Invalid parameter name (expected a simple identifier key)".to_string(),
                                 })?;
 
                         // Get parameter type using the same extraction logic as schema
@@ -560,4 +570,323 @@ fn extract_function_params(config: &JsonValue, file_name: &str)
     }
 
     Ok(params)
+}
+
+#[cfg(test)]
+mod is_estree_object_property_like_tests
+{
+    use serde_json::json;
+
+    use super::is_estree_object_property_like;
+
+    #[test]
+    fn accepts_object_property_and_property_nodes()
+    {
+        assert!(is_estree_object_property_like(&json!({ "type": "ObjectProperty" })));
+        assert!(is_estree_object_property_like(&json!({ "type": "Property" })));
+        assert!(!is_estree_object_property_like(&json!({ "type": "SpreadElement" })));
+    }
+}
+
+#[cfg(test)]
+mod parse_schema_ast_tests
+{
+    use serde_json::json;
+
+    use super::parse_schema_ast;
+    use crate::error::ConvexTypeGeneratorError;
+
+    fn v_member_call(type_name: &str, arguments: Vec<serde_json::Value>) -> serde_json::Value
+    {
+        json!({
+            "type": "CallExpression",
+            "callee": {
+                "type": "StaticMemberExpression",
+                "object": { "type": "Identifier", "name": "v" },
+                "property": { "type": "Identifier", "name": type_name }
+            },
+            "arguments": arguments
+        })
+    }
+
+    fn col(name: &str, value: serde_json::Value) -> serde_json::Value
+    {
+        json!({
+            "type": "ObjectProperty",
+            "key": { "type": "Identifier", "name": name },
+            "value": value
+        })
+    }
+
+    fn export_default_define_schema(tables_props: Vec<serde_json::Value>) -> serde_json::Value
+    {
+        json!({
+            "body": [{
+                "type": "ExportDefaultDeclaration",
+                "declaration": {
+                    "type": "CallExpression",
+                    "callee": { "type": "Identifier", "name": "defineSchema" },
+                    "arguments": [{
+                        "type": "ObjectExpression",
+                        "properties": tables_props
+                    }]
+                }
+            }]
+        })
+    }
+
+    fn table(name: &str, columns: Vec<serde_json::Value>) -> serde_json::Value
+    {
+        json!({
+            "type": "ObjectProperty",
+            "key": { "type": "Identifier", "name": name },
+            "value": {
+                "type": "CallExpression",
+                "callee": { "type": "Identifier", "name": "defineTable" },
+                "arguments": [{
+                    "type": "ObjectExpression",
+                    "properties": columns
+                }]
+            }
+        })
+    }
+
+    #[test]
+    fn missing_body_errors()
+    {
+        let err = parse_schema_ast(json!({})).unwrap_err();
+        assert!(
+            matches!(err, ConvexTypeGeneratorError::InvalidSchema { ref details, .. } if details == "Missing body array")
+        );
+    }
+
+    #[test]
+    fn missing_define_schema_errors()
+    {
+        let ast = json!({ "body": [{ "type": "EmptyStatement" }] });
+        let err = parse_schema_ast(ast).unwrap_err();
+        assert!(matches!(err, ConvexTypeGeneratorError::InvalidSchema { .. }));
+    }
+
+    #[test]
+    fn parses_single_string_column()
+    {
+        let ast = export_default_define_schema(vec![table("users", vec![col("email", v_member_call("string", vec![]))])]);
+        let schema = parse_schema_ast(ast).unwrap();
+        assert_eq!(schema.tables.len(), 1);
+        assert_eq!(schema.tables[0].name, "users");
+        assert_eq!(schema.tables[0].columns.len(), 1);
+        assert_eq!(schema.tables[0].columns[0].name, "email");
+        assert_eq!(schema.tables[0].columns[0].data_type["type"], "string");
+    }
+
+    #[test]
+    fn optional_wraps_inner()
+    {
+        let ast = export_default_define_schema(vec![table(
+            "t",
+            vec![col("x", v_member_call("optional", vec![v_member_call("boolean", vec![])]))],
+        )]);
+        let schema = parse_schema_ast(ast).unwrap();
+        let dt = &schema.tables[0].columns[0].data_type;
+        assert_eq!(dt["type"], "optional");
+        assert_eq!(dt["inner"]["type"], "boolean");
+    }
+}
+
+#[cfg(test)]
+mod parse_function_ast_tests
+{
+    use std::collections::BTreeMap;
+
+    use serde_json::json;
+
+    use super::parse_function_ast;
+    use crate::error::ConvexTypeGeneratorError;
+
+    fn export_query_fn(name: &str, args_props: Vec<serde_json::Value>) -> serde_json::Value
+    {
+        json!({
+            "body": [{
+                "type": "ExportNamedDeclaration",
+                "declaration": {
+                    "type": "VariableDeclaration",
+                    "declarations": [{
+                        "id": { "type": "Identifier", "name": name },
+                        "init": {
+                            "type": "CallExpression",
+                            "callee": { "type": "Identifier", "name": "query" },
+                            "arguments": [{
+                                "type": "ObjectExpression",
+                                "properties": [{
+                                    "type": "ObjectProperty",
+                                    "key": { "name": "args" },
+                                    "value": {
+                                        "type": "ObjectExpression",
+                                        "properties": args_props
+                                    }
+                                }]
+                            }]
+                        }
+                    }]
+                }
+            }]
+        })
+    }
+
+    fn arg_property(kind: &str, name: &str, value: serde_json::Value) -> serde_json::Value
+    {
+        json!({
+            "type": kind,
+            "key": { "type": "Identifier", "name": name },
+            "value": value
+        })
+    }
+
+    fn v_member_call(type_name: &str, arguments: Vec<serde_json::Value>) -> serde_json::Value
+    {
+        json!({
+            "type": "CallExpression",
+            "callee": {
+                "type": "StaticMemberExpression",
+                "object": { "type": "Identifier", "name": "v" },
+                "property": { "type": "Identifier", "name": type_name }
+            },
+            "arguments": arguments
+        })
+    }
+
+    #[test]
+    fn parses_query_with_object_property_args()
+    {
+        let ast = export_query_fn(
+            "list",
+            vec![arg_property("ObjectProperty", "limit", v_member_call("number", vec![]))],
+        );
+        let mut m = BTreeMap::new();
+        m.insert("/x/api.ts".into(), ast);
+        let fns = parse_function_ast(m).unwrap();
+        assert_eq!(fns.len(), 1);
+        assert_eq!(fns[0].name, "list");
+        assert_eq!(fns[0].params.len(), 1);
+        assert_eq!(fns[0].params[0].name, "limit");
+    }
+
+    #[test]
+    fn parses_query_with_property_args()
+    {
+        let ast = export_query_fn(
+            "list2",
+            vec![arg_property("Property", "limit", v_member_call("number", vec![]))],
+        );
+        let mut m = BTreeMap::new();
+        m.insert("/y/z.ts".into(), ast);
+        let fns = parse_function_ast(m).unwrap();
+        assert_eq!(fns[0].params.len(), 1);
+    }
+
+    #[test]
+    fn rejects_spread_in_args_object()
+    {
+        let ast = export_query_fn(
+            "bad",
+            vec![json!({
+                "type": "SpreadElement",
+                "argument": { "type": "Identifier", "name": "x" }
+            })],
+        );
+        let mut m = BTreeMap::new();
+        m.insert("/a/b.ts".into(), ast);
+        let err = parse_function_ast(m).unwrap_err();
+        assert!(matches!(err, ConvexTypeGeneratorError::InvalidSchema { .. }));
+    }
+
+    #[test]
+    fn missing_body_errors()
+    {
+        let mut m = BTreeMap::new();
+        m.insert("/p.ts".into(), json!({}));
+        let err = parse_function_ast(m).unwrap_err();
+        assert!(matches!(err, ConvexTypeGeneratorError::InvalidSchema { .. }));
+    }
+}
+
+#[cfg(test)]
+mod find_define_schema_tests
+{
+    use serde_json::json;
+
+    use super::find_define_schema;
+
+    #[test]
+    fn none_on_empty_body()
+    {
+        assert!(find_define_schema(&[]).is_none());
+    }
+
+    #[test]
+    fn finds_export_default_define_schema()
+    {
+        let body = vec![json!({
+            "type": "ExportDefaultDeclaration",
+            "declaration": {
+                "type": "CallExpression",
+                "callee": { "type": "Identifier", "name": "defineSchema" },
+                "arguments": []
+            }
+        })];
+        let got = find_define_schema(&body).unwrap();
+        assert_eq!(got["callee"]["name"], "defineSchema");
+    }
+
+    #[test]
+    fn finds_top_level_define_schema_call()
+    {
+        let body = vec![json!({
+            "type": "CallExpression",
+            "callee": { "type": "Identifier", "name": "defineSchema" },
+            "arguments": []
+        })];
+        assert!(find_define_schema(&body).is_some());
+    }
+}
+
+#[cfg(test)]
+mod extract_function_params_tests
+{
+    use serde_json::json;
+
+    use super::extract_function_params;
+    use crate::error::ConvexTypeGeneratorError;
+
+    #[test]
+    fn empty_when_no_args_property()
+    {
+        let config = json!({
+            "type": "ObjectExpression",
+            "properties": [{
+                "type": "ObjectProperty",
+                "key": { "name": "handler" },
+                "value": { "type": "ArrowFunctionExpression" }
+            }]
+        });
+        assert!(extract_function_params(&config, "f").unwrap().is_empty());
+    }
+
+    #[test]
+    fn errors_when_args_is_not_object_expression()
+    {
+        let config = json!({
+            "type": "ObjectExpression",
+            "properties": [{
+                "type": "ObjectProperty",
+                "key": { "name": "args" },
+                "value": { "type": "Identifier", "name": "sharedArgs" }
+            }]
+        });
+        let err = extract_function_params(&config, "f").unwrap_err();
+        assert!(
+            matches!(err, ConvexTypeGeneratorError::InvalidSchema { ref details, .. } if details == "Function args must be an object")
+        );
+    }
 }

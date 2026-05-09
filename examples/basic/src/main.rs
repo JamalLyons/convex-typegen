@@ -6,7 +6,7 @@ use std::io::{self, Write};
 use std::path::Path;
 
 use convex::{ConvexClient, Value as ConvexValue};
-use convex_typegen::ConvexClientExt;
+use convex_typegen::prelude::*;
 use convex_types::{GetGameArgs, LossGameArgs, WinGameArgs};
 use rand::Rng;
 
@@ -19,7 +19,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Get current game stats using the extension trait
     let game_stats = client
-        .query(GetGameArgs::FUNCTION_PATH, ConvexClient::prepare_args(GetGameArgs {})?)
+        .query(
+            GetGameArgs::FUNCTION_PATH,
+            ConvexClient::prepare_args(GetGameArgs { logData: None })?,
+        )
         .await?;
 
     println!("Initial game stats response: {:?}", game_stats);
@@ -100,7 +103,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Get and display updated stats
     match client
-        .query(GetGameArgs::FUNCTION_PATH, ConvexClient::prepare_args(GetGameArgs {})?)
+        .query(
+            GetGameArgs::FUNCTION_PATH,
+            ConvexClient::prepare_args(GetGameArgs { logData: None })?,
+        )
         .await
     {
         Ok(updated_stats) => {

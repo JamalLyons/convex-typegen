@@ -98,3 +98,85 @@ fn join_oxc_diagnostic_messages(errors: &[OxcDiagnostic]) -> String
         .collect::<Vec<_>>()
         .join("; ")
 }
+
+#[cfg(test)]
+mod generate_javascript_ast_tests
+{
+    use std::fs;
+    use std::path::PathBuf;
+
+    use tempdir::TempDir;
+
+    use super::generate_javascript_ast;
+
+    #[test]
+    fn parses_simple_export()
+    {
+        let tmp = TempDir::new("lex_ok").unwrap();
+        let p = tmp.path().join("m.ts");
+        fs::write(&p, "export const a = 1;\n").unwrap();
+        let ast = generate_javascript_ast(&p).unwrap();
+        assert!(ast.get("body").and_then(|b| b.as_array()).is_some());
+    }
+
+    #[test]
+    fn missing_file_is_io_error()
+    {
+        let p = PathBuf::from("/nonexistent/convex-typegen/lexer-missing.ts");
+        let e = generate_javascript_ast(&p).unwrap_err();
+        assert!(matches!(e, crate::error::ConvexTypeGeneratorError::IOError { .. }));
+    }
+
+    #[test]
+    fn whitespace_only_is_empty_schema_error()
+    {
+        let tmp = TempDir::new("lex_ws").unwrap();
+        let p = tmp.path().join("w.ts");
+        fs::write(&p, " \n  \t ").unwrap();
+        assert!(matches!(
+            generate_javascript_ast(&p).unwrap_err(),
+            crate::error::ConvexTypeGeneratorError::EmptySchemaFile { .. }
+        ));
+    }
+
+    #[test]
+    fn invalid_syntax_returns_parsing_failed()
+    {
+        let tmp = TempDir::new("lex_bad").unwrap();
+        let p = tmp.path().join("bad.ts");
+        fs::write(&p, "export const x = )));\n").unwrap();
+        let e = generate_javascript_ast(&p).unwrap_err();
+        assert!(matches!(e, crate::error::ConvexTypeGeneratorError::ParsingFailed { .. }));
+    }
+}
+
+#[cfg(test)]
+mod parsing_failure_details_tests
+{
+    use oxc::diagnostics::OxcDiagnostic;
+
+    use super::{join_oxc_diagnostic_messages, parsing_failure_details};
+
+    #[test]
+    fn summary_only_when_no_errors()
+    {
+        assert_eq!(parsing_failure_details("boom", &[]), "boom");
+    }
+
+    #[test]
+    fn joins_nonempty_messages()
+    {
+        let a = OxcDiagnostic::error("first");
+        let b = OxcDiagnostic::error("second");
+        let s = parsing_failure_details("head", &[a, b]);
+        assert!(s.starts_with("head:"));
+        assert!(s.contains("first"));
+        assert!(s.contains("second"));
+    }
+
+    #[test]
+    fn join_skips_empty_strings()
+    {
+        assert_eq!(join_oxc_diagnostic_messages(&[]), "");
+    }
+}

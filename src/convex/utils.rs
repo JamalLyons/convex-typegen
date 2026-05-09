@@ -46,3 +46,78 @@ pub(crate) fn validate_type_name(type_name: &str) -> Result<(), ConvexTypeGenera
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod capitalize_first_letter_tests
+{
+    use super::capitalize_first_letter;
+
+    #[test]
+    fn empty_string()
+    {
+        assert_eq!(capitalize_first_letter(""), "");
+    }
+
+    #[test]
+    fn single_ascii_char()
+    {
+        assert_eq!(capitalize_first_letter("a"), "A");
+    }
+
+    #[test]
+    fn preserves_rest_case()
+    {
+        assert_eq!(capitalize_first_letter("games"), "Games");
+    }
+
+    #[test]
+    fn unicode_first_char()
+    {
+        assert_eq!(capitalize_first_letter("über"), "Über");
+    }
+}
+
+#[cfg(test)]
+mod to_pascal_case_tests
+{
+    use super::to_pascal_case;
+
+    #[test]
+    fn empty()
+    {
+        assert_eq!(to_pascal_case(""), "");
+    }
+
+    #[test]
+    fn snake_and_separators()
+    {
+        assert_eq!(to_pascal_case("foo_bar-baz"), "FooBarBaz");
+    }
+
+    #[test]
+    fn literal_union_style()
+    {
+        assert_eq!(to_pascal_case("draft"), "Draft");
+    }
+}
+
+#[cfg(test)]
+mod validate_type_name_tests
+{
+    use super::validate_type_name;
+    use crate::error::ConvexTypeGeneratorError;
+
+    #[test]
+    fn accepts_known_convex_validator()
+    {
+        validate_type_name("string").unwrap();
+        validate_type_name("optional").unwrap();
+    }
+
+    #[test]
+    fn rejects_unknown()
+    {
+        let e = validate_type_name("not_a_real_validator").unwrap_err();
+        assert!(matches!(e, ConvexTypeGeneratorError::InvalidType { found, .. } if found == "not_a_real_validator"));
+    }
+}

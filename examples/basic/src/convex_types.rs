@@ -75,6 +75,7 @@ pub struct TestTable {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(crate = "convex_typegen::serde")]
 pub struct GetGameArgs {
+    pub logData: Option<bool>,
 }
 
 impl GetGameArgs {
@@ -85,7 +86,11 @@ impl std::convert::TryFrom<GetGameArgs> for std::collections::BTreeMap<String, C
     type Error = ConvexJsonError;
 
     fn try_from(_args: GetGameArgs) -> Result<Self, Self::Error> {
-        Ok(std::collections::BTreeMap::new())
+        let mut map = std::collections::BTreeMap::new();
+        if let Some(__v) = _args.logData {
+            map.insert("logData".to_string(), convex_typegen::serde_json::to_value(__v)?);
+        }
+        Ok(map)
     }
 }
 

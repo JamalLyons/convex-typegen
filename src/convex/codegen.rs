@@ -255,6 +255,12 @@ fn convex_type_to_rust_type(data_type: &JsonValue, table_name: Option<&str>, fie
     }
 }
 
+/// Top-level `v.optional(...)` args map to `Option<T>`; Convex expects **omitted** keys, not JSON `null`.
+fn convex_arg_root_is_optional(data_type: &JsonValue) -> bool
+{
+    data_type["type"].as_str() == Some("optional")
+}
+
 /// Generate the code for a function.
 fn generate_function_code(function: ConvexFunction) -> String
 {
@@ -298,10 +304,19 @@ fn generate_function_code(function: ConvexFunction) -> String
     } else {
         code.push_str("        let mut map = std::collections::BTreeMap::new();\n");
         for param in &function.params {
-            code.push_str(&format!(
-                "        map.insert(\"{}\".to_string(), convex_typegen::serde_json::to_value(_args.{})?);\n",
-                param.name, param.name
-            ));
+            if convex_arg_root_is_optional(&param.data_type) {
+                // Convex `v.optional` does not treat JSON `null` as absent; omit the key when `None`.
+                code.push_str(&format!(
+                    "        if let Some(__v) = _args.{} {{\n            map.insert(\"{}\".to_string(), \
+                     convex_typegen::serde_json::to_value(__v)?);\n        }}\n",
+                    param.name, param.name
+                ));
+            } else {
+                code.push_str(&format!(
+                    "        map.insert(\"{}\".to_string(), convex_typegen::serde_json::to_value(_args.{})?);\n",
+                    param.name, param.name
+                ));
+            }
         }
         code.push_str("        Ok(map)\n");
     }
@@ -310,4 +325,264 @@ fn generate_function_code(function: ConvexFunction) -> String
     code.push_str("}\n\n");
 
     code
+}
+
+#[cfg(test)]
+mod convex_arg_root_is_optional_tests
+{
+    use serde_json::json;
+
+    use super::convex_arg_root_is_optional;
+
+    #[test]
+    fn true_for_optional_root()
+    {
+        assert!(convex_arg_root_is_optional(&json!({
+            "type": "optional",
+            "inner": { "type": "boolean" }
+        })));
+    }
+
+    #[test]
+    fn false_for_non_optional()
+    {
+        assert!(!convex_arg_root_is_optional(&json!({ "type": "string" })));
+    }
+}
+
+#[cfg(test)]
+mod convex_type_to_rust_type_tests
+{
+    use serde_json::json;
+
+    use super::convex_type_to_rust_type;
+
+    #[test]
+    fn primitives_and_container_shapes()
+    {
+        assert_eq!(convex_type_to_rust_type(&json!({ "type": "string" }), None, None), "String");
+        assert_eq!(convex_type_to_rust_type(&json!({ "type": "boolean" }), None, None), "bool");
+        assert_eq!(convex_type_to_rust_type(&json!({ "type": "number" }), None, None), "f64");
+        assert_eq!(convex_type_to_rust_type(&json!({ "type": "int64" }), None, None), "i64");
+        assert_eq!(convex_type_to_rust_type(&json!({ "type": "bytes" }), None, None), "Vec<u8>");
+        assert_eq!(
+            convex_type_to_rust_type(&json!({ "type": "any" }), None, None),
+            "ConvexJsonValue"
+        );
+    }
+
+    #[test]
+    fn array_wraps_element()
+    {
+        let t = convex_type_to_rust_type(&json!({ "type": "array", "elements": { "type": "string" } }), None, None);
+        assert_eq!(t, "Vec<String>");
+    }
+
+    #[test]
+    fn optional_union_uses_table_field_enum_names()
+    {
+        let t = convex_type_to_rust_type(
+            &json!({
+                "type": "optional",
+                "inner": { "type": "union", "variants": [] }
+            }),
+            Some("items"),
+            Some("status"),
+        );
+        assert_eq!(t, "Option<ItemsOptionalStatus>");
+    }
+
+    #[test]
+    fn homogeneous_object_becomes_btreemap()
+    {
+        let t = convex_type_to_rust_type(
+            &json!({
+                "type": "object",
+                "properties": {
+                    "a": { "type": "string" },
+                    "b": { "type": "string" }
+                }
+            }),
+            None,
+            None,
+        );
+        assert_eq!(t, "std::collections::BTreeMap<String, String>");
+    }
+
+    #[test]
+    fn heterogeneous_object_falls_back_to_json_value()
+    {
+        let t = convex_type_to_rust_type(
+            &json!({
+                "type": "object",
+                "properties": {
+                    "a": { "type": "string" },
+                    "b": { "type": "number" }
+                }
+            }),
+            None,
+            None,
+        );
+        assert_eq!(t, "ConvexJsonValue");
+    }
+
+    #[test]
+    fn unknown_type_maps_to_json_value()
+    {
+        assert_eq!(
+            convex_type_to_rust_type(&json!({ "type": "future_validator" }), None, None),
+            "ConvexJsonValue"
+        );
+    }
+}
+
+#[cfg(test)]
+mod generate_table_enums_tests
+{
+    use serde_json::json;
+
+    use super::generate_table_enums;
+    use crate::convex::types::{ConvexColumn, ConvexTable};
+
+    #[test]
+    fn union_column_emits_enum()
+    {
+        let table = ConvexTable {
+            name: "doc".into(),
+            columns: vec![ConvexColumn {
+                name: "state".into(),
+                data_type: json!({
+                    "type": "union",
+                    "variants": [
+                        { "type": "literal", "value": { "value": "on" } },
+                        { "type": "string" }
+                    ]
+                }),
+            }],
+        };
+        let code = generate_table_enums(&table);
+        assert!(code.contains("pub enum DocState"));
+        assert!(code.contains("On"));
+        assert!(code.contains("String(String)"));
+    }
+}
+
+#[cfg(test)]
+mod generate_table_code_tests
+{
+    use serde_json::json;
+
+    use super::generate_table_code;
+    use crate::convex::types::{ConvexColumn, ConvexTable};
+
+    #[test]
+    fn struct_fields_use_expected_rust_types()
+    {
+        let table = ConvexTable {
+            name: "user".into(),
+            columns: vec![ConvexColumn {
+                name: "name".into(),
+                data_type: json!({ "type": "string" }),
+            }],
+        };
+        let code = generate_table_code(table);
+        assert!(code.contains("pub struct UserTable"));
+        assert!(code.contains("pub name: String"));
+    }
+}
+
+#[cfg(test)]
+mod generate_function_code_tests
+{
+    use serde_json::json;
+
+    use super::generate_function_code;
+    use crate::convex::types::{ConvexFunction, ConvexFunctionParam};
+
+    #[test]
+    fn emits_function_path_and_try_from()
+    {
+        let f = ConvexFunction {
+            name: "ping".into(),
+            params: vec![ConvexFunctionParam {
+                name: "msg".into(),
+                data_type: json!({ "type": "string" }),
+            }],
+            type_: "query".into(),
+            file_name: "net".into(),
+        };
+        let code = generate_function_code(f);
+        assert!(code.contains("pub struct PingArgs"));
+        assert!(code.contains("\"net:ping\""));
+        assert!(code.contains("TryFrom<PingArgs>"));
+        assert!(code.contains("map.insert(\"msg\""));
+    }
+
+    #[test]
+    fn optional_root_param_skips_null_insert_path()
+    {
+        let f = ConvexFunction {
+            name: "opt".into(),
+            params: vec![ConvexFunctionParam {
+                name: "x".into(),
+                data_type: json!({ "type": "optional", "inner": { "type": "boolean" } }),
+            }],
+            type_: "mutation".into(),
+            file_name: "m".into(),
+        };
+        let code = generate_function_code(f);
+        assert!(code.contains("if let Some(__v) = _args.x"));
+    }
+
+    #[test]
+    fn empty_params_try_from_returns_empty_map()
+    {
+        let f = ConvexFunction {
+            name: "noop".into(),
+            params: vec![],
+            type_: "query".into(),
+            file_name: "api".into(),
+        };
+        let code = generate_function_code(f);
+        assert!(code.contains("BTreeMap::new()"));
+    }
+}
+
+#[cfg(test)]
+mod run_codegen_tests
+{
+    use std::fs;
+
+    use serde_json::json;
+    use tempdir::TempDir;
+
+    use super::run_codegen;
+    use crate::convex::types::{ConvexColumn, ConvexFunction, ConvexSchema, ConvexTable};
+
+    #[test]
+    fn writes_header_and_table_and_function_snippets()
+    {
+        let tmp = TempDir::new("codegen_out").unwrap();
+        let out = tmp.path().join("out.rs");
+        let schema = ConvexSchema {
+            tables: vec![ConvexTable {
+                name: "t".into(),
+                columns: vec![ConvexColumn {
+                    name: "n".into(),
+                    data_type: json!({ "type": "number" }),
+                }],
+            }],
+        };
+        let functions = vec![ConvexFunction {
+            name: "f".into(),
+            params: vec![],
+            type_: "query".into(),
+            file_name: "api".into(),
+        }];
+        run_codegen(&out, (schema, functions)).unwrap();
+        let body = fs::read_to_string(&out).unwrap();
+        assert!(body.contains("convex-typegen"));
+        assert!(body.contains("TTable"));
+        assert!(body.contains("FArgs"));
+    }
 }

@@ -60,6 +60,7 @@ Version 0.3.0 is a major release that improves the stability and consistency acr
 - Optional `verbose` crate feature: when enabled, Oxc parser/semantic diagnostics are printed to stderr with `Debug` formatting (in addition to messages embedded in `ParsingFailed::details`).
 - Added `prelude` module that re-exports the most commonly used types and traits for convenience.
 - README.md for basic example directory.
+- Added documentation for the architecture of the library.
 
 ### Changed
 - Dependency version updates for [convex](https://docs.rs/convex/latest/convex/), [oxc](https://oxc.rs), [serde](https://serde.rs), and [serde_json](https://serde.rs/json.html).
@@ -73,3 +74,5 @@ Version 0.3.0 is a major release that improves the stability and consistency acr
 - Function AST map keys are unique per file: canonical absolute paths prevent two different modules with the same basename (for example `convex/a/foo.ts` and `convex/b/foo.ts`) from colliding or replacing each other.
 - Generated args-to-JSON conversion no longer uses `serde_json::to_value(...).unwrap()`, avoiding panics when a field cannot serialize to JSON.
 - `v.object({ ... })` types: heterogeneous objects (fields that do not share one Rust value type) are no longer mis-typed as `BTreeMap<String, T>` from a single sampled field; they are emitted as `serde_json::Value` until dedicated structs exist.
+- Function `args` parsing: accept ESTree `Property` nodes (Oxc) in addition to Babel-style `ObjectProperty` for each field inside the `args` object, so non-empty `args` blocks no longer fail with “Invalid argument property structure” depending on serializer shape.
+- Generated `TryFrom` for function arguments: top-level `v.optional(...)` parameters omit the key entirely when the Rust field is `None`, instead of serializing JSON `null`, which Convex rejects (`v.optional` means absent, not null).

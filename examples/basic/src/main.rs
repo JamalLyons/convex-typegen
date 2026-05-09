@@ -11,7 +11,8 @@ use convex_types::{GetGameArgs, LossGameArgs, WinGameArgs};
 use rand::Rng;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), Box<dyn std::error::Error>>
+{
     // Resolve next to this crate’s `Cargo.toml`, not the shell’s cwd (e.g. `just example` from repo root).
     dotenvy::from_filename(Path::new(env!("CARGO_MANIFEST_DIR")).join(".env.local"))?;
 
@@ -28,14 +29,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Initial game stats response: {:?}", game_stats);
 
     let (wins, losses) = match game_stats {
-        convex::FunctionResult::Value(value) => {
-            if let ConvexValue::Object(obj) = value {
-                let win_count = obj.get("win_count").map(extract_float_value).unwrap_or(0.0);
-                let loss_count = obj.get("loss_count").map(extract_float_value).unwrap_or(0.0);
-                (win_count as i32, loss_count as i32)
-            } else {
-                (0, 0)
-            }
+        convex::FunctionResult::Value(ConvexValue::Object(obj)) => {
+            let win_count = obj.get("win_count").map(extract_float_value).unwrap_or(0.0);
+            let loss_count = obj.get("loss_count").map(extract_float_value).unwrap_or(0.0);
+            (win_count as i32, loss_count as i32)
         }
         _ => (0, 0),
     };
@@ -109,22 +106,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .await
     {
-        Ok(updated_stats) => {
-            if let convex::FunctionResult::Value(value) = updated_stats {
-                if let ConvexValue::Object(obj) = value {
-                    let win_count = obj.get("win_count").map(extract_float_value).unwrap_or(0.0);
-                    let loss_count = obj.get("loss_count").map(extract_float_value).unwrap_or(0.0);
-                    println!("\nUpdated record - Wins: {}, Losses: {}", win_count as i32, loss_count as i32);
-                }
-            }
+        Ok(convex::FunctionResult::Value(ConvexValue::Object(obj))) => {
+            let win_count = obj.get("win_count").map(extract_float_value).unwrap_or(0.0);
+            let loss_count = obj.get("loss_count").map(extract_float_value).unwrap_or(0.0);
+            println!("\nUpdated record - Wins: {}, Losses: {}", win_count as i32, loss_count as i32);
         }
+        Ok(_) => {}
         Err(e) => println!("Error getting updated stats: {:?}", e),
     }
 
     Ok(())
 }
 
-fn extract_float_value(value: &ConvexValue) -> f64 {
+fn extract_float_value(value: &ConvexValue) -> f64
+{
     if let ConvexValue::Float64(f) = value {
         *f
     } else {

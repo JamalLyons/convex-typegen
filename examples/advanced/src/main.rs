@@ -15,7 +15,8 @@ use convex_types::{
 };
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), Box<dyn std::error::Error>>
+{
     dotenvy::from_filename(Path::new(env!("CARGO_MANIFEST_DIR")).join(".env.local")).ok();
 
     let Ok(url) = std::env::var("CONVEX_URL") else {
@@ -55,7 +56,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let teams = client
         .query(
             TeamsListByOwnerArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(TeamsListByOwnerArgs { ownerUserId: user_id.clone() })?,
+            ConvexClient::prepare_args(TeamsListByOwnerArgs {
+                ownerUserId: user_id.clone(),
+            })?,
         )
         .await?;
     println!("teamsListByOwner → {:?}", teams);
@@ -93,10 +96,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 numbers: vec![1.0, 2.0, 3.0],
                 flags: BTreeMap::from([("verbose".to_string(), true), ("trace".to_string(), false)]),
                 mode: convex_typegen::serde_json::json!("json"),
-                extra: Some(std::collections::HashMap::from([(
-                    "k".to_string(),
-                    "v".to_string(),
-                )])),
+                extra: Some(std::collections::HashMap::from([("k".to_string(), "v".to_string())])),
             })?,
         )
         .await?;
@@ -150,9 +150,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
     println!("tasksCreate ok");
 
-    let ts = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)?
-        .as_secs();
+    let ts = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_secs();
     let _alt_user = client
         .mutation(
             UsersCreateArgs::FUNCTION_PATH,
@@ -174,7 +172,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn extract_ids(summary: &FunctionResult) -> (Option<String>, Option<String>, Option<String>) {
+fn extract_ids(summary: &FunctionResult) -> (Option<String>, Option<String>, Option<String>)
+{
     let FunctionResult::Value(ConvexValue::Object(obj)) = summary else {
         return (None, None, None);
     };
@@ -184,7 +183,8 @@ fn extract_ids(summary: &FunctionResult) -> (Option<String>, Option<String>, Opt
     (team, project, user)
 }
 
-fn string_from_convex_value(v: &ConvexValue) -> Option<String> {
+fn string_from_convex_value(v: &ConvexValue) -> Option<String>
+{
     match v {
         ConvexValue::String(s) => Some(s.clone()),
         _ => None,

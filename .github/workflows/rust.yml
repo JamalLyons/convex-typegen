@@ -1,0 +1,67 @@
+name: Rust
+
+on:
+  push:
+    branches: [main, master, dev]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rustfmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
+
+      # `rustfmt.toml` uses unstable options; nightly must match `just fmt-check`.
+      - name: rustfmt (crate root)
+        run: cargo fmt --all --check
+
+      - name: rustfmt (examples/basic)
+        run: cargo fmt --manifest-path examples/basic/Cargo.toml --check
+
+      - name: rustfmt (examples/advanced)
+        run: cargo fmt --manifest-path examples/advanced/Cargo.toml --check
+
+  clippy-test:
+    name: Clippy, tests, and examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Clippy (crate root)
+        run: cargo clippy --locked --all-targets --all-features -- -D warnings
+
+      - name: Clippy (examples/basic)
+        run: cargo clippy --locked --manifest-path examples/basic/Cargo.toml --all-targets --all-features -- -D warnings
+
+      - name: Clippy (examples/advanced)
+        run: cargo clippy --locked --manifest-path examples/advanced/Cargo.toml --all-targets --all-features -- -D warnings
+
+      - name: Test (crate root)
+        run: cargo test --locked --all-features
+
+      - name: Build examples
+        run: |
+          cargo build --locked --manifest-path examples/basic/Cargo.toml --all-features
+          cargo build --locked --manifest-path examples/advanced/Cargo.toml --all-features

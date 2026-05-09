@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use convex::Value as ConvexValue;
@@ -88,20 +88,22 @@ pub(crate) fn create_schema_ast(path: PathBuf) -> Result<JsonValue, ConvexTypeGe
 }
 
 /// Creates a map of all convex functions from a list of function paths.
-pub(crate) fn create_functions_ast(paths: Vec<PathBuf>) -> Result<HashMap<String, JsonValue>, ConvexTypeGeneratorError>
+///
+/// Keys are full path strings (lossy UTF-8); a [`BTreeMap`] keeps iteration
+/// ordered by path so generated output is stable across runs.
+pub(crate) fn create_functions_ast(paths: Vec<PathBuf>) -> Result<BTreeMap<String, JsonValue>, ConvexTypeGeneratorError>
 {
-    let mut functions = HashMap::new();
+    let mut functions = BTreeMap::new();
 
     for path in paths {
         let function_ast = generate_ast(&path)?;
         let path_str = path.to_string_lossy().to_string();
-        let file_name = path
-            .file_name()
+        path.file_name()
             .ok_or_else(|| ConvexTypeGeneratorError::InvalidPath(path_str.clone()))?
             .to_str()
-            .ok_or(ConvexTypeGeneratorError::InvalidUnicode(path_str))?;
+            .ok_or(ConvexTypeGeneratorError::InvalidUnicode(path_str.clone()))?;
 
-        functions.insert(file_name.to_string(), function_ast);
+        functions.insert(path_str, function_ast);
     }
 
     Ok(functions)
@@ -367,13 +369,19 @@ fn extract_column_type(column_prop: &JsonValue, context: &mut TypeContext) -> Re
     Ok(type_value)
 }
 
-pub(crate) fn parse_function_ast(ast_map: HashMap<String, JsonValue>) -> Result<ConvexFunctions, ConvexTypeGeneratorError>
+pub(crate) fn parse_function_ast(ast_map: BTreeMap<String, JsonValue>) -> Result<ConvexFunctions, ConvexTypeGeneratorError>
 {
     let mut functions = Vec::new();
 
-    for (file_name, ast) in ast_map {
-        // Strip the .ts extension from the file name
-        let file_name = file_name.strip_suffix(".ts").unwrap_or(&file_name).to_string();
+    for (source_path, ast) in ast_map {
+        let path_buf = PathBuf::from(&source_path);
+        let file_name = path_buf
+            .file_name()
+            .ok_or_else(|| ConvexTypeGeneratorError::InvalidPath(source_path.clone()))?
+            .to_str()
+            .ok_or_else(|| ConvexTypeGeneratorError::InvalidUnicode(source_path.clone()))?;
+        // Strip the .ts extension from the file name (Convex module path segment).
+        let file_name = file_name.strip_suffix(".ts").unwrap_or(file_name).to_string();
 
         // Get the body array
         let body = ast["body"]

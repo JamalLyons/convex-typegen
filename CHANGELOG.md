@@ -40,3 +40,25 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Initial release of the project.
 
+## [0.2.0] - 2025-01-16
+### Added
+- Added this changelog file for all releases.
+- Added `ConvexValueExt` trait to the [convex::Value](https://docs.rs/convex/0.9.0/convex/enum.Value.html) type.
+
+### Changed
+- Updated from convex version [0.8.1](https://docs.rs/convex/0.8.1/convex/index.html) to [0.9.0](https://docs.rs/convex/0.9.0/convex/index.html)
+- Bumped [oxc](https://oxc.rs) to version 0.46.0
+- Removed the use of `.unwrap()` in the codebase.
+
+### Fixed
+- Test generation scripts not deleting generated files.
+
+## [0.3.0] - 2026-05-09
+Version 0.3.0 is a major release that improves the stability and consistency across the library. Major bug fixes, and refactorings have been made to the codebase.
+
+### Added
+
+### Changed
+
+### Fixed
+- Stable ordering of generated function argument types and `FUNCTION_PATH` blocks: function ASTs are keyed by full source path and collected in a `BTreeMap`, so output no longer depends on hash iteration order (cleaner diffs and a clearer `cargo:rerun-if-changed` story).

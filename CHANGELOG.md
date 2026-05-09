@@ -58,10 +58,13 @@ Version 0.3.0 is a major release that improves the stability and consistency acr
 
 ### Added
 - Optional `verbose` crate feature: when enabled, Oxc parser/semantic diagnostics are printed to stderr with `Debug` formatting (in addition to messages embedded in `ParsingFailed::details`).
+- Added `prelude` module that re-exports the most commonly used types and traits for convenience.
+- README.md for basic example directory.
 
 ### Changed
 - Dependency version updates for [convex](https://docs.rs/convex/latest/convex/), [oxc](https://oxc.rs), [serde](https://serde.rs), and [serde_json](https://serde.rs/json.html).
 - **Breaking:** Generated `*Args` types implement `TryFrom<Self> for BTreeMap<String, serde_json::Value>` (with `type Error = serde_json::Error`) instead of infallible `From`, so `serde_json::to_value` failures are not hidden behind `unwrap()`. `ConvexClientExt::prepare_args` now returns `Result<BTreeMap<String, convex::Value>, serde_json::Error>`.
+- **Breaking:** Renamed `JsonValue` to `ConvexJsonValue` and `JsonError` to `ConvexJsonError` to avoid confusion with the `serde_json` crate.
 
 ### Fixed
 - `ParsingFailed::details` for parser panic and semantic-check failures now includes joined Oxc diagnostic messages (primary message text) instead of only a generic summary, so callers and build logs can see what went wrong without lossy `Debug` output.

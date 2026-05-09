@@ -25,22 +25,33 @@ A blazing fast Rust type generator for [ConvexDB](https://www.convex.dev) schema
 1. Add dependencies using cargo:
 
 ```bash
-cargo add convex-typegen serde serde_json
+cargo add convex-typegen
 cargo add --build convex-typegen
 ```
+
+Generated Rust uses **serde** and **serde_json** through `convex-typegen` re-exports (`#[serde(crate = "convex_typegen::serde")]` and `convex_typegen::serde_json` in emitted code), so your app crate does not need its own `serde` / `serde_json` dependencies for the generated file alone. Add them only if you use those crates elsewhere in your code.
 
 2. Add the following to your `build.rs` file:
 
 ```rust
-use convex_typegen::{generate, Configuration};
+use convex_typegen::prelude::*;
 
 fn main() {
     let config = Configuration::default();
+
+    println!("cargo:rerun-if-changed={}", config.schema_path.display());
+    println!("cargo:rerun-if-changed={}", config.convex_dir.display());
+    for path in resolved_function_paths(&config).expect("resolve convex function sources") {
+        println!("cargo:rerun-if-changed={}", path.display());
+    }
+
     if let Err(e) = generate(config) {
         panic!("convex-typegen failed: {e}");
     }
 }
 ```
+
+By default, [`Configuration`](https://docs.rs/convex-typegen/latest/convex_typegen/struct.Configuration.html) uses `convex/` next to your `Cargo.toml` and discovers every `*.ts` function file under it (skipping the schema file, `_generated/`, `node_modules/`, and `*.d.ts`). Point `convex_dir` at another directory if your backend is not named `convex`, or set non-empty `function_paths` to override discovery entirely.
 
 3. Run `cargo build` to generate the types.
 

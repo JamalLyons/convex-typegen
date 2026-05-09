@@ -16,9 +16,6 @@ readme = "readme.md"
 categories = ["development-tools", "database", "web-programming"]
 keywords = ["convex", "rust", "typegen", "database", "types"]
 
-# Rust version requirement
-# rust-version = "1.70.0"
-
 [features]
 default = []
 # Print Oxc parser/semantic diagnostics to stderr (in addition to `ParsingFailed::details`).
@@ -32,7 +29,7 @@ serde_json = "1.0.149"
 thiserror = "2.0.18"
 
 [dev-dependencies]
-tempdir = "0.3"
+tempdir = "0.3.7"
 
 [profile.dev]
 opt-level = 1      # Make debug builds run faster

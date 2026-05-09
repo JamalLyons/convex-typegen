@@ -80,7 +80,7 @@ fn test_heterogeneous_object_field_is_serde_json_value()
     assert!(generate(config).is_ok());
     let generated_code = fs::read_to_string(output_path).expect("Failed to read generated code");
     assert!(
-        generated_code.contains("pub payload: serde_json::Value"),
+        generated_code.contains("pub payload: ConvexJsonValue"),
         "mixed field types must not use a homogeneous BTreeMap; got:\n{}",
         &generated_code[..generated_code.len().min(2500)]
     );

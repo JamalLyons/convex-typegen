@@ -49,6 +49,7 @@ export const testQuery = query({
         schema_path,
         function_paths: vec![function_path],
         out_file: temp_dir.path().join("types.rs"),
+        ..Default::default()
     };
 
     let result = generate(config);
@@ -60,7 +61,7 @@ export const testQuery = query({
         "expected fallible TryInto map conversion, got snippet: {}",
         &generated[..generated.len().min(2000)]
     );
-    assert!(generated.contains("type Error = serde_json::Error"));
+    assert!(generated.contains("type Error = ConvexJsonError"));
     assert!(
         !generated.contains(".unwrap()"),
         "generated bindings should not use unwrap(); use fallible conversion instead"
@@ -93,6 +94,7 @@ fn test_invalid_function_args()
         schema_path,
         function_paths: vec![function_path],
         out_file: temp_dir.path().join("types.rs"),
+        ..Default::default()
     };
 
     match generate(config) {

@@ -1,16 +1,15 @@
-use convex_typegen::{generate, Configuration};
+use convex_typegen::prelude::*;
 
 fn main() {
-    // Rebuild if the schema or games files change
-    println!("cargo:rerun-if-changed=convex/schema.ts");
-    println!("cargo:rerun-if-changed=convex/games.ts");
+    let config = Configuration::default();
 
-    let config = Configuration {
-        function_paths: vec![std::path::PathBuf::from("convex/games.ts")],
-        ..Default::default()
-    };
+    println!("cargo:rerun-if-changed={}", config.schema_path.display());
+    println!("cargo:rerun-if-changed={}", config.convex_dir.display());
 
-    // Generate the types
+    for path in resolved_function_paths(&config).expect("resolve convex function sources") {
+        println!("cargo:rerun-if-changed={}", path.display());
+    }
+
     if let Err(e) = generate(config) {
         panic!("convex-typegen failed: {e}");
     }

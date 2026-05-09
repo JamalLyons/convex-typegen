@@ -14,6 +14,7 @@ fn test_configuration_default() {
     let config = Configuration::default();
     assert_eq!(config.schema_path, PathBuf::from("convex/schema.ts"));
     assert_eq!(config.out_file, PathBuf::from("src/convex_types.rs"));
+    assert_eq!(config.convex_dir, PathBuf::from("convex"));
     assert!(config.function_paths.is_empty());
 }
 

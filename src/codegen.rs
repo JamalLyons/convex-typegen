@@ -20,7 +20,7 @@ pub(crate) fn generate_code(path: &PathBuf, data: (ConvexSchema, ConvexFunctions
 #![allow(non_snake_case)]
 #![allow(dead_code)]
 
-use serde::{Serialize, Deserialize};
+use convex_typegen::prelude::*;
 
 "#;
 
@@ -164,7 +164,7 @@ fn convex_type_to_rust_type(data_type: &JsonValue, table_name: Option<&str>, fie
         "null" => "()".to_string(),
         "int64" => "i64".to_string(),
         "bytes" => "Vec<u8>".to_string(),
-        "any" => "serde_json::Value".to_string(),
+        "any" => "ConvexJsonValue".to_string(),
 
         "array" => {
             let element_type = convex_type_to_rust_type(&data_type["elements"], None, None);
@@ -174,7 +174,7 @@ fn convex_type_to_rust_type(data_type: &JsonValue, table_name: Option<&str>, fie
         "object" => {
             if let Some(props) = data_type["properties"].as_object() {
                 if props.is_empty() {
-                    return "serde_json::Value".to_string();
+                    return "ConvexJsonValue".to_string();
                 }
 
                 let mut keys: Vec<&String> = props.keys().collect();
@@ -191,10 +191,10 @@ fn convex_type_to_rust_type(data_type: &JsonValue, table_name: Option<&str>, fie
                 if rust_types.all(|t| t == first) {
                     format!("std::collections::BTreeMap<String, {}>", first)
                 } else {
-                    "serde_json::Value".to_string()
+                    "ConvexJsonValue".to_string()
                 }
             } else {
-                "serde_json::Value".to_string()
+                "ConvexJsonValue".to_string()
             }
         }
 
@@ -210,7 +210,7 @@ fn convex_type_to_rust_type(data_type: &JsonValue, table_name: Option<&str>, fie
                     if let (Some(table), Some(field)) = (table_name, field_name) {
                         format!("{}Optional{}", capitalize_first_letter(table), capitalize_first_letter(field))
                     } else {
-                        "serde_json::Value".to_string()
+                        "ConvexJsonValue".to_string()
                     }
                 }
                 _ => convex_type_to_rust_type(&data_type["inner"], None, None),
@@ -229,7 +229,7 @@ fn convex_type_to_rust_type(data_type: &JsonValue, table_name: Option<&str>, fie
 
         "id" => "String".to_string(),
 
-        _ => "serde_json::Value".to_string(), // fallback for unknown types
+        _ => "ConvexJsonValue".to_string(), // fallback for unknown types
     }
 }
 
@@ -240,8 +240,9 @@ fn generate_function_code(function: ConvexFunction) -> String {
     // Generate the args struct name
     let struct_name = format!("{}Args", capitalize_first_letter(&function.name));
 
-    // Generate struct with derive macros
+    // Point serde derives at this crate so downstream does not need a direct `serde` dependency.
     code.push_str("#[derive(Debug, Clone, Serialize, Deserialize)]\n");
+    code.push_str("#[serde(crate = \"convex_typegen::serde\")]\n");
     code.push_str(&format!("pub struct {} {{\n", struct_name));
 
     // Generate fields for each parameter
@@ -260,10 +261,10 @@ fn generate_function_code(function: ConvexFunction) -> String {
 
     // Fallible conversion: serde_json::to_value can fail (e.g. non-finite f64).
     code.push_str(&format!(
-        "impl std::convert::TryFrom<{}> for std::collections::BTreeMap<String, serde_json::Value> {{\n",
+        "impl std::convert::TryFrom<{}> for std::collections::BTreeMap<String, ConvexJsonValue> {{\n",
         struct_name
     ));
-    code.push_str("    type Error = serde_json::Error;\n\n");
+    code.push_str("    type Error = ConvexJsonError;\n\n");
     code.push_str(&format!(
         "    fn try_from(_args: {}) -> Result<Self, Self::Error> {{\n",
         struct_name
@@ -275,7 +276,7 @@ fn generate_function_code(function: ConvexFunction) -> String {
         code.push_str("        let mut map = std::collections::BTreeMap::new();\n");
         for param in &function.params {
             code.push_str(&format!(
-                "        map.insert(\"{}\".to_string(), serde_json::to_value(_args.{})?);\n",
+                "        map.insert(\"{}\".to_string(), convex_typegen::serde_json::to_value(_args.{})?);\n",
                 param.name, param.name
             ));
         }

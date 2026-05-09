@@ -5,7 +5,7 @@
 #![allow(non_snake_case)]
 #![allow(dead_code)]
 
-use serde::{Serialize, Deserialize};
+use convex_typegen::prelude::*;
 
 #[derive(Debug, Clone)]
 pub enum TestSimple_union {
@@ -52,15 +52,16 @@ pub struct TestTable {
     pub bytes: Vec<u8>,
     pub simple_array: Vec<String>,
     pub number_array: Vec<f64>,
-    pub mixed_array: Vec<serde_json::Value>,
+    pub mixed_array: Vec<ConvexJsonValue>,
     pub nested_array: Vec<Vec<String>>,
     pub deep_nested_array: Vec<Vec<Vec<f64>>>,
     pub simple_object: std::collections::BTreeMap<String, String>,
-    pub complex_object: serde_json::Value,
-    pub nested_object: std::collections::BTreeMap<String, std::collections::BTreeMap<String, std::collections::BTreeMap<String, String>>>,
+    pub complex_object: ConvexJsonValue,
+    pub nested_object:
+        std::collections::BTreeMap<String, std::collections::BTreeMap<String, std::collections::BTreeMap<String, String>>>,
     pub string_record: std::collections::HashMap<String, String>,
     pub number_record: std::collections::HashMap<String, f64>,
-    pub complex_record: std::collections::HashMap<String, serde_json::Value>,
+    pub complex_record: std::collections::HashMap<String, ConvexJsonValue>,
     pub simple_union: TestSimple_union,
     pub complex_union: TestComplex_union,
     pub literal_union: TestLiteral_union,
@@ -68,19 +69,19 @@ pub struct TestTable {
     pub optional_object: Option<std::collections::BTreeMap<String, String>>,
     pub optional_union: Option<TestOptionalOptional_union>,
     pub optional_array: Option<Vec<String>>,
-    pub complex_nested: serde_json::Value,
+    pub complex_nested: ConvexJsonValue,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GetGameArgs {
-}
+#[serde(crate = "convex_typegen::serde")]
+pub struct GetGameArgs {}
 
 impl GetGameArgs {
     pub const FUNCTION_PATH: &'static str = "games:getGame";
 }
 
-impl std::convert::TryFrom<GetGameArgs> for std::collections::BTreeMap<String, serde_json::Value> {
-    type Error = serde_json::Error;
+impl std::convert::TryFrom<GetGameArgs> for std::collections::BTreeMap<String, ConvexJsonValue> {
+    type Error = ConvexJsonError;
 
     fn try_from(_args: GetGameArgs) -> Result<Self, Self::Error> {
         Ok(std::collections::BTreeMap::new())
@@ -88,15 +89,15 @@ impl std::convert::TryFrom<GetGameArgs> for std::collections::BTreeMap<String, s
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WinGameArgs {
-}
+#[serde(crate = "convex_typegen::serde")]
+pub struct WinGameArgs {}
 
 impl WinGameArgs {
     pub const FUNCTION_PATH: &'static str = "games:winGame";
 }
 
-impl std::convert::TryFrom<WinGameArgs> for std::collections::BTreeMap<String, serde_json::Value> {
-    type Error = serde_json::Error;
+impl std::convert::TryFrom<WinGameArgs> for std::collections::BTreeMap<String, ConvexJsonValue> {
+    type Error = ConvexJsonError;
 
     fn try_from(_args: WinGameArgs) -> Result<Self, Self::Error> {
         Ok(std::collections::BTreeMap::new())
@@ -104,18 +105,17 @@ impl std::convert::TryFrom<WinGameArgs> for std::collections::BTreeMap<String, s
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LossGameArgs {
-}
+#[serde(crate = "convex_typegen::serde")]
+pub struct LossGameArgs {}
 
 impl LossGameArgs {
     pub const FUNCTION_PATH: &'static str = "games:lossGame";
 }
 
-impl std::convert::TryFrom<LossGameArgs> for std::collections::BTreeMap<String, serde_json::Value> {
-    type Error = serde_json::Error;
+impl std::convert::TryFrom<LossGameArgs> for std::collections::BTreeMap<String, ConvexJsonValue> {
+    type Error = ConvexJsonError;
 
     fn try_from(_args: LossGameArgs) -> Result<Self, Self::Error> {
         Ok(std::collections::BTreeMap::new())
     }
 }
-

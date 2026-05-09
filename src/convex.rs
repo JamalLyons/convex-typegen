@@ -564,12 +564,13 @@ fn generate_ast(path: &PathBuf) -> Result<JsonValue, ConvexTypeGeneratorError> {
     errors.extend(semantics.errors);
 
     if !errors.is_empty() {
+        #[cfg(feature = "verbose")]
         for error in &errors {
             eprintln!("{error:?}");
         }
         return Err(ConvexTypeGeneratorError::ParsingFailed {
             file: path_str,
-            details: "Semantic analysis failed".to_string(),
+            details: parsing_failure_details("Semantic analysis failed", &errors),
         });
     }
 

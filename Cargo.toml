@@ -19,6 +19,11 @@ keywords = ["convex", "rust", "typegen", "database", "types"]
 # Rust version requirement
 # rust-version = "1.70.0"
 
+[features]
+default = []
+# Print Oxc parser/semantic diagnostics to stderr (in addition to `ParsingFailed::details`).
+verbose = []
+
 [dependencies]
 convex = "0.10.4"
 oxc = { version = "0.129.0", features = ["semantic", "serialize"], default-features = false}

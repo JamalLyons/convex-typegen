@@ -4,18 +4,18 @@ A blazing fast Rust type generator for [ConvexDB](https://www.convex.dev) schema
 
 ## Features
 
-- 🚀 **Blazing Fast**: Efficient AST parsing and type generation using oxc
-- 🔄 **Auto-regeneration**: Types automatically update when schema or function files change
-- 🛠️ **Complete Type System**: 
+- **Blazing Fast**: Efficient AST parsing and type generation using oxc
+- **Auto-regeneration**: Types automatically update when schema or function files change
+- **Complete Type System**: 
   - Full schema type generation (tables, columns, unions)
   - Function argument types for queries, mutations, and actions
   - Support for all Convex types (arrays, objects, records, literals)
   - Proper handling of optional fields and complex types
-- 🔒 **Type Safety**: 
+- **Type Safety**: 
   - Compile-time type checking
   - Automatic serialization/deserialization
   - Zero runtime overhead
-- 🎨 **Developer Experience**: 
+- **Developer Experience**: 
   - Clean, idiomatic Rust code generation
   - Smart function path resolution (e.g., "auth:login")
   - Detailed documentation for generated types
@@ -32,10 +32,13 @@ cargo add --build convex-typegen
 2. Add the following to your `build.rs` file:
 
 ```rust
-use convex_typegen::generate;
+use convex_typegen::{generate, Configuration};
 
 fn main() {
-    generate().unwrap();
+    let config = Configuration::default();
+    if let Err(e) = generate(config) {
+        panic!("convex-typegen failed: {e}");
+    }
 }
 ```
 

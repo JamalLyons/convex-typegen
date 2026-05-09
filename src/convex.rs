@@ -89,21 +89,30 @@ pub(crate) fn create_schema_ast(path: PathBuf) -> Result<JsonValue, ConvexTypeGe
 
 /// Creates a map of all convex functions from a list of function paths.
 ///
-/// Keys are full path strings (lossy UTF-8); a [`BTreeMap`] keeps iteration
-/// ordered by path so generated output is stable across runs.
+/// Each path is [`std::path::Path::canonicalize`], then stored under its
+/// lossy UTF-8 form. A [`BTreeMap`] sorts by that key so generated output is
+/// stable, and distinct files that share a basename (for example
+/// `convex/a/foo.ts` and `convex/b/foo.ts`) never overwrite one another.
 pub(crate) fn create_functions_ast(paths: Vec<PathBuf>) -> Result<BTreeMap<String, JsonValue>, ConvexTypeGeneratorError>
 {
     let mut functions = BTreeMap::new();
 
     for path in paths {
-        let function_ast = generate_ast(&path)?;
         let path_str = path.to_string_lossy().to_string();
-        path.file_name()
-            .ok_or_else(|| ConvexTypeGeneratorError::InvalidPath(path_str.clone()))?
-            .to_str()
-            .ok_or(ConvexTypeGeneratorError::InvalidUnicode(path_str.clone()))?;
+        let canonical = path.canonicalize().map_err(|error| ConvexTypeGeneratorError::IOError {
+            file: path_str.clone(),
+            error,
+        })?;
 
-        functions.insert(path_str, function_ast);
+        let key = canonical.to_string_lossy().to_string();
+        canonical
+            .file_name()
+            .ok_or_else(|| ConvexTypeGeneratorError::InvalidPath(key.clone()))?
+            .to_str()
+            .ok_or_else(|| ConvexTypeGeneratorError::InvalidUnicode(key.clone()))?;
+
+        let function_ast = generate_ast(&canonical)?;
+        functions.insert(key, function_ast);
     }
 
     Ok(functions)

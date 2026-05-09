@@ -31,3 +31,6 @@ install-example-deps:
 # Build and run the `basic` example (Convex URL / keys typically come from `.env` via dotenvy).
 example *ARGS:
     cargo run --manifest-path examples/basic/Cargo.toml {{ ARGS }}
+
+doc:
+    cargo doc --all-features --no-deps --open

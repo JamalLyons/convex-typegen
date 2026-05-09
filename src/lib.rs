@@ -1,80 +1,52 @@
-mod codegen;
-pub mod convex;
-mod discover;
-pub mod errors;
+#![doc = include_str!("../readme.md")]
+//!
+//! ## Crate layout
+//!
+//! - [`config::Configuration`] — input paths and optional explicit function file list.
+//! - [`generate`] — end-to-end pipeline used from `build.rs`.
+//! - [`prelude`] — re-exports for `build.rs` and for crates that consume generated code.
+//! - [`fs::rcfp`] — resolves the same function source paths as [`generate`] (for `cargo:rerun-if-changed`).
+//!
+//! Parsing and codegen live in the private `convex` module; the public API stays small on purpose.
+//!
+//! ## Serde
+//!
+//! Generated files use `#[serde(crate = "convex_typegen::serde")]` and
+//! `convex_typegen::serde_json::…` so application crates do not need direct `serde` / `serde_json`
+//! dependencies unless they use those crates themselves.
+
+use crate::config::Configuration;
+use crate::convex::codegen::run_codegen;
+use crate::convex::parser::{parse_function_ast, parse_schema_ast};
+use crate::convex::{create_function_asts, create_schema_ast};
+use crate::error::ConvexTypeGeneratorError;
+use crate::fs::rcfp;
+
+pub mod config;
+mod convex;
+mod error;
+mod fs;
 pub mod prelude;
 
-/// Re-export of **serde** so generated code can use `#[serde(crate = "convex_typegen::serde")]` and
-/// your application crate does not need its own `serde` dependency for those derives.
+/// Crate-root re-export for generated `#[serde(crate = "convex_typegen::serde")]`.
 pub use serde;
-/// Re-export of **serde_json** so generated `TryFrom` bodies can call `convex_typegen::serde_json::…`
-/// without a direct `serde_json` dependency in your application crate.
+/// Crate-root re-export for generated `TryFrom` impls and `ConvexJsonValue` aliases.
 pub use serde_json;
+/// Ergonomic helpers for the official Convex Rust client (see [`prelude`]).
+pub use crate::convex::ConvexClientExt;
 
-use std::path::PathBuf;
-
-use codegen::generate_code;
-use convex::{create_functions_ast, create_schema_ast, parse_function_ast, parse_schema_ast};
-use errors::ConvexTypeGeneratorError;
-
-/// Configuration options for the type generator.
-#[derive(Debug, Clone)]
-pub struct Configuration {
-    /// Path to the Convex schema file (default: "convex/schema.ts")
-    pub schema_path: PathBuf,
-
-    /// Output file path for generated Rust types (default: "src/convex_types.rs")
-    pub out_file: PathBuf,
-
-    /// Convex backend directory (default: `"convex"`, i.e. next to `Cargo.toml` when the build
-    /// runs from the package root). When [`function_paths`](Self::function_paths) is empty, all
-    /// `*.ts` files under this directory are used as function sources except `schema.ts` (same
-    /// file as [`schema_path`](Self::schema_path)), `_generated/`, `node_modules/`, and `*.d.ts`.
-    pub convex_dir: PathBuf,
-
-    /// When non-empty, only these files are parsed as Convex functions (directory discovery is
-    /// skipped). Use this in tests or for unusual layouts.
-    pub function_paths: Vec<PathBuf>,
-}
-
-impl Default for Configuration {
-    fn default() -> Self {
-        Self {
-            schema_path: PathBuf::from("convex/schema.ts"),
-            out_file: PathBuf::from("src/convex_types.rs"),
-            convex_dir: PathBuf::from("convex"),
-            function_paths: Vec::new(),
-        }
-    }
-}
-
-/// Resolves which TypeScript files will be parsed for Convex queries, mutations, and actions.
+/// Runs the full generator: resolve TypeScript inputs, parse with Oxc to ESTree JSON, walk that
+/// JSON into an internal model, then emit Rust to [`Configuration::out_file`].
 ///
-/// This is the same list [`generate`](crate::generate) uses. Intended for `build.rs`
-/// `cargo:rerun-if-changed` lines.
-pub fn resolved_function_paths(config: &Configuration) -> Result<Vec<PathBuf>, ConvexTypeGeneratorError> {
-    if !config.function_paths.is_empty() {
-        return Ok(config.function_paths.clone());
-    }
-    discover::discover_function_paths(&config.convex_dir, &config.schema_path)
-}
-
-/// Generates Rust types from Convex schema and function definitions.
-///
-/// # Arguments
-/// * `config` - Configuration options for the type generation process
-///
-/// # Returns
-/// * `Ok(())` if type generation succeeds
-/// * `Err(ConvexTypeGeneratorError)` if an error occurs during generation
+/// Pipeline: validate schema path → canonicalize schema → parse schema TS to ESTree JSON →
+/// [`fs::rcfp`] → parse each function file → structured schema + function model → write generated Rust.
 ///
 /// # Errors
-/// This function can fail for several reasons:
-/// * Schema file not found
-/// * Invalid schema structure
-/// * IO errors when reading/writing files
-/// * Parse errors in schema or function files
-pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError> {
+///
+/// Surfaced as [`error::ConvexTypeGeneratorError`]: missing paths, Oxc parse/semantic errors, schema
+/// shapes we do not recognize, IO, or JSON deserialization of the ESTree payload.
+pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError>
+{
     if !config.schema_path.exists() {
         return Err(ConvexTypeGeneratorError::MissingSchemaFile);
     }
@@ -88,13 +60,13 @@ pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError> {
         })?;
 
     let schema_ast = create_schema_ast(schema_path)?;
-    let function_paths = resolved_function_paths(&config)?;
-    let functions_ast = create_functions_ast(function_paths)?;
+    let function_paths = rcfp(&config)?;
+    let function_asts = create_function_asts(function_paths)?;
 
     let parsed_schema = parse_schema_ast(schema_ast)?;
-    let parsed_functions = parse_function_ast(functions_ast)?;
+    let parsed_functions = parse_function_ast(function_asts)?;
 
-    generate_code(&config.out_file, (parsed_schema, parsed_functions))?;
+    run_codegen(&config.out_file, (parsed_schema, parsed_functions))?;
 
     Ok(())
 }

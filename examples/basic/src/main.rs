@@ -1,10 +1,12 @@
+//! CLI demo: reads/writes game stats through generated arg structs and [`ConvexClientExt`].
+
 mod convex_types;
 
 use std::io::{self, Write};
 use std::path::Path;
 
 use convex::{ConvexClient, Value as ConvexValue};
-use convex_typegen::convex::ConvexClientExt;
+use convex_typegen::ConvexClientExt;
 use convex_types::{GetGameArgs, LossGameArgs, WinGameArgs};
 use rand::Rng;
 

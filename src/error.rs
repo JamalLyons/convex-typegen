@@ -1,15 +1,23 @@
+//! Error taxonomy for discovery, parse, schema validation, and emit.
+//!
+//! [`ConvexTypeGeneratorError::IOError`] may be constructed with an empty `file` (for example via
+//! [`From<std::io::Error>`]); use [`ConvexTypeGeneratorError::with_file_context`] when the caller
+//! knows which path failed.
+
 use thiserror::Error;
 
-/// Errors that can occur during the type generation process.
+/// Unified error type for the whole codegen pipeline.
 #[derive(Debug, Error)]
-pub enum ConvexTypeGeneratorError {
+pub enum ConvexTypeGeneratorError
+{
     /// The schema file could not be found at the specified path
     #[error("Schema file not found")]
     MissingSchemaFile,
 
     /// Failed to parse a source file
     #[error("Failed to parse file '{file}': {details}")]
-    ParsingFailed {
+    ParsingFailed
+    {
         /// Path to the file that failed to parse
         file: String,
         /// Details about the parsing failure
@@ -18,7 +26,8 @@ pub enum ConvexTypeGeneratorError {
 
     /// The schema file exists but is empty
     #[error("Schema file '{file}' is empty")]
-    EmptySchemaFile {
+    EmptySchemaFile
+    {
         /// Path to the empty schema file
         file: String,
     },
@@ -37,7 +46,8 @@ pub enum ConvexTypeGeneratorError {
 
     /// An IO error occurred while reading or writing files
     #[error("IO error while reading '{file}': {error}")]
-    IOError {
+    IOError
+    {
         /// Path to the file where the error occurred
         file: String,
         /// The underlying IO error
@@ -47,7 +57,8 @@ pub enum ConvexTypeGeneratorError {
 
     /// The schema file has invalid structure or content
     #[error("Invalid schema at {context}: {details}")]
-    InvalidSchema {
+    InvalidSchema
+    {
         /// Context where the invalid schema was found
         context: String,
         /// Details about why the schema is invalid
@@ -56,14 +67,16 @@ pub enum ConvexTypeGeneratorError {
 
     /// A circular reference was detected in type definitions
     #[error("Circular type reference detected: {}", .path.join(" -> "))]
-    CircularReference {
+    CircularReference
+    {
         /// The path of types that form the circular reference
         path: Vec<String>,
     },
 
     /// An invalid type name was encountered
     #[error("Invalid type '{found}'. Valid types are: {}", .valid_types.join(", "))]
-    InvalidType {
+    InvalidType
+    {
         /// The invalid type that was found
         found: String,
         /// List of valid type names
@@ -71,8 +84,10 @@ pub enum ConvexTypeGeneratorError {
     },
 }
 
-impl From<std::io::Error> for ConvexTypeGeneratorError {
-    fn from(error: std::io::Error) -> Self {
+impl From<std::io::Error> for ConvexTypeGeneratorError
+{
+    fn from(error: std::io::Error) -> Self
+    {
         ConvexTypeGeneratorError::IOError {
             file: String::new(),
             error,
@@ -80,9 +95,11 @@ impl From<std::io::Error> for ConvexTypeGeneratorError {
     }
 }
 
-impl ConvexTypeGeneratorError {
-    /// Adds file context to an IO error
-    pub fn with_file_context(self, file: impl Into<String>) -> Self {
+impl ConvexTypeGeneratorError
+{
+    /// Attaches `file` to [`ConvexTypeGeneratorError::IOError`]; leaves other variants unchanged.
+    pub fn with_file_context(self, file: impl Into<String>) -> Self
+    {
         match self {
             Self::IOError { error, .. } => Self::IOError {
                 file: file.into(),

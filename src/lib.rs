@@ -10,8 +10,7 @@ use errors::ConvexTypeGeneratorError;
 
 /// Configuration options for the type generator.
 #[derive(Debug, Clone)]
-pub struct Configuration
-{
+pub struct Configuration {
     /// Path to the Convex schema file (default: "convex/schema.ts")
     pub schema_path: PathBuf,
 
@@ -22,10 +21,8 @@ pub struct Configuration
     pub function_paths: Vec<PathBuf>,
 }
 
-impl Default for Configuration
-{
-    fn default() -> Self
-    {
+impl Default for Configuration {
+    fn default() -> Self {
         Self {
             schema_path: PathBuf::from("convex/schema.ts"),
             out_file: "src/convex_types.rs".to_string(),
@@ -49,8 +46,7 @@ impl Default for Configuration
 /// * Invalid schema structure
 /// * IO errors when reading/writing files
 /// * Parse errors in schema or function files
-pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError>
-{
+pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError> {
     if !config.schema_path.exists() {
         return Err(ConvexTypeGeneratorError::MissingSchemaFile);
     }

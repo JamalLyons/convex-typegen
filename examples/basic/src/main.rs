@@ -10,13 +10,13 @@ use rand::Rng;
 const CONVEX_URL: &str = "https://notable-orca-705.convex.cloud";
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>>
-{
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut client = ConvexClient::new(CONVEX_URL).await?;
 
     // Get current game stats using the extension trait
-    let args_map = ConvexClient::prepare_args(GetGameArgs {})?;
-    let game_stats = client.query(GetGameArgs::FUNCTION_PATH, args_map).await?;
+    let game_stats = client
+        .query(GetGameArgs::FUNCTION_PATH, ConvexClient::prepare_args(GetGameArgs {})?)
+        .await?;
 
     println!("Initial game stats response: {:?}", game_stats);
 
@@ -64,8 +64,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
             std::cmp::Ordering::Equal => {
                 println!("Congratulations! You won in {} attempts!", attempts);
                 // Save win to Convex using winGame mutation
-                let args_map = ConvexClient::prepare_args(WinGameArgs {})?;
-                match client.mutation(WinGameArgs::FUNCTION_PATH, args_map).await {
+                match client
+                    .mutation(WinGameArgs::FUNCTION_PATH, ConvexClient::prepare_args(WinGameArgs {})?)
+                    .await
+                {
                     Ok(result) => println!("Save win result: {:?}", result),
                     Err(e) => println!("Error saving win: {:?}", e),
                 }
@@ -76,8 +78,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
         if attempts >= MAX_ATTEMPTS {
             println!("Sorry, you've run out of attempts! The number was {}", secret_number);
             // Save loss to Convex using lossGame mutation
-            let args_map = ConvexClient::prepare_args(LossGameArgs {})?;
-            match client.mutation(LossGameArgs::FUNCTION_PATH, args_map).await {
+            match client
+                .mutation(LossGameArgs::FUNCTION_PATH, ConvexClient::prepare_args(LossGameArgs {})?)
+                .await
+            {
                 Ok(_) => (),
                 Err(e) => println!("Error saving loss: {:?}", e),
             }
@@ -91,8 +95,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
     // Get and display updated stats
-    let args_map = ConvexClient::prepare_args(GetGameArgs {})?;
-    match client.query(GetGameArgs::FUNCTION_PATH, args_map).await {
+    match client
+        .query(GetGameArgs::FUNCTION_PATH, ConvexClient::prepare_args(GetGameArgs {})?)
+        .await
+    {
         Ok(updated_stats) => {
             if let convex::FunctionResult::Value(value) = updated_stats {
                 if let ConvexValue::Object(obj) = value {
@@ -108,8 +114,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     Ok(())
 }
 
-fn extract_float_value(value: &ConvexValue) -> f64
-{
+fn extract_float_value(value: &ConvexValue) -> f64 {
     if let ConvexValue::Float64(f) = value {
         *f
     } else {

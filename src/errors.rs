@@ -28,7 +28,7 @@ pub enum ConvexTypeGeneratorError
 
     /// The file name contains invalid Unicode characters
     InvalidUnicode(String),
-    /// Failed to serialize the AST to JSON
+    /// Failed to parse ESTree JSON produced from the parser AST
     SerializationFailed(serde_json::Error),
 
     /// An IO error occurred while reading or writing files
@@ -85,7 +85,7 @@ impl fmt::Display for ConvexTypeGeneratorError
                 write!(f, "Path contains invalid Unicode: {}", path)
             }
             Self::SerializationFailed(err) => {
-                write!(f, "Failed to serialize AST: {}", err)
+                write!(f, "Failed to parse AST as JSON: {}", err)
             }
             Self::IOError { file, error } => {
                 write!(f, "IO error while reading '{}': {}", file, error)

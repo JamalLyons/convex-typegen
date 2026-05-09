@@ -17,8 +17,7 @@ use crate::errors::ConvexTypeGeneratorError;
 ///
 /// A schema can contain many tables. https://docs.convex.dev/database/schemas
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct ConvexSchema
-{
+pub(crate) struct ConvexSchema {
     pub(crate) tables: Vec<ConvexTable>,
 }
 
@@ -26,8 +25,7 @@ pub(crate) struct ConvexSchema
 ///
 /// A table can contain many columns.
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct ConvexTable
-{
+pub(crate) struct ConvexTable {
     /// The name of the table.
     pub(crate) name: String,
     /// The columns in the table.
@@ -36,8 +34,7 @@ pub(crate) struct ConvexTable
 
 /// A column in the convex schema.
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct ConvexColumn
-{
+pub(crate) struct ConvexColumn {
     /// The name of the column.
     pub(crate) name: String,
     /// The data type of the column.
@@ -52,8 +49,7 @@ pub(crate) type ConvexFunctions = Vec<ConvexFunction>;
 ///
 /// https://docs.convex.dev/functions
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct ConvexFunction
-{
+pub(crate) struct ConvexFunction {
     pub(crate) name: String,
     pub(crate) params: Vec<ConvexFunctionParam>,
     pub(crate) type_: String,
@@ -62,8 +58,7 @@ pub(crate) struct ConvexFunction
 
 /// A parameter in a convex function.
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct ConvexFunctionParam
-{
+pub(crate) struct ConvexFunctionParam {
     pub(crate) name: String,
     pub(crate) data_type: JsonValue,
 }
@@ -78,8 +73,7 @@ pub(crate) struct ConvexFunctionParam
 /// * The file cannot be read
 /// * The file contains invalid syntax
 /// * The AST cannot be generated
-pub(crate) fn create_schema_ast(path: PathBuf) -> Result<JsonValue, ConvexTypeGeneratorError>
-{
+pub(crate) fn create_schema_ast(path: PathBuf) -> Result<JsonValue, ConvexTypeGeneratorError> {
     // Validate path exists before processing
     if !path.exists() {
         return Err(ConvexTypeGeneratorError::MissingSchemaFile);
@@ -94,8 +88,7 @@ pub(crate) fn create_schema_ast(path: PathBuf) -> Result<JsonValue, ConvexTypeGe
 /// lossy UTF-8 form. A [`BTreeMap`] sorts by that key so generated output is
 /// stable, and distinct files that share a basename (for example
 /// `convex/a/foo.ts` and `convex/b/foo.ts`) never overwrite one another.
-pub(crate) fn create_functions_ast(paths: Vec<PathBuf>) -> Result<BTreeMap<String, JsonValue>, ConvexTypeGeneratorError>
-{
+pub(crate) fn create_functions_ast(paths: Vec<PathBuf>) -> Result<BTreeMap<String, JsonValue>, ConvexTypeGeneratorError> {
     let mut functions = BTreeMap::new();
 
     for path in paths {
@@ -119,8 +112,7 @@ pub(crate) fn create_functions_ast(paths: Vec<PathBuf>) -> Result<BTreeMap<Strin
     Ok(functions)
 }
 
-pub(crate) fn parse_schema_ast(ast: JsonValue) -> Result<ConvexSchema, ConvexTypeGeneratorError>
-{
+pub(crate) fn parse_schema_ast(ast: JsonValue) -> Result<ConvexSchema, ConvexTypeGeneratorError> {
     let context = "root";
     // Get the body array
     let body = ast["body"]
@@ -216,8 +208,7 @@ pub(crate) fn parse_schema_ast(ast: JsonValue) -> Result<ConvexSchema, ConvexTyp
 }
 
 /// Helper function to find the defineSchema call in the AST
-fn find_define_schema(body: &[JsonValue]) -> Option<&JsonValue>
-{
+fn find_define_schema(body: &[JsonValue]) -> Option<&JsonValue> {
     for node in body {
         // Check if this is an export default declaration
         if let Some(declaration) = node.get("declaration") {
@@ -246,8 +237,7 @@ fn find_define_schema(body: &[JsonValue]) -> Option<&JsonValue>
 }
 
 /// Helper function to extract the column type from a column property
-fn extract_column_type(column_prop: &JsonValue, context: &mut TypeContext) -> Result<JsonValue, ConvexTypeGeneratorError>
-{
+fn extract_column_type(column_prop: &JsonValue, context: &mut TypeContext) -> Result<JsonValue, ConvexTypeGeneratorError> {
     let value = &column_prop["value"];
     let callee = &value["callee"];
 
@@ -379,8 +369,7 @@ fn extract_column_type(column_prop: &JsonValue, context: &mut TypeContext) -> Re
     Ok(type_value)
 }
 
-pub(crate) fn parse_function_ast(ast_map: BTreeMap<String, JsonValue>) -> Result<ConvexFunctions, ConvexTypeGeneratorError>
-{
+pub(crate) fn parse_function_ast(ast_map: BTreeMap<String, JsonValue>) -> Result<ConvexFunctions, ConvexTypeGeneratorError> {
     let mut functions = Vec::new();
 
     for (source_path, ast) in ast_map {
@@ -455,9 +444,10 @@ pub(crate) fn parse_function_ast(ast_map: BTreeMap<String, JsonValue>) -> Result
 }
 
 /// Helper function to extract function parameters from the function configuration
-fn extract_function_params(config: &JsonValue, file_name: &str)
-    -> Result<Vec<ConvexFunctionParam>, ConvexTypeGeneratorError>
-{
+fn extract_function_params(
+    config: &JsonValue,
+    file_name: &str,
+) -> Result<Vec<ConvexFunctionParam>, ConvexTypeGeneratorError> {
     let mut params = Vec::new();
 
     // Get the args object from the function config
@@ -515,10 +505,23 @@ fn extract_function_params(config: &JsonValue, file_name: &str)
 /// # Arguments
 /// * `path` - Path to the source file
 ///
+/// Primary diagnostic text from Oxc (`Display` is the message; `Debug` is noisier).
+fn join_oxc_diagnostic_messages(errors: &[OxcDiagnostic]) -> String {
+    errors.iter().map(ToString::to_string).filter(|s| !s.is_empty()).collect::<Vec<_>>().join("; ")
+}
+
+fn parsing_failure_details(summary: &str, errors: &[OxcDiagnostic]) -> String {
+    let joined = join_oxc_diagnostic_messages(errors);
+    if joined.is_empty() {
+        summary.to_string()
+    } else {
+        format!("{summary}: {joined}")
+    }
+}
+
 /// # Errors
 /// Returns an error if the file cannot be parsed or contains invalid syntax
-fn generate_ast(path: &PathBuf) -> Result<JsonValue, ConvexTypeGeneratorError>
-{
+fn generate_ast(path: &PathBuf) -> Result<JsonValue, ConvexTypeGeneratorError> {
     let path_str = path.to_string_lossy().to_string();
     let allocator = Allocator::default();
 
@@ -543,12 +546,13 @@ fn generate_ast(path: &PathBuf) -> Result<JsonValue, ConvexTypeGeneratorError>
     errors.extend(ret.errors);
 
     if ret.panicked {
+        #[cfg(feature = "verbose")]
         for error in &errors {
             eprintln!("{error:?}");
         }
         return Err(ConvexTypeGeneratorError::ParsingFailed {
             file: path_str.clone(),
-            details: "Parser panicked".to_string(),
+            details: parsing_failure_details("Parser panicked", &errors),
         });
     }
 
@@ -569,7 +573,9 @@ fn generate_ast(path: &PathBuf) -> Result<JsonValue, ConvexTypeGeneratorError>
         });
     }
 
-    serde_json::to_value(&ret.program).map_err(ConvexTypeGeneratorError::SerializationFailed)
+    // Oxc's `Program` is not `serde::Serialize`; ESTree JSON is produced via `to_estree_*_json`.
+    let estree_json = ret.program.to_estree_ts_json(false);
+    serde_json::from_str(&estree_json).map_err(ConvexTypeGeneratorError::SerializationFailed)
 }
 
 const VALID_CONVEX_TYPES: &[&str] = &[
@@ -577,8 +583,7 @@ const VALID_CONVEX_TYPES: &[&str] = &[
     "optional", "any",
 ];
 
-fn validate_type_name(type_name: &str) -> Result<(), ConvexTypeGeneratorError>
-{
+fn validate_type_name(type_name: &str) -> Result<(), ConvexTypeGeneratorError> {
     if !VALID_CONVEX_TYPES.contains(&type_name) {
         return Err(ConvexTypeGeneratorError::InvalidType {
             found: type_name.to_string(),
@@ -589,8 +594,7 @@ fn validate_type_name(type_name: &str) -> Result<(), ConvexTypeGeneratorError>
 }
 
 #[derive(Debug, Default)]
-struct TypeContext
-{
+struct TypeContext {
     /// Stack of type paths being processed (includes type name and path)
     type_stack: Vec<(String, String)>, // (type_name, full_path)
     /// Current file being processed - used for error context
@@ -599,10 +603,8 @@ struct TypeContext
     type_path: Vec<String>,
 }
 
-impl TypeContext
-{
-    fn new(file_name: String) -> Self
-    {
+impl TypeContext {
+    fn new(file_name: String) -> Self {
         Self {
             file_name,
             type_stack: Vec::new(),
@@ -610,8 +612,7 @@ impl TypeContext
         }
     }
 
-    fn push_type(&mut self, type_name: &str) -> Result<(), ConvexTypeGeneratorError>
-    {
+    fn push_type(&mut self, type_name: &str) -> Result<(), ConvexTypeGeneratorError> {
         let current_path = self.type_path.join(".");
 
         // Only check for circular references in object types
@@ -635,14 +636,12 @@ impl TypeContext
     }
 
     /// Get the current context for error messages
-    fn get_error_context(&self) -> String
-    {
+    fn get_error_context(&self) -> String {
         format!("{}:{}", self.file_name, self.type_path.join("."))
     }
 
     /// Removes the most recently pushed type from the stack
-    fn pop_type(&mut self)
-    {
+    fn pop_type(&mut self) {
         // Only pop if the last type was an object (matches push_type behavior)
         if let Some((type_name, _)) = self.type_stack.last() {
             if type_name == "object" {
@@ -652,8 +651,7 @@ impl TypeContext
     }
 }
 
-fn check_circular_references(type_obj: &JsonValue, context: &mut TypeContext) -> Result<(), ConvexTypeGeneratorError>
-{
+fn check_circular_references(type_obj: &JsonValue, context: &mut TypeContext) -> Result<(), ConvexTypeGeneratorError> {
     let type_name = type_obj["type"]
         .as_str()
         .ok_or_else(|| ConvexTypeGeneratorError::InvalidSchema {
@@ -720,16 +718,13 @@ fn check_circular_references(type_obj: &JsonValue, context: &mut TypeContext) ->
 }
 
 /// Trait for converting types into Convex-compatible arguments
-pub trait IntoConvexValue
-{
+pub trait IntoConvexValue {
     /// Convert the type into a Convex Value
     fn into_convex_value(self) -> ConvexValue;
 }
 
-impl IntoConvexValue for JsonValue
-{
-    fn into_convex_value(self) -> ConvexValue
-    {
+impl IntoConvexValue for JsonValue {
+    fn into_convex_value(self) -> ConvexValue {
         match self {
             JsonValue::Null => ConvexValue::Null,
             JsonValue::Bool(b) => ConvexValue::Boolean(b),
@@ -753,16 +748,13 @@ impl IntoConvexValue for JsonValue
     }
 }
 
-pub trait ConvexValueExt
-{
+pub trait ConvexValueExt {
     /// Convert a convex value into a serde value
     fn into_serde_value(self) -> JsonValue;
 }
 
-impl ConvexValueExt for ConvexValue
-{
-    fn into_serde_value(self) -> JsonValue
-    {
+impl ConvexValueExt for ConvexValue {
+    fn into_serde_value(self) -> JsonValue {
         match self {
             ConvexValue::Null => JsonValue::Null,
             ConvexValue::Boolean(b) => JsonValue::Bool(b),
@@ -783,8 +775,7 @@ impl ConvexValueExt for ConvexValue
 }
 
 /// Extension trait for ConvexClient to provide a more ergonomic API
-pub trait ConvexClientExt
-{
+pub trait ConvexClientExt {
     /// Convert function arguments into Convex-compatible format.
     ///
     /// Uses [`TryFrom`] on the generated args type; serialization errors

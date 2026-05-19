@@ -38,7 +38,8 @@ impl std::convert::TryFrom<GamesGetGameArgs> for std::collections::BTreeMap<Stri
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(crate = "convex_typegen::serde")]
-pub struct GamesWinGameArgs {}
+pub struct GamesWinGameArgs {
+}
 
 impl GamesWinGameArgs {
     pub const FUNCTION_PATH: &'static str = "games:winGame";
@@ -54,7 +55,8 @@ impl std::convert::TryFrom<GamesWinGameArgs> for std::collections::BTreeMap<Stri
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(crate = "convex_typegen::serde")]
-pub struct GamesLossGameArgs {}
+pub struct GamesLossGameArgs {
+}
 
 impl GamesLossGameArgs {
     pub const FUNCTION_PATH: &'static str = "games:lossGame";
@@ -67,3 +69,4 @@ impl std::convert::TryFrom<GamesLossGameArgs> for std::collections::BTreeMap<Str
         Ok(std::collections::BTreeMap::new())
     }
 }
+

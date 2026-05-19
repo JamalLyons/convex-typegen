@@ -1,6 +1,3 @@
-//! Minimal `build.rs`: rerun-if-changed for schema, convex dir, and every discovered TS function,
-//! then run [`convex_typegen::generate`] with defaults (`convex/schema.ts` → `src/convex_types.rs`).
-
 use convex_typegen::prelude::*;
 
 fn main()

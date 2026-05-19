@@ -8,7 +8,12 @@
  * @module
  */
 
-import type * as games from "../games.js";
+import type * as integrations from "../integrations.js";
+import type * as projects from "../projects.js";
+import type * as tasks from "../tasks.js";
+import type * as teams from "../teams.js";
+import type * as users from "../users.js";
+import type * as workspace from "../workspace.js";
 
 import type {
   ApiFromModules,
@@ -17,7 +22,12 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  games: typeof games;
+  integrations: typeof integrations;
+  projects: typeof projects;
+  tasks: typeof tasks;
+  teams: typeof teams;
+  users: typeof users;
+  workspace: typeof workspace;
 }>;
 
 /**

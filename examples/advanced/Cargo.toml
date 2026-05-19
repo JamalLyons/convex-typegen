@@ -1,5 +1,5 @@
 [package]
-name = "basic"
+name = "advanced"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,7 +7,6 @@ edition = "2021"
 convex = "0.10.4"
 dotenvy = "0.15.7"
 tokio = { version = "1.52.3", features = ["full"] }
-rand = "0.8"
 convex-typegen = { path = "../../" }
 
 [build-dependencies]

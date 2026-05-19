@@ -1,10 +1,12 @@
 [package]
 name = "convex-typegen"
-version = "0.2.0"
+version = "0.3.0"
 description = "Type safe bindings for ConvexDB in Rust"
 authors = ["Jamal Lyons"]
 license = "MIT"
-edition = "2021"
+edition = "2024"
+rust-version = "1.95"
+exclude = ["examples/", ".github/"]
 
 # Documentation and repository links
 documentation = "https://docs.rs/convex-typegen"
@@ -16,17 +18,27 @@ readme = "readme.md"
 categories = ["development-tools", "database", "web-programming"]
 keywords = ["convex", "rust", "typegen", "database", "types"]
 
-# Rust version requirement
-# rust-version = "1.70.0"
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+default = ["client"]
+# Runtime helpers for the official Convex Rust client (`ConvexClientExt`, etc.).
+client = ["dep:convex"]
+# Print Oxc parser/semantic diagnostics to stderr (in addition to `ParsingFailed::details`).
+verbose = []
 
 [dependencies]
-convex = "0.9.0"
-oxc = { version = "0.46.0", features = ["semantic", "serialize"], default-features = false}
-serde = { version = "1.0.215", features = ["std", "derive"], default-features = false }
-serde_json = "1.0.132"
+convex = { version = "0.10.4", optional = true }
+oxc = { version = "0.129.0", features = ["semantic", "serialize"], default-features = false }
+serde = { version = "1.0.228", features = ["std", "derive"], default-features = false }
+serde_json = "1.0.149"
+thiserror = "2.0.18"
 
 [dev-dependencies]
-tempdir = "0.3"
+insta = { version = "1", features = ["filters"] }
+tempfile = "3"
 
 [profile.dev]
 opt-level = 1      # Make debug builds run faster

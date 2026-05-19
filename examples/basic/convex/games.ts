@@ -1,18 +1,22 @@
 import { v } from "convex/values";
-import { query, mutation, QueryCtx } from "./_generated/server";
+import { mutation, query, type QueryCtx } from "./_generated/server";
 
 export const getGame = query({
     args: {
+        logData: v.optional(v.boolean()),
     },
-    handler: async (ctx, args) => {
-        return await getGameData(ctx)
+    handler: async (ctx, { logData }) => {
+        const data = await getGameData(ctx);
+        if (logData) {
+            console.log("Log data:", data);
+        }
+        return data;
     },
 });
 
 export const winGame = mutation({
-    args: {},
-    handler: async (ctx, args) => {
-        let game = await getGameData(ctx)
+    handler: async (ctx) => {
+        const game = await getGameData(ctx);
 
         if (!game) {
             await ctx.db.insert("games", {
@@ -25,14 +29,13 @@ export const winGame = mutation({
             });
         }
 
-        return game
+        return game;
     },
 });
 
 export const lossGame = mutation({
-    args: {},
-    handler: async (ctx, args) => {
-        let game = await getGameData(ctx)
+    handler: async (ctx) => {
+        const game = await getGameData(ctx);
 
         if (!game) {
             await ctx.db.insert("games", {
@@ -45,11 +48,10 @@ export const lossGame = mutation({
             });
         }
 
-        return game
+        return game;
     },
 });
 
-async function getGameData(ctx: QueryCtx)
-{
-    return await ctx.db.query("games").first()
+async function getGameData(ctx: QueryCtx) {
+    return await ctx.db.query("games").first();
 }

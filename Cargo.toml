@@ -4,7 +4,7 @@ version = "0.3.0"
 description = "Type safe bindings for ConvexDB in Rust"
 authors = ["Jamal Lyons"]
 license = "MIT"
-edition = "2021"
+edition = "2024"
 rust-version = "1.95"
 exclude = ["examples/", ".github/"]
 

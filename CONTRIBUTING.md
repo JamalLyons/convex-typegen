@@ -26,7 +26,7 @@ cargo build --no-default-features
 - Keep changes focused; include tests for behavior changes.
 - Run `just fmt` before pushing if you changed Rust sources.
 - Update `CHANGELOG.md` under `[Unreleased]` for user-visible changes.
-- MSRV is **1.78** (`rust-version` in `Cargo.toml`); CI enforces it.
+- MSRV is **1.95** (`rust-version` in `Cargo.toml`); CI enforces it. Use **nightly** rustfmt (`just fmt` / `just fmt-check`) for unstable options in `rustfmt.toml`.
 
 ## Golden tests
 

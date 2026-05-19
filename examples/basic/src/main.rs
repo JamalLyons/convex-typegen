@@ -11,7 +11,8 @@ use convex_types::{GamesGetGameArgs, GamesLossGameArgs, GamesWinGameArgs};
 use rand::Rng;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), Box<dyn std::error::Error>>
+{
     dotenvy::from_filename(Path::new(env!("CARGO_MANIFEST_DIR")).join(".env.local"))?;
 
     let mut client = ConvexClient::new(&std::env::var("CONVEX_URL")?).await?;
@@ -122,7 +123,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn extract_float_value(value: &ConvexValue) -> f64 {
+fn extract_float_value(value: &ConvexValue) -> f64
+{
     if let ConvexValue::Float64(f) = value {
         *f
     } else {

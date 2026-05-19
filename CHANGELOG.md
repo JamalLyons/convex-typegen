@@ -18,7 +18,7 @@ Version 0.3.0 improves stability, supply-chain hygiene, and generated-code corre
 - **`examples/advanced`:** richer Convex sample with indexes and `withIndex`.
 - **Tests:** integration golden tests (`tests/golden_generate.rs`), build-script smoke test, `generate` coverage for chained `.index()` and cross-module duplicate export names.
 - **`client` Cargo feature** (default-on): runtime helpers (`ConvexClientExt`, `IntoConvexValue`, `ConvexValueExt`) depend on the official `convex` crate; disable with `default-features = false` for build-only use.
-- **Supply chain:** `deny.toml`, CI jobs for `cargo audit` and `cargo deny`, MSRV job (Rust 1.78), `no-default-features` build job, release workflow for tagged publishes.
+- **Supply chain:** `deny.toml`, CI jobs for `cargo audit` and `cargo deny`, MSRV job (Rust 1.95), `no-default-features` build job, release workflow for tagged publishes.
 - **Community:** `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`.
 - **Lexer:** maximum source file size (10 MiB) to mitigate accidental or malicious huge inputs.
 
@@ -28,7 +28,7 @@ Version 0.3.0 improves stability, supply-chain hygiene, and generated-code corre
 - **Breaking:** Generated `*Args` types implement `TryFrom<Self> for BTreeMap<String, serde_json::Value>` (with `type Error = serde_json::Error`) instead of infallible `From`. `ConvexClientExt::prepare_args` returns `Result<BTreeMap<String, convex::Value>, serde_json::Error>`.
 - **Breaking:** Renamed `JsonValue` to `ConvexJsonValue` and `JsonError` to `ConvexJsonError` in the prelude.
 - **Breaking:** Generated args structs are `{Module}{Export}Args` when the export name does not already start with the module segment (e.g. `GamesGetGameArgs`, `ModAListArgs`). Exports already prefixed with the module (e.g. `tasksSearch` in `tasks.ts`) become `TasksSearchArgs`. This prevents duplicate `pub struct` definitions when multiple modules export the same short name (e.g. `list`).
-- Crate version and `rust-version = "1.78"` declared in `Cargo.toml`.
+- Crate uses **edition 2024** with `rust-version = "1.95"` in `Cargo.toml`.
 
 ### Fixed
 

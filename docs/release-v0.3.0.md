@@ -8,7 +8,7 @@ This release focuses on **correct multi-module codegen**, **safer argument seria
 - **Fallible args conversion** — `*Args` implements `TryFrom` into `BTreeMap<String, ConvexJsonValue>`; `ConvexClientExt::prepare_args` returns `Result<_, serde_json::Error>`.
 - **Convex-correct optional args** — top-level `v.optional(...)` fields omit the key when `None` (not JSON `null`).
 - **`client` feature (default on)** — runtime helpers stay behind the official `convex` crate; use `default-features = false` in `build-dependencies` for a lighter codegen-only path.
-- **MSRV:** Rust **1.78+**
+- **MSRV:** Rust **1.95+** (edition 2024)
 
 ---
 

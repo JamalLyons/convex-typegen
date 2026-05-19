@@ -22,7 +22,7 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-use serde_json::{json, Value as JsonValue};
+use serde_json::{Value as JsonValue, json};
 
 use crate::convex::types::{ConvexColumn, ConvexFunction, ConvexFunctionParam, ConvexFunctions, ConvexSchema, ConvexTable};
 use crate::convex::utils::validate_type_name;
@@ -192,22 +192,23 @@ fn find_define_schema(body: &[JsonValue]) -> Option<&JsonValue>
             // Check if this is a call expression
             if declaration["type"].as_str() == Some("CallExpression") {
                 // Check if the callee is defineSchema
-                if let Some(callee) = declaration.get("callee") {
-                    if callee["type"].as_str() == Some("Identifier") && callee["name"].as_str() == Some("defineSchema") {
-                        return Some(declaration);
-                    }
+                if let Some(callee) = declaration.get("callee")
+                    && callee["type"].as_str() == Some("Identifier")
+                    && callee["name"].as_str() == Some("defineSchema")
+                {
+                    return Some(declaration);
                 }
             }
         }
 
         // Could also be a regular variable declaration or expression
         // that calls defineSchema
-        if node["type"].as_str() == Some("CallExpression") {
-            if let Some(callee) = node.get("callee") {
-                if callee["type"].as_str() == Some("Identifier") && callee["name"].as_str() == Some("defineSchema") {
-                    return Some(node);
-                }
-            }
+        if node["type"].as_str() == Some("CallExpression")
+            && let Some(callee) = node.get("callee")
+            && callee["type"].as_str() == Some("Identifier")
+            && callee["name"].as_str() == Some("defineSchema")
+        {
+            return Some(node);
         }
     }
     None
@@ -270,25 +271,24 @@ fn extract_column_type(column_prop: &JsonValue, context: &mut TypeContext) -> Re
         }
         "object" => {
             // For objects, parse each property type
-            if let Some(obj_def) = args.first() {
-                if let Some(properties) = obj_def["properties"].as_array() {
-                    let mut prop_types = serde_json::Map::new();
+            if let Some(obj_def) = args.first()
+                && let Some(properties) = obj_def["properties"].as_array()
+            {
+                let mut prop_types = serde_json::Map::new();
 
-                    for prop in properties {
-                        let prop_name =
-                            prop["key"]["name"]
-                                .as_str()
-                                .ok_or_else(|| ConvexTypeGeneratorError::InvalidSchema {
-                                    context: context.type_path.join("."),
-                                    details: "Invalid object property name".to_string(),
-                                })?;
+                for prop in properties {
+                    let prop_name = prop["key"]["name"]
+                        .as_str()
+                        .ok_or_else(|| ConvexTypeGeneratorError::InvalidSchema {
+                            context: context.type_path.join("."),
+                            details: "Invalid object property name".to_string(),
+                        })?;
 
-                        let prop_type = extract_column_type(prop, context)?;
-                        prop_types.insert(prop_name.to_string(), prop_type);
-                    }
-
-                    type_obj.insert("properties".to_string(), JsonValue::Object(prop_types));
+                    let prop_type = extract_column_type(prop, context)?;
+                    prop_types.insert(prop_name.to_string(), prop_type);
                 }
+
+                type_obj.insert("properties".to_string(), JsonValue::Object(prop_types));
             }
         }
         "record" => {
@@ -407,10 +407,10 @@ impl TypeContext
     fn pop_type(&mut self)
     {
         // Only pop if the last type was an object (matches push_type behavior)
-        if let Some((type_name, _)) = self.type_stack.last() {
-            if type_name == "object" {
-                self.type_stack.pop();
-            }
+        if let Some((type_name, _)) = self.type_stack.last()
+            && type_name == "object"
+        {
+            self.type_stack.pop();
         }
     }
 }
@@ -442,13 +442,13 @@ fn check_circular_references(type_obj: &JsonValue, context: &mut TypeContext) ->
             }
         }
         "object" => {
-            if let Some(properties) = type_obj.get("properties") {
-                if let Some(props) = properties.as_object() {
-                    for (prop_name, prop_type) in props {
-                        context.type_path.push(prop_name.to_string());
-                        check_circular_references(prop_type, context)?;
-                        context.type_path.pop();
-                    }
+            if let Some(properties) = type_obj.get("properties")
+                && let Some(props) = properties.as_object()
+            {
+                for (prop_name, prop_type) in props {
+                    context.type_path.push(prop_name.to_string());
+                    check_circular_references(prop_type, context)?;
+                    context.type_path.pop();
                 }
             }
         }
@@ -507,46 +507,48 @@ pub(crate) fn parse_function_ast(ast_map: BTreeMap<String, JsonValue>) -> Result
 
         for node in body {
             // Look for export declarations
-            if node["type"].as_str() == Some("ExportNamedDeclaration") {
-                if let Some(declaration) = node.get("declaration") {
-                    // Handle variable declarations (const testQuery = query({...}))
-                    if declaration["type"].as_str() == Some("VariableDeclaration") {
-                        if let Some(declarators) = declaration["declarations"].as_array() {
-                            for declarator in declarators {
-                                // Get function name
-                                let name = declarator["id"]["name"].as_str().ok_or_else(|| {
-                                    ConvexTypeGeneratorError::InvalidSchema {
-                                        context: format!("file_{}", file_name),
-                                        details: "Missing function name".to_string(),
-                                    }
+            if node["type"].as_str() == Some("ExportNamedDeclaration")
+                && let Some(declaration) = node.get("declaration")
+            {
+                // Handle variable declarations (const testQuery = query({...}))
+                if declaration["type"].as_str() == Some("VariableDeclaration")
+                    && let Some(declarators) = declaration["declarations"].as_array()
+                {
+                    for declarator in declarators {
+                        // Get function name
+                        let name =
+                            declarator["id"]["name"]
+                                .as_str()
+                                .ok_or_else(|| ConvexTypeGeneratorError::InvalidSchema {
+                                    context: format!("file_{}", file_name),
+                                    details: "Missing function name".to_string(),
                                 })?;
 
-                                // Get the function call (query/mutation/action)
-                                let init = &declarator["init"];
-                                if init["type"].as_str() == Some("CallExpression") {
-                                    // Get the callee to determine function type
-                                    let fn_type = init["callee"]["name"].as_str().ok_or_else(|| {
-                                        ConvexTypeGeneratorError::InvalidSchema {
-                                            context: format!("function_{}", name),
-                                            details: "Missing function type".to_string(),
-                                        }
+                        // Get the function call (query/mutation/action)
+                        let init = &declarator["init"];
+                        if init["type"].as_str() == Some("CallExpression") {
+                            // Get the callee to determine function type
+                            let fn_type =
+                                init["callee"]["name"]
+                                    .as_str()
+                                    .ok_or_else(|| ConvexTypeGeneratorError::InvalidSchema {
+                                        context: format!("function_{}", name),
+                                        details: "Missing function type".to_string(),
                                     })?;
 
-                                    // Get the first argument which contains the function config
-                                    if let Some(args) = init["arguments"].as_array() {
-                                        if let Some(config) = args.first() {
-                                            // Extract function parameters from the args property
-                                            let params = extract_function_params(config, &file_name)?;
+                            // Get the first argument which contains the function config
+                            if let Some(args) = init["arguments"].as_array()
+                                && let Some(config) = args.first()
+                            {
+                                // Extract function parameters from the args property
+                                let params = extract_function_params(config, &file_name)?;
 
-                                            convex_functions.push(ConvexFunction {
-                                                name: name.to_string(),
-                                                params,
-                                                type_: fn_type.to_string(),
-                                                file_name: file_name.to_string(),
-                                            });
-                                        }
-                                    }
-                                }
+                                convex_functions.push(ConvexFunction {
+                                    name: name.to_string(),
+                                    params,
+                                    type_: fn_type.to_string(),
+                                    file_name: file_name.to_string(),
+                                });
                             }
                         }
                     }
@@ -566,7 +568,7 @@ fn is_estree_object_property_like(node: &JsonValue) -> bool
 
 /// Helper function to extract function parameters from the function configuration
 fn extract_function_params(config: &JsonValue, file_name: &str)
-    -> Result<Vec<ConvexFunctionParam>, ConvexTypeGeneratorError>
+-> Result<Vec<ConvexFunctionParam>, ConvexTypeGeneratorError>
 {
     let mut params = Vec::new();
 

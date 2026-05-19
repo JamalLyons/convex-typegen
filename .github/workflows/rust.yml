@@ -2,9 +2,8 @@ name: Rust
 
 on:
   push:
-    branches: [main, master, dev]
+    branches: [master, dev]
   pull_request:
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -27,15 +26,15 @@ jobs:
         with:
           components: rustfmt
 
-      # `rustfmt.toml` uses unstable options; nightly must match `just fmt-check`.
+      # `rustfmt.toml` uses unstable options; use nightly explicitly (matches `just fmt-check`).
       - name: rustfmt (crate root)
-        run: cargo fmt --all --check
+        run: cargo +nightly fmt --all --check
 
       - name: rustfmt (examples/basic)
-        run: cargo fmt --manifest-path examples/basic/Cargo.toml --check
+        run: cargo +nightly fmt --manifest-path examples/basic/Cargo.toml --check
 
       - name: rustfmt (examples/advanced)
-        run: cargo fmt --manifest-path examples/advanced/Cargo.toml --check
+        run: cargo +nightly fmt --manifest-path examples/advanced/Cargo.toml --check
 
   clippy-test:
     name: Clippy, tests, and examples
@@ -43,7 +42,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.95.0
         with:
           components: clippy
 
@@ -72,7 +71,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.95.0
 
       - uses: Swatinem/rust-cache@v2
 
@@ -83,12 +82,12 @@ jobs:
         run: cargo test --locked --no-default-features
 
   msrv:
-    name: MSRV (1.78)
+    name: MSRV (1.95)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@1.78.0
+      - uses: dtolnay/rust-toolchain@1.95.0
         with:
           components: clippy
 

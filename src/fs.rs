@@ -29,7 +29,7 @@ pub fn rcfp(config: &Configuration) -> Result<Vec<PathBuf>, ConvexTypeGeneratorE
 /// If `convex_dir` does not exist, returns an empty list (no error). If it exists but is not a
 /// directory, returns [`ConvexTypeGeneratorError::InvalidPath`].
 fn find_convex_function_source_paths(convex_dir: &Path, schema_path: &Path)
-    -> Result<Vec<PathBuf>, ConvexTypeGeneratorError>
+-> Result<Vec<PathBuf>, ConvexTypeGeneratorError>
 {
     if !convex_dir.exists() {
         return Ok(Vec::new());
@@ -50,12 +50,11 @@ fn find_convex_function_source_paths(convex_dir: &Path, schema_path: &Path)
         if p.to_string_lossy().ends_with(".d.ts") {
             return false;
         }
-        if let Some(ref sch) = schema_canonical {
-            if let Ok(canon) = p.canonicalize() {
-                if &canon == sch {
-                    return false;
-                }
-            }
+        if let Some(ref sch) = schema_canonical
+            && let Ok(canon) = p.canonicalize()
+            && &canon == sch
+        {
+            return false;
         }
         true
     });

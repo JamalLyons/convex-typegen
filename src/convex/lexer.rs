@@ -121,7 +121,7 @@ mod generate_javascript_ast_tests
 
     use tempfile::tempdir;
 
-    use super::{generate_javascript_ast, MAX_SOURCE_BYTES};
+    use super::{MAX_SOURCE_BYTES, generate_javascript_ast};
 
     #[test]
     fn parses_simple_export()

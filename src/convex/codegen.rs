@@ -114,35 +114,35 @@ fn generate_table_enums(table: &ConvexTable) -> String
         }
 
         // Handle optional unions
-        if let Some("optional") = column.data_type["type"].as_str() {
-            if let Some("union") = column.data_type["inner"]["type"].as_str() {
-                let enum_name = format!(
-                    "{}Optional{}",
-                    capitalize_first_letter(&table.name),
-                    capitalize_first_letter(&column.name)
-                );
-                code.push_str("#[derive(Debug, Clone)]\n");
-                code.push_str(&format!("pub enum {} {{\n", enum_name));
+        if let Some("optional") = column.data_type["type"].as_str()
+            && let Some("union") = column.data_type["inner"]["type"].as_str()
+        {
+            let enum_name = format!(
+                "{}Optional{}",
+                capitalize_first_letter(&table.name),
+                capitalize_first_letter(&column.name)
+            );
+            code.push_str("#[derive(Debug, Clone)]\n");
+            code.push_str(&format!("pub enum {} {{\n", enum_name));
 
-                if let Some(variants) = column.data_type["inner"]["variants"].as_array() {
-                    for variant in variants {
-                        match variant["type"].as_str() {
-                            Some("literal") => {
-                                if let Some(value) = variant["value"]["value"].as_str() {
-                                    code.push_str(&format!("    {},\n", to_pascal_case(value)));
-                                }
+            if let Some(variants) = column.data_type["inner"]["variants"].as_array() {
+                for variant in variants {
+                    match variant["type"].as_str() {
+                        Some("literal") => {
+                            if let Some(value) = variant["value"]["value"].as_str() {
+                                code.push_str(&format!("    {},\n", to_pascal_case(value)));
                             }
-                            Some(type_name) => {
-                                let rust_type = convex_type_to_rust_type(variant, Some(&table.name), Some(&column.name));
-                                code.push_str(&format!("    {}({}),\n", to_pascal_case(type_name), rust_type));
-                            }
-                            None => continue,
                         }
+                        Some(type_name) => {
+                            let rust_type = convex_type_to_rust_type(variant, Some(&table.name), Some(&column.name));
+                            code.push_str(&format!("    {}({}),\n", to_pascal_case(type_name), rust_type));
+                        }
+                        None => continue,
                     }
                 }
-
-                code.push_str("}\n\n");
             }
+
+            code.push_str("}\n\n");
         }
     }
 

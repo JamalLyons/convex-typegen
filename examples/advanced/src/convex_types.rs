@@ -139,7 +139,10 @@ impl std::convert::TryFrom<ProjectsUpdateTagsArgs> for std::collections::BTreeMa
 
     fn try_from(_args: ProjectsUpdateTagsArgs) -> Result<Self, Self::Error> {
         let mut map = std::collections::BTreeMap::new();
-        map.insert("projectId".to_string(), convex_typegen::serde_json::to_value(_args.projectId)?);
+        map.insert(
+            "projectId".to_string(),
+            convex_typegen::serde_json::to_value(_args.projectId)?,
+        );
         map.insert("tags".to_string(), convex_typegen::serde_json::to_value(_args.tags)?);
         Ok(map)
     }
@@ -189,7 +192,10 @@ impl std::convert::TryFrom<TasksCreateArgs> for std::collections::BTreeMap<Strin
 
     fn try_from(_args: TasksCreateArgs) -> Result<Self, Self::Error> {
         let mut map = std::collections::BTreeMap::new();
-        map.insert("projectId".to_string(), convex_typegen::serde_json::to_value(_args.projectId)?);
+        map.insert(
+            "projectId".to_string(),
+            convex_typegen::serde_json::to_value(_args.projectId)?,
+        );
         map.insert("title".to_string(), convex_typegen::serde_json::to_value(_args.title)?);
         map.insert("priority".to_string(), convex_typegen::serde_json::to_value(_args.priority)?);
         if let Some(__v) = _args.assigneeUserId {
@@ -220,7 +226,10 @@ impl std::convert::TryFrom<TeamsListByOwnerArgs> for std::collections::BTreeMap<
 
     fn try_from(_args: TeamsListByOwnerArgs) -> Result<Self, Self::Error> {
         let mut map = std::collections::BTreeMap::new();
-        map.insert("ownerUserId".to_string(), convex_typegen::serde_json::to_value(_args.ownerUserId)?);
+        map.insert(
+            "ownerUserId".to_string(),
+            convex_typegen::serde_json::to_value(_args.ownerUserId)?,
+        );
         Ok(map)
     }
 }
@@ -245,7 +254,10 @@ impl std::convert::TryFrom<TeamsCreateArgs> for std::collections::BTreeMap<Strin
         let mut map = std::collections::BTreeMap::new();
         map.insert("name".to_string(), convex_typegen::serde_json::to_value(_args.name)?);
         map.insert("slug".to_string(), convex_typegen::serde_json::to_value(_args.slug)?);
-        map.insert("ownerUserId".to_string(), convex_typegen::serde_json::to_value(_args.ownerUserId)?);
+        map.insert(
+            "ownerUserId".to_string(),
+            convex_typegen::serde_json::to_value(_args.ownerUserId)?,
+        );
         if let Some(__v) = _args.createdAt {
             map.insert("createdAt".to_string(), convex_typegen::serde_json::to_value(__v)?);
         }
@@ -322,7 +334,10 @@ impl std::convert::TryFrom<UsersCreateArgs> for std::collections::BTreeMap<Strin
     fn try_from(_args: UsersCreateArgs) -> Result<Self, Self::Error> {
         let mut map = std::collections::BTreeMap::new();
         map.insert("email".to_string(), convex_typegen::serde_json::to_value(_args.email)?);
-        map.insert("displayName".to_string(), convex_typegen::serde_json::to_value(_args.displayName)?);
+        map.insert(
+            "displayName".to_string(),
+            convex_typegen::serde_json::to_value(_args.displayName)?,
+        );
         map.insert("role".to_string(), convex_typegen::serde_json::to_value(_args.role)?);
         if let Some(__v) = _args.metadata {
             map.insert("metadata".to_string(), convex_typegen::serde_json::to_value(__v)?);
@@ -339,8 +354,7 @@ impl std::convert::TryFrom<UsersCreateArgs> for std::collections::BTreeMap<Strin
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(crate = "convex_typegen::serde")]
-pub struct WorkspaceSeedIfEmptyArgs {
-}
+pub struct WorkspaceSeedIfEmptyArgs {}
 
 impl WorkspaceSeedIfEmptyArgs {
     pub const FUNCTION_PATH: &'static str = "workspace:workspaceSeedIfEmpty";
@@ -356,8 +370,7 @@ impl std::convert::TryFrom<WorkspaceSeedIfEmptyArgs> for std::collections::BTree
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(crate = "convex_typegen::serde")]
-pub struct WorkspaceSummaryArgs {
-}
+pub struct WorkspaceSummaryArgs {}
 
 impl WorkspaceSummaryArgs {
     pub const FUNCTION_PATH: &'static str = "workspace:workspaceSummary";
@@ -370,4 +383,3 @@ impl std::convert::TryFrom<WorkspaceSummaryArgs> for std::collections::BTreeMap<
         Ok(std::collections::BTreeMap::new())
     }
 }
-

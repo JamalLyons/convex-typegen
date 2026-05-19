@@ -2,53 +2,72 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.3.0] - 2026-05-09
-Version 0.3.0 is a major release that improves the stability and consistency across the library. Major bug fixes, and refactorings have been made to the codebase.
+## [Unreleased]
+
+## [0.3.0] - 2026-05-19
+
+Version 0.3.0 improves stability, supply-chain hygiene, and generated-code correctness for multi-module Convex backends.
 
 ### Added
+
 - Optional `verbose` crate feature: when enabled, Oxc parser/semantic diagnostics are printed to stderr with `Debug` formatting (in addition to messages embedded in `ParsingFailed::details`).
-- Added `prelude` module that re-exports the most commonly used types and traits for convenience.
-- README.md for basic example directory.
-- Added documentation for the architecture of the library.
-- **Schema parsing — `defineTable` builder chains:** `parse_schema_ast` peels `defineTable({ ... })` followed by `.index`, `.searchIndex`, or `.vectorIndex` (any depth of those three) before reading column validators, so schemas match common Convex patterns without stripping indexes.
-- **`examples/advanced`:** Convex sample with indexes on all tables and handlers that use `withIndex` (including compound `by_team_status` for `teamId` + `status`); slug uniqueness uses `by_slug`.
-- **Tests:** `generate` coverage with inline TypeScript in tempdirs for chained `.index()` on `defineTable` and for duplicate function export names across modules; synthetic ESTree test `parses_single_string_column_through_chained_index` in `parse_schema_ast` tests.
-- **Documentation:** `docs/architecture.md` updated for peeled `defineTable` chains; advanced example readme files describe indexes and `withIndex`.
+- `prelude` module re-exporting commonly used types and traits.
+- README for the basic example directory.
+- `docs/architecture.md` for contributors.
+- **Schema parsing — `defineTable` builder chains:** `parse_schema_ast` peels `defineTable({ ... })` followed by `.index`, `.searchIndex`, or `.vectorIndex` before reading column validators.
+- **`examples/advanced`:** richer Convex sample with indexes and `withIndex`.
+- **Tests:** integration golden tests (`tests/golden_generate.rs`), build-script smoke test, `generate` coverage for chained `.index()` and cross-module duplicate export names.
+- **`client` Cargo feature** (default-on): runtime helpers (`ConvexClientExt`, `IntoConvexValue`, `ConvexValueExt`) depend on the official `convex` crate; disable with `default-features = false` for build-only use.
+- **Supply chain:** `deny.toml`, CI jobs for `cargo audit` and `cargo deny`, MSRV job (Rust 1.78), `no-default-features` build job, release workflow for tagged publishes.
+- **Community:** `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`.
+- **Lexer:** maximum source file size (10 MiB) to mitigate accidental or malicious huge inputs.
 
 ### Changed
-- Dependency version updates for [convex](https://docs.rs/convex/latest/convex/), [oxc](https://oxc.rs), [serde](https://serde.rs), and [serde_json](https://serde.rs/json.html).
-- **Breaking:** Generated `*Args` types implement `TryFrom<Self> for BTreeMap<String, serde_json::Value>` (with `type Error = serde_json::Error`) instead of infallible `From`, so `serde_json::to_value` failures are not hidden behind `unwrap()`. `ConvexClientExt::prepare_args` now returns `Result<BTreeMap<String, convex::Value>, serde_json::Error>`.
-- **Breaking:** Renamed `JsonValue` to `ConvexJsonValue` and `JsonError` to `ConvexJsonError` to avoid confusion with the `serde_json` crate.
+
+- Dependency updates for [convex](https://docs.rs/convex/latest/convex/), [oxc](https://oxc.rs), [serde](https://serde.rs), and [serde_json](https://serde.rs/json.html).
+- **Breaking:** Generated `*Args` types implement `TryFrom<Self> for BTreeMap<String, serde_json::Value>` (with `type Error = serde_json::Error`) instead of infallible `From`. `ConvexClientExt::prepare_args` returns `Result<BTreeMap<String, convex::Value>, serde_json::Error>`.
+- **Breaking:** Renamed `JsonValue` to `ConvexJsonValue` and `JsonError` to `ConvexJsonError` in the prelude.
+- **Breaking:** Generated args structs are `{Module}{Export}Args` when the export name does not already start with the module segment (e.g. `GamesGetGameArgs`, `ModAListArgs`). Exports already prefixed with the module (e.g. `tasksSearch` in `tasks.ts`) become `TasksSearchArgs`. This prevents duplicate `pub struct` definitions when multiple modules export the same short name (e.g. `list`).
+- Crate version and `rust-version = "1.78"` declared in `Cargo.toml`.
 
 ### Fixed
-- `ParsingFailed::details` for parser panic and semantic-check failures now includes joined Oxc diagnostic messages (primary message text) instead of only a generic summary, so callers and build logs can see what went wrong without lossy `Debug` output.
-- Unconditional `eprintln!` for parse/semantic diagnostics was removed from default builds (use the `verbose` feature when stderr echo is desired).
-- Stable ordering of generated function argument types and `FUNCTION_PATH` blocks: function ASTs are keyed by canonicalized source paths and collected in a `BTreeMap`, so output no longer depends on hash iteration order (cleaner diffs and a clearer `cargo:rerun-if-changed` story).
-- Function AST map keys are unique per file: canonical absolute paths prevent two different modules with the same basename (for example `convex/a/foo.ts` and `convex/b/foo.ts`) from colliding or replacing each other.
-- Generated args-to-JSON conversion no longer uses `serde_json::to_value(...).unwrap()`, avoiding panics when a field cannot serialize to JSON.
-- `v.object({ ... })` types: heterogeneous objects (fields that do not share one Rust value type) are no longer mis-typed as `BTreeMap<String, T>` from a single sampled field; they are emitted as `serde_json::Value` until dedicated structs exist.
-- Function `args` parsing: accept ESTree `Property` nodes (Oxc) in addition to Babel-style `ObjectProperty` for each field inside the `args` object, so non-empty `args` blocks no longer fail with “Invalid argument property structure” depending on serializer shape.
-- Generated `TryFrom` for function arguments: top-level `v.optional(...)` parameters omit the key entirely when the Rust field is `None`, instead of serializing JSON `null`, which Convex rejects (`v.optional` means absent, not null).
+
+- `ParsingFailed::details` includes joined Oxc diagnostic messages.
+- Unconditional `eprintln!` for parse/semantic diagnostics removed from default builds (use `verbose`).
+- Stable ordering of generated function types via `BTreeMap` keys on canonical paths.
+- Function AST map keys are unique per file (canonical absolute paths).
+- Generated args-to-JSON conversion no longer uses `unwrap()` on `serde_json::to_value`.
+- Heterogeneous `v.object` fields fall back to `ConvexJsonValue` instead of incorrect `BTreeMap<String, T>`.
+- Function `args` parsing accepts ESTree `Property` and `ObjectProperty` nodes.
+- Generated `TryFrom` omits keys for top-level `v.optional` parameters when `None` (not JSON `null`).
+- Codegen rejects duplicate qualified args struct names with `InvalidSchema` instead of emitting uncompilable Rust.
 
 ## [0.2.0] - 2025-01-16
+
 ### Added
+
 - Added this changelog file for all releases.
 - Added `ConvexValueExt` trait to the [convex::Value](https://docs.rs/convex/0.9.0/convex/enum.Value.html) type.
 
 ### Changed
+
 - Updated from convex version [0.8.1](https://docs.rs/convex/0.8.1/convex/index.html) to [0.9.0](https://docs.rs/convex/0.9.0/convex/index.html)
 - Bumped [oxc](https://oxc.rs) to version 0.46.0
 - Removed the use of `.unwrap()` in the typegen crate's own Rust sources (generated output still used `unwrap` until 0.3.0).
 
 ### Fixed
+
 - Test generation scripts not deleting generated files.
 
-
 ## [0.1.1] - 2024-11-14
+
 ### Fixed
+
 - Cleaned unnecessary documentation comments.
 - Removed unused library's dependencies.
 
 ## [0.1.0] - 2024-11-13
+
 ### Added
+
 - Initial release of the project.

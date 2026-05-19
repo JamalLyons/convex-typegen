@@ -16,108 +16,27 @@
 //!
 //! ## Client helpers
 //!
-//! [`IntoConvexValue`] and [`ConvexValueExt`] bridge `serde_json` and the official Convex client
-//! crate’s `Value` type for callers who build args from JSON or inspect query results.
-//! [`ConvexClientExt::prepare_args`] turns a generated args struct into the `BTreeMap<String, Value>`
-//! the Convex client expects, using `TryFrom` so non-JSON-safe values (e.g. non-finite floats)
-//! fail at prepare time.
+//! With the **`client`** feature, [`IntoConvexValue`], [`ConvexValueExt`], and [`ConvexClientExt`]
+//! bridge `serde_json` and the official Convex client crate.
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-use convex::Value as ConvexValue;
 use serde_json::Value as JsonValue;
 
 use crate::convex::lexer::generate_javascript_ast;
 use crate::error::ConvexTypeGeneratorError;
 
+#[cfg(feature = "client")]
+mod client;
 pub(crate) mod codegen;
 pub(crate) mod lexer;
 pub(crate) mod parser;
 pub(crate) mod types;
 pub(crate) mod utils;
 
-/// Infallible conversion from JSON-shaped args into [`ConvexValue`] (typically after serde / `TryFrom`).
-pub trait IntoConvexValue
-{
-    /// Convert the type into a Convex Value
-    fn into_convex_value(self) -> ConvexValue;
-}
-
-impl IntoConvexValue for JsonValue
-{
-    fn into_convex_value(self) -> ConvexValue
-    {
-        match self {
-            JsonValue::Null => ConvexValue::Null,
-            JsonValue::Bool(b) => ConvexValue::Boolean(b),
-            JsonValue::Number(n) => {
-                if let Some(i) = n.as_i64() {
-                    ConvexValue::Int64(i)
-                } else if let Some(f) = n.as_f64() {
-                    ConvexValue::Float64(f)
-                } else {
-                    ConvexValue::Null
-                }
-            }
-            JsonValue::String(s) => ConvexValue::String(s),
-            JsonValue::Array(arr) => ConvexValue::Array(arr.into_iter().map(|v| v.into_convex_value()).collect()),
-            JsonValue::Object(map) => {
-                let converted: BTreeMap<String, ConvexValue> =
-                    map.into_iter().map(|(k, v)| (k, v.into_convex_value())).collect();
-                ConvexValue::Object(converted)
-            }
-        }
-    }
-}
-
-/// Lossy-ish mapping from Convex wire values back to JSON ([`ConvexValue::Bytes`] becomes a JSON array of numbers).
-pub trait ConvexValueExt
-{
-    /// Map a Convex runtime value into [`serde_json::Value`].
-    fn into_serde_value(self) -> JsonValue;
-}
-
-impl ConvexValueExt for ConvexValue
-{
-    fn into_serde_value(self) -> JsonValue
-    {
-        match self {
-            ConvexValue::Null => JsonValue::Null,
-            ConvexValue::Boolean(b) => JsonValue::Bool(b),
-            ConvexValue::Int64(i) => JsonValue::Number(i.into()),
-            ConvexValue::Float64(f) => {
-                if let Some(n) = serde_json::Number::from_f64(f) {
-                    JsonValue::Number(n)
-                } else {
-                    JsonValue::Null
-                }
-            }
-            ConvexValue::String(s) => JsonValue::String(s),
-            ConvexValue::Array(arr) => JsonValue::Array(arr.into_iter().map(|v| v.into_serde_value()).collect()),
-            ConvexValue::Object(map) => JsonValue::Object(map.into_iter().map(|(k, v)| (k, v.into_serde_value())).collect()),
-            ConvexValue::Bytes(b) => JsonValue::Array(b.into_iter().map(|byte| JsonValue::Number(byte.into())).collect()),
-        }
-    }
-}
-
-/// Blanket helpers on [`convex::ConvexClient`] for generated argument structs.
-pub trait ConvexClientExt
-{
-    /// Convert function arguments into Convex-compatible format.
-    ///
-    /// Uses [`TryFrom`] on the generated args type; serialization errors
-    /// (for example non-finite floats) are returned as [`serde_json::Error`].
-    fn prepare_args<T>(args: T) -> Result<BTreeMap<String, ConvexValue>, serde_json::Error>
-    where
-        BTreeMap<String, JsonValue>: TryFrom<T, Error = serde_json::Error>,
-    {
-        let map = BTreeMap::try_from(args)?;
-        Ok(map.into_iter().map(|(k, v)| (k, v.into_convex_value())).collect())
-    }
-}
-
-impl ConvexClientExt for convex::ConvexClient {}
+#[cfg(feature = "client")]
+pub use client::{ConvexClientExt, ConvexValueExt, IntoConvexValue};
 
 /// Parse `schema.ts` through Oxc; returns the ESTree program as JSON ([`lexer::generate_javascript_ast`]).
 pub(crate) fn create_schema_ast(path: PathBuf) -> Result<JsonValue, ConvexTypeGeneratorError>
@@ -160,7 +79,7 @@ pub(crate) fn create_function_asts(paths: Vec<PathBuf>) -> Result<BTreeMap<Strin
     Ok(function_asts)
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "client"))]
 mod into_convex_value_tests
 {
     use serde_json::json;
@@ -201,7 +120,7 @@ mod into_convex_value_tests
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "client"))]
 mod convex_value_ext_tests
 {
     use convex::Value as Cv;
@@ -231,7 +150,7 @@ mod convex_value_ext_tests
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "client"))]
 mod convex_client_ext_tests
 {
     use std::collections::BTreeMap;
@@ -288,7 +207,7 @@ mod create_schema_ast_tests
     use std::fs;
     use std::path::PathBuf;
 
-    use tempdir::TempDir;
+    use tempfile::tempdir;
 
     use super::create_schema_ast;
 
@@ -305,7 +224,7 @@ mod create_schema_ast_tests
     #[test]
     fn parses_valid_typescript_file()
     {
-        let tmp = TempDir::new("schema_ast").unwrap();
+        let tmp = tempdir().unwrap();
         let p = tmp.path().join("f.ts");
         fs::write(&p, "export const x: number = 1;\n").unwrap();
         let ast = create_schema_ast(p).unwrap();
@@ -315,7 +234,7 @@ mod create_schema_ast_tests
     #[test]
     fn empty_file_yields_empty_schema_file_error()
     {
-        let tmp = TempDir::new("empty_ts").unwrap();
+        let tmp = tempdir().unwrap();
         let p = tmp.path().join("empty.ts");
         fs::write(&p, "   \n\t  ").unwrap();
         assert!(matches!(
@@ -331,7 +250,7 @@ mod create_function_asts_tests
     use std::fs;
     use std::path::PathBuf;
 
-    use tempdir::TempDir;
+    use tempfile::tempdir;
 
     use super::create_function_asts;
 
@@ -345,7 +264,7 @@ mod create_function_asts_tests
     #[test]
     fn canonical_keys_and_parses_each_file()
     {
-        let tmp = TempDir::new("fn_asts").unwrap();
+        let tmp = tempdir().unwrap();
         let a = tmp.path().join("a.ts");
         fs::write(&a, "export const n = 1;\n").unwrap();
         let m = create_function_asts(vec![a]).unwrap();

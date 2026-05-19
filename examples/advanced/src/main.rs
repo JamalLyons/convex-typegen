@@ -15,8 +15,7 @@ use convex_types::{
 };
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>>
-{
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::from_filename(Path::new(env!("CARGO_MANIFEST_DIR")).join(".env.local")).ok();
 
     let Ok(url) = std::env::var("CONVEX_URL") else {
@@ -172,8 +171,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     Ok(())
 }
 
-fn extract_ids(summary: &FunctionResult) -> (Option<String>, Option<String>, Option<String>)
-{
+fn extract_ids(summary: &FunctionResult) -> (Option<String>, Option<String>, Option<String>) {
     let FunctionResult::Value(ConvexValue::Object(obj)) = summary else {
         return (None, None, None);
     };
@@ -183,8 +181,7 @@ fn extract_ids(summary: &FunctionResult) -> (Option<String>, Option<String>, Opt
     (team, project, user)
 }
 
-fn string_from_convex_value(v: &ConvexValue) -> Option<String>
-{
+fn string_from_convex_value(v: &ConvexValue) -> Option<String> {
     match v {
         ConvexValue::String(s) => Some(s.clone()),
         _ => None,

@@ -37,6 +37,18 @@ fn main() {
 
 A full minimal setup lives in [examples/basic](https://github.com/JamalLyons/convex-typegen/tree/main/examples/basic) in this repo.
 
+## Generated names
+
+Function argument structs are named **`{Module}{Export}Args`** when the export does not already start with the module file name (without `.ts`). Examples:
+
+| Module file | Export | Generated struct |
+| --- | --- | --- |
+| `games.ts` | `getGame` | `GamesGetGameArgs` |
+| `mod_a.ts` | `list` | `ModAListArgs` |
+| `tasks.ts` | `tasksSearch` | `TasksSearchArgs` |
+
+`FUNCTION_PATH` strings are unchanged (e.g. `"games:getGame"`).
+
 ## Defaults
 
 | Field | Default |
@@ -48,6 +60,20 @@ A full minimal setup lives in [examples/basic](https://github.com/JamalLyons/con
 Paths are relative to the package directory when Cargo runs the build script.
 
 Function sources: every `*.ts` under `convex_dir`, except the schema file, `_generated/`, `node_modules/`, and `*.d.ts`. Set `function_paths` to a non-empty list to skip discovery and pass files explicitly.
+
+## Features
+
+| Feature | Default | Description |
+| --- | --- | --- |
+| `client` | on | Re-exports `ConvexClientExt`, `IntoConvexValue`, `ConvexValueExt` (pulls in the `convex` crate). |
+| `verbose` | off | Print Oxc diagnostics to stderr during parse failures. |
+
+Build-only usage (smaller dependency tree):
+
+```toml
+[build-dependencies]
+convex-typegen = { version = "0.3", default-features = false }
+```
 
 ## Serde
 

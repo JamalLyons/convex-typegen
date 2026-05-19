@@ -16,18 +16,18 @@ pub struct GamesTable {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(crate = "convex_typegen::serde")]
-pub struct GetGameArgs {
+pub struct GamesGetGameArgs {
     pub logData: Option<bool>,
 }
 
-impl GetGameArgs {
+impl GamesGetGameArgs {
     pub const FUNCTION_PATH: &'static str = "games:getGame";
 }
 
-impl std::convert::TryFrom<GetGameArgs> for std::collections::BTreeMap<String, ConvexJsonValue> {
+impl std::convert::TryFrom<GamesGetGameArgs> for std::collections::BTreeMap<String, ConvexJsonValue> {
     type Error = ConvexJsonError;
 
-    fn try_from(_args: GetGameArgs) -> Result<Self, Self::Error> {
+    fn try_from(_args: GamesGetGameArgs) -> Result<Self, Self::Error> {
         let mut map = std::collections::BTreeMap::new();
         if let Some(__v) = _args.logData {
             map.insert("logData".to_string(), convex_typegen::serde_json::to_value(__v)?);
@@ -38,34 +38,34 @@ impl std::convert::TryFrom<GetGameArgs> for std::collections::BTreeMap<String, C
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(crate = "convex_typegen::serde")]
-pub struct WinGameArgs {
+pub struct GamesWinGameArgs {
 }
 
-impl WinGameArgs {
+impl GamesWinGameArgs {
     pub const FUNCTION_PATH: &'static str = "games:winGame";
 }
 
-impl std::convert::TryFrom<WinGameArgs> for std::collections::BTreeMap<String, ConvexJsonValue> {
+impl std::convert::TryFrom<GamesWinGameArgs> for std::collections::BTreeMap<String, ConvexJsonValue> {
     type Error = ConvexJsonError;
 
-    fn try_from(_args: WinGameArgs) -> Result<Self, Self::Error> {
+    fn try_from(_args: GamesWinGameArgs) -> Result<Self, Self::Error> {
         Ok(std::collections::BTreeMap::new())
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(crate = "convex_typegen::serde")]
-pub struct LossGameArgs {
+pub struct GamesLossGameArgs {
 }
 
-impl LossGameArgs {
+impl GamesLossGameArgs {
     pub const FUNCTION_PATH: &'static str = "games:lossGame";
 }
 
-impl std::convert::TryFrom<LossGameArgs> for std::collections::BTreeMap<String, ConvexJsonValue> {
+impl std::convert::TryFrom<GamesLossGameArgs> for std::collections::BTreeMap<String, ConvexJsonValue> {
     type Error = ConvexJsonError;
 
-    fn try_from(_args: LossGameArgs) -> Result<Self, Self::Error> {
+    fn try_from(_args: GamesLossGameArgs) -> Result<Self, Self::Error> {
         Ok(std::collections::BTreeMap::new())
     }
 }

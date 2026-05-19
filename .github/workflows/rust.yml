@@ -65,3 +65,76 @@ jobs:
         run: |
           cargo build --locked --manifest-path examples/basic/Cargo.toml --all-features
           cargo build --locked --manifest-path examples/advanced/Cargo.toml --all-features
+
+  no-default-features:
+    name: Build without client feature
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build codegen-only
+        run: cargo build --locked --no-default-features
+
+      - name: Test codegen-only
+        run: cargo test --locked --no-default-features
+
+  msrv:
+    name: MSRV (1.78)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@1.78.0
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Clippy
+        run: cargo clippy --locked --all-targets --all-features -- -D warnings
+
+      - name: Test
+        run: cargo test --locked --all-features
+
+      - name: Build without client feature
+        run: cargo build --locked --no-default-features
+
+  audit:
+    name: cargo audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+
+      - name: Audit
+        run: |
+          cargo audit \
+            --ignore RUSTSEC-2026-0007 \
+            --ignore RUSTSEC-2025-0004 \
+            --ignore RUSTSEC-2025-0022
+
+  deny:
+    name: cargo deny
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked
+
+      - name: Deny check
+        run: cargo deny check

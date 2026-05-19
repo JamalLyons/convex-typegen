@@ -1,3 +1,4 @@
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![doc = include_str!("../readme.md")]
 //!
 //! ## Crate layout
@@ -34,6 +35,8 @@ pub use serde;
 pub use serde_json;
 
 /// Ergonomic helpers for the official Convex Rust client (see [`prelude`]).
+#[cfg(feature = "client")]
+#[cfg_attr(docsrs, doc(cfg(feature = "client")))]
 pub use crate::convex::ConvexClientExt;
 
 /// Runs the full generator: resolve TypeScript inputs, parse with Oxc to ESTree JSON, walk that
@@ -77,7 +80,7 @@ mod generate_tests
 {
     use std::fs;
 
-    use tempdir::TempDir;
+    use tempfile::tempdir;
 
     use super::generate;
     use crate::config::Configuration;
@@ -85,7 +88,7 @@ mod generate_tests
     #[test]
     fn generate_errors_when_schema_path_missing()
     {
-        let tmp = TempDir::new("ctg_no_schema").unwrap();
+        let tmp = tempdir().unwrap();
         let cfg = Configuration {
             schema_path: tmp.path().join("nope/schema.ts"),
             out_file: tmp.path().join("out.rs"),
@@ -109,7 +112,7 @@ export default defineSchema({
 });
 "#;
 
-        let tmp = TempDir::new("ctg_chained_index").unwrap();
+        let tmp = tempdir().unwrap();
         let convex = tmp.path().join("convex");
         fs::create_dir_all(&convex).unwrap();
         let schema = convex.join("schema.ts");
@@ -129,10 +132,9 @@ export default defineSchema({
         assert!(body.contains("pub email: String,"), "expected email column: {body}");
     }
 
-    /// Codegen names args structs from the **export identifier** only (`ListArgs`), so the same
-    /// name in two modules produces **duplicate** Rust items; `generate` still succeeds.
+    /// Args structs are `{Module}{Export}Args`, so the same export name in two modules is unique.
     #[test]
-    fn generate_duplicate_export_names_produce_duplicate_args_structs()
+    fn generate_duplicate_export_names_produce_unique_args_structs()
     {
         const SCHEMA: &str = r#"
 import { defineSchema, defineTable } from "convex/server";
@@ -163,7 +165,7 @@ export const list = query({
 });
 "#;
 
-        let tmp = TempDir::new("ctg_dup_exports").unwrap();
+        let tmp = tempdir().unwrap();
         let convex = tmp.path().join("convex");
         fs::create_dir_all(&convex).unwrap();
         let schema = convex.join("schema.ts");
@@ -182,11 +184,8 @@ export const list = query({
 
         generate(cfg).unwrap();
         let body = fs::read_to_string(&out).unwrap();
-        let struct_defs = body.matches("pub struct ListArgs").count();
-        assert_eq!(
-            struct_defs, 2,
-            "expected two `pub struct ListArgs` from mod_a:list and mod_b:list; got {struct_defs}"
-        );
+        assert!(body.contains("pub struct ModAListArgs"), "expected mod_a:list args struct");
+        assert!(body.contains("pub struct ModBListArgs"), "expected mod_b:list args struct");
         assert!(body.contains("\"mod_a:list\""), "expected first module path in emitted Rust");
         assert!(body.contains("\"mod_b:list\""), "expected second module path in emitted Rust");
     }

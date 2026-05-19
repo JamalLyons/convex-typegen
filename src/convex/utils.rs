@@ -20,6 +20,24 @@ pub(crate) fn capitalize_first_letter(s: &str) -> String
     first_char.to_uppercase().to_string() + &rest
 }
 
+/// `{Module}{Export}Args` when the export name does not already start with the module segment.
+///
+/// Examples: `games` + `getGame` → `GamesGetGameArgs`; `mod_a` + `list` → `ModAListArgs`;
+/// `tasks` + `tasksSearch` → `TasksSearchArgs` (export already prefixed).
+pub(crate) fn function_args_struct_name(module: &str, export: &str) -> String
+{
+    let module_pascal = to_pascal_case(module);
+    let export_pascal = capitalize_first_letter(export);
+
+    let base = if export_pascal.starts_with(&module_pascal) {
+        export_pascal
+    } else {
+        format!("{module_pascal}{export_pascal}")
+    };
+
+    format!("{base}Args")
+}
+
 /// Split on non-alphanumeric runs and uppercase each word (`foo_bar` → `FooBar`).
 pub(crate) fn to_pascal_case(s: &str) -> String
 {
@@ -45,6 +63,22 @@ pub(crate) fn validate_type_name(type_name: &str) -> Result<(), ConvexTypeGenera
         });
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod function_args_struct_name_tests
+{
+    use super::function_args_struct_name;
+
+    #[test]
+    fn combines_module_and_export()
+    {
+        assert_eq!(function_args_struct_name("games", "getGame"), "GamesGetGameArgs");
+        assert_eq!(function_args_struct_name("mod_a", "list"), "ModAListArgs");
+        assert_eq!(function_args_struct_name("mod_b", "list"), "ModBListArgs");
+        assert_eq!(function_args_struct_name("tasks", "tasksSearch"), "TasksSearchArgs");
+        assert_eq!(function_args_struct_name("api", "getItem"), "ApiGetItemArgs");
+    }
 }
 
 #[cfg(test)]

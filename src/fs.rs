@@ -98,14 +98,14 @@ mod find_convex_function_source_paths_tests
     use std::fs;
     use std::io::Write;
 
-    use tempdir::TempDir;
+    use tempfile::tempdir;
 
     use super::find_convex_function_source_paths;
 
     #[test]
     fn skips_generated_schema_and_d_ts_and_sorts()
     {
-        let tmp = TempDir::new("convex_discover").unwrap();
+        let tmp = tempdir().unwrap();
         let convex = tmp.path().join("convex");
         fs::create_dir_all(convex.join("_generated")).unwrap();
         fs::create_dir_all(convex.join("sub")).unwrap();
@@ -131,7 +131,7 @@ mod find_convex_function_source_paths_tests
     #[test]
     fn missing_convex_dir_yields_empty_vec()
     {
-        let tmp = TempDir::new("no_convex").unwrap();
+        let tmp = tempdir().unwrap();
         let convex = tmp.path().join("nope");
         let schema = tmp.path().join("schema.ts");
         assert!(find_convex_function_source_paths(&convex, &schema).unwrap().is_empty());
@@ -140,7 +140,7 @@ mod find_convex_function_source_paths_tests
     #[test]
     fn convex_dir_not_directory_returns_invalid_path()
     {
-        let tmp = TempDir::new("convex_file").unwrap();
+        let tmp = tempdir().unwrap();
         let convex = tmp.path().join("convex");
         fs::write(&convex, b"not a dir").unwrap();
         let schema = tmp.path().join("schema.ts");
@@ -154,7 +154,7 @@ mod rcfp_tests
 {
     use std::fs;
 
-    use tempdir::TempDir;
+    use tempfile::tempdir;
 
     use super::rcfp;
     use crate::config::Configuration;
@@ -162,7 +162,7 @@ mod rcfp_tests
     #[test]
     fn returns_config_function_paths_when_non_empty_without_walking()
     {
-        let tmp = TempDir::new("rcfp_explicit").unwrap();
+        let tmp = tempdir().unwrap();
         let a = tmp.path().join("a.ts");
         let b = tmp.path().join("b.ts");
         fs::write(&a, "//").unwrap();
@@ -178,7 +178,7 @@ mod rcfp_tests
     #[test]
     fn delegates_to_discovery_when_function_paths_empty()
     {
-        let tmp = TempDir::new("rcfp_walk").unwrap();
+        let tmp = tempdir().unwrap();
         let convex = tmp.path().join("convex");
         fs::create_dir_all(&convex).unwrap();
         let schema = convex.join("schema.ts");
@@ -207,14 +207,14 @@ mod walk_ts_files_tests
 {
     use std::fs;
 
-    use tempdir::TempDir;
+    use tempfile::tempdir;
 
     use super::walk_ts_files;
 
     #[test]
     fn collects_ts_recursively_skipping_named_dirs()
     {
-        let tmp = TempDir::new("walk_ts").unwrap();
+        let tmp = tempdir().unwrap();
         let root = tmp.path();
         fs::create_dir_all(root.join("node_modules/pkg")).unwrap();
         fs::create_dir_all(root.join("_generated")).unwrap();

@@ -18,6 +18,9 @@ use serde_json::Value as JsonValue;
 
 use crate::error::ConvexTypeGeneratorError;
 
+/// Maximum source file size accepted by the lexer (DoS mitigation).
+pub(crate) const MAX_SOURCE_BYTES: usize = 10 * 1024 * 1024;
+
 /// Read `path`, parse with Oxc, and return the program as ESTree JSON.
 pub(crate) fn generate_javascript_ast(path: &PathBuf) -> Result<JsonValue, ConvexTypeGeneratorError>
 {
@@ -32,6 +35,17 @@ pub(crate) fn generate_javascript_ast(path: &PathBuf) -> Result<JsonValue, Conve
 
     if source_text.trim().is_empty() {
         return Err(ConvexTypeGeneratorError::EmptySchemaFile { file: path_str });
+    }
+
+    if source_text.len() > MAX_SOURCE_BYTES {
+        return Err(ConvexTypeGeneratorError::ParsingFailed {
+            file: path_str.clone(),
+            details: format!(
+                "Source file exceeds maximum size ({} bytes, limit is {} bytes)",
+                source_text.len(),
+                MAX_SOURCE_BYTES
+            ),
+        });
     }
 
     let source_type = SourceType::from_path(path).map_err(|_| ConvexTypeGeneratorError::ParsingFailed {
@@ -105,14 +119,14 @@ mod generate_javascript_ast_tests
     use std::fs;
     use std::path::PathBuf;
 
-    use tempdir::TempDir;
+    use tempfile::tempdir;
 
-    use super::generate_javascript_ast;
+    use super::{generate_javascript_ast, MAX_SOURCE_BYTES};
 
     #[test]
     fn parses_simple_export()
     {
-        let tmp = TempDir::new("lex_ok").unwrap();
+        let tmp = tempdir().unwrap();
         let p = tmp.path().join("m.ts");
         fs::write(&p, "export const a = 1;\n").unwrap();
         let ast = generate_javascript_ast(&p).unwrap();
@@ -130,7 +144,7 @@ mod generate_javascript_ast_tests
     #[test]
     fn whitespace_only_is_empty_schema_error()
     {
-        let tmp = TempDir::new("lex_ws").unwrap();
+        let tmp = tempdir().unwrap();
         let p = tmp.path().join("w.ts");
         fs::write(&p, " \n  \t ").unwrap();
         assert!(matches!(
@@ -142,9 +156,20 @@ mod generate_javascript_ast_tests
     #[test]
     fn invalid_syntax_returns_parsing_failed()
     {
-        let tmp = TempDir::new("lex_bad").unwrap();
+        let tmp = tempdir().unwrap();
         let p = tmp.path().join("bad.ts");
         fs::write(&p, "export const x = )));\n").unwrap();
+        let e = generate_javascript_ast(&p).unwrap_err();
+        assert!(matches!(e, crate::error::ConvexTypeGeneratorError::ParsingFailed { .. }));
+    }
+
+    #[test]
+    fn oversized_file_returns_parsing_failed()
+    {
+        let tmp = tempdir().unwrap();
+        let p = tmp.path().join("big.ts");
+        let oversized = "x".repeat(MAX_SOURCE_BYTES + 1);
+        fs::write(&p, oversized).unwrap();
         let e = generate_javascript_ast(&p).unwrap_err();
         assert!(matches!(e, crate::error::ConvexTypeGeneratorError::ParsingFailed { .. }));
     }

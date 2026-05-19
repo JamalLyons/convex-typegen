@@ -37,5 +37,12 @@ example *ARGS:
 example-advanced *ARGS:
     cargo run --manifest-path examples/advanced/Cargo.toml {{ ARGS }}
 
+# Generate and open the documentation for this package.
 doc:
     cargo doc --all-features --no-deps --open
+
+publish:
+    cargo publish
+
+publish-test:
+    cargo publish --dry-run --allow-dirty

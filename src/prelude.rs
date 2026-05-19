@@ -8,6 +8,7 @@ pub use serde::{Deserialize, Serialize};
 pub use serde_json::{Error as ConvexJsonError, Value as ConvexJsonValue};
 
 pub use crate::config::Configuration;
+#[cfg(feature = "client")]
 pub use crate::convex::{ConvexClientExt, ConvexValueExt, IntoConvexValue};
 pub use crate::error::ConvexTypeGeneratorError;
 pub use crate::fs::rcfp;

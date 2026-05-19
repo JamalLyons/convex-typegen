@@ -3,8 +3,7 @@
 
 use convex_typegen::prelude::*;
 
-fn main()
-{
+fn main() {
     let config = Configuration::default();
 
     println!("cargo:rerun-if-changed={}", config.schema_path.display());

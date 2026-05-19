@@ -81,6 +81,8 @@ The build must be **self-contained in Rust**: Oxc parses TypeScript/TSX, runs se
 5. **`SemanticBuilder`** — `with_check_syntax_error(true)`; any semantic/syntax errors → `ParsingFailed` with joined Oxc diagnostics (and optional **`verbose`** feature to `eprintln!` full debug).
 6. **`Program::to_estree_ts_json(false)`** — Oxc’s `Program` is not `Serialize`; this produces a JSON string, then **`serde_json::from_str`** turns it into `serde_json::Value`. Failures become `SerializationFailed`.
 
+Files larger than **`lexer::MAX_SOURCE_BYTES`** (10 MiB) are rejected before parsing.
+
 ### Contributor notes
 
 - **ESTree dialect**: Oxc may emit node kinds that differ from older Babel-centric tools (e.g. object literal fields as **`Property`** vs **`ObjectProperty`**). The parser must accept both where we match on `type` (see `parser::is_estree_object_property_like` and function `args` handling).
@@ -167,7 +169,7 @@ Most failures are **`InvalidSchema { context, details }`**. When extending the p
 
 1. **`generate_table_enums`** — For each column that is `v.union` (or `v.optional(v.union(...))`), emit a Rust `enum` **before** table structs so types are in scope.
 2. **`generate_table_code`** — `pub struct {Table}Table { ... }` with fields derived from `convex_type_to_rust_type`.
-3. **`generate_function_code`** — For each `ConvexFunction`, emit `{Name}Args`, `FUNCTION_PATH`, serde derives, and **`TryFrom<...> for BTreeMap<String, ConvexJsonValue>`**.
+3. **`generate_function_code`** — For each `ConvexFunction`, emit `{Module}{Export}Args` (see naming below), `FUNCTION_PATH`, serde derives, and **`TryFrom<...> for BTreeMap<String, ConvexJsonValue>`**. Duplicate qualified struct names return **`InvalidSchema`**.
 
 ### `convex_type_to_rust_type`
 
@@ -186,16 +188,17 @@ So for root-level optional parameters, generated `TryFrom` **omits the map key**
 
 ### Naming (`utils.rs`)
 
+- **`function_args_struct_name`**: `{Module}{Export}Args` unless the export already starts with the PascalCase module segment (`tasks` + `tasksSearch` → `TasksSearchArgs`; `games` + `getGame` → `GamesGetGameArgs`).
 - **`capitalize_first_letter`**: table/field → struct/enum name segments (`games` → `Games`).
-- **`to_pascal_case`**: union variants from literals or type names (`draft` → `Draft`, `string` → `String` variant wrapper).
+- **`to_pascal_case`**: module file segments and union variants (`mod_a` → `ModA`, `draft` → `Draft`).
 
 Keep naming **stable** and **collision-free** when changing algorithms—users rely on generated type names in application code.
 
 ---
 
-## Runtime helpers (`convex/mod.rs`)
+## Runtime helpers (`convex/client.rs`, feature `client`)
 
-These exist for **downstream crates** that call Convex with generated types:
+With the default **`client`** feature, these exist for **downstream crates** that call Convex with generated types:
 
 - **`IntoConvexValue`** — `serde_json::Value` → `convex::Value` (used after args are JSON-shaped).
 - **`ConvexValueExt`** — `convex::Value` → `serde_json::Value` (lossy for some kinds, e.g. bytes → JSON array of numbers).
@@ -211,7 +214,8 @@ These exist for **downstream crates** that call Convex with generated types:
   - Synthetic ESTree-shaped JSON for `parse_schema_ast` / `parse_function_ast`.
   - Lexer edge cases (empty file, invalid TS).
   - Codegen string properties (`TryFrom` optional branch, `convex_type_to_rust_type` cases).
-- **Integration-style `generate` test** uses `src/testdata/minimal_schema.ts` and `minimal_api.ts` copied into a `tempdir` so the full pipeline runs without depending on repo `examples/`.
+- **Integration tests** in `tests/golden_generate.rs` and `tests/build_script_smoke.rs` run the full pipeline in `tempfile` directories with inline TypeScript fixtures.
+- **Golden snapshots** (`insta`) guard stable codegen output for minimal schema/function and cross-module duplicate exports.
 
 When changing parser assumptions, **add or adjust a minimal JSON fixture** in tests before touching production code when possible.
 

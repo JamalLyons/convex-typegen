@@ -6,20 +6,21 @@
 //! - Table structs (`{Table}Table`) and per-column Rust types.
 //! - Enums for `v.union` (and `v.optional(v.union(…))` via `{Table}Optional{Field}`) using literal
 //!   variants where possible.
-//! - Per-function `{Name}Args` structs with `FUNCTION_PATH`, `Serialize`/`Deserialize`, and
+//! - Per-function `{Module}{Export}Args` structs with `FUNCTION_PATH`, `Serialize`/`Deserialize`, and
 //!   `TryFrom` into `BTreeMap<String, ConvexJsonValue>` for [`crate::ConvexClientExt::prepare_args`].
 //!
 //! ## Naming
 //!
 //! Union enums combine **PascalCase table + field** so different columns’ unions never collide.
 
+use std::collections::HashSet;
 use std::io::{Seek, SeekFrom, Write};
 use std::path::PathBuf;
 
 use serde_json::Value as JsonValue;
 
 use crate::convex::types::{ConvexFunction, ConvexFunctions, ConvexSchema, ConvexTable};
-use crate::convex::utils::{capitalize_first_letter, to_pascal_case};
+use crate::convex::utils::{capitalize_first_letter, function_args_struct_name, to_pascal_case};
 use crate::error::ConvexTypeGeneratorError;
 
 /// Truncate `path`, write the standard generated header + tables + function arg structs.
@@ -58,8 +59,16 @@ use convex_typegen::prelude::*;
         code.push_str(&generate_table_code(table));
     }
 
-    // Generate function argument types
+    // Generate function argument types (reject duplicate qualified struct names)
+    let mut emitted_args_structs = HashSet::new();
     for function in data.1 {
+        let struct_name = function_args_struct_name(&function.file_name, &function.name);
+        if !emitted_args_structs.insert(struct_name.clone()) {
+            return Err(ConvexTypeGeneratorError::InvalidSchema {
+                context: format!("function_{}:{}", function.file_name, function.name),
+                details: format!("Duplicate generated args struct name `{struct_name}`"),
+            });
+        }
         code.push_str(&generate_function_code(function));
     }
 
@@ -204,13 +213,17 @@ fn convex_type_to_rust_type(data_type: &JsonValue, table_name: Option<&str>, fie
 
                 // Property types use `None` context so nested shapes (e.g. optional
                 // unions inside an object) do not pick up the parent column's enum names.
-                let mut rust_types = keys.iter().map(|k| {
-                    let v = props.get(*k).expect("key from props.keys()");
-                    convex_type_to_rust_type(v, None, None)
-                });
+                let rust_types: Vec<String> = keys
+                    .iter()
+                    .filter_map(|k| props.get(*k).map(|v| convex_type_to_rust_type(v, None, None)))
+                    .collect();
 
-                let first = rust_types.next().expect("non-empty props");
-                if rust_types.all(|t| t == first) {
+                if rust_types.is_empty() {
+                    return "ConvexJsonValue".to_string();
+                }
+
+                let first = rust_types[0].clone();
+                if rust_types[1..].iter().all(|t| t == &first) {
                     format!("std::collections::BTreeMap<String, {}>", first)
                 } else {
                     "ConvexJsonValue".to_string()
@@ -266,8 +279,7 @@ fn generate_function_code(function: ConvexFunction) -> String
 {
     let mut code = String::new();
 
-    // Generate the args struct name
-    let struct_name = format!("{}Args", capitalize_first_letter(&function.name));
+    let struct_name = function_args_struct_name(&function.file_name, &function.name);
 
     // Point serde derives at this crate so downstream does not need a direct `serde` dependency.
     code.push_str("#[derive(Debug, Clone, Serialize, Deserialize)]\n");
@@ -512,9 +524,9 @@ mod generate_function_code_tests
             file_name: "net".into(),
         };
         let code = generate_function_code(f);
-        assert!(code.contains("pub struct PingArgs"));
+        assert!(code.contains("pub struct NetPingArgs"));
         assert!(code.contains("\"net:ping\""));
-        assert!(code.contains("TryFrom<PingArgs>"));
+        assert!(code.contains("TryFrom<NetPingArgs>"));
         assert!(code.contains("map.insert(\"msg\""));
     }
 
@@ -554,7 +566,7 @@ mod run_codegen_tests
     use std::fs;
 
     use serde_json::json;
-    use tempdir::TempDir;
+    use tempfile::tempdir;
 
     use super::run_codegen;
     use crate::convex::types::{ConvexColumn, ConvexFunction, ConvexSchema, ConvexTable};
@@ -562,7 +574,7 @@ mod run_codegen_tests
     #[test]
     fn writes_header_and_table_and_function_snippets()
     {
-        let tmp = TempDir::new("codegen_out").unwrap();
+        let tmp = tempdir().unwrap();
         let out = tmp.path().join("out.rs");
         let schema = ConvexSchema {
             tables: vec![ConvexTable {
@@ -583,6 +595,30 @@ mod run_codegen_tests
         let body = fs::read_to_string(&out).unwrap();
         assert!(body.contains("convex-typegen"));
         assert!(body.contains("TTable"));
-        assert!(body.contains("FArgs"));
+        assert!(body.contains("ApiFArgs"));
+    }
+
+    #[test]
+    fn run_codegen_errors_on_duplicate_qualified_struct_name()
+    {
+        let tmp = tempdir().unwrap();
+        let out = tmp.path().join("out.rs");
+        let schema = ConvexSchema { tables: vec![] };
+        let functions = vec![
+            ConvexFunction {
+                name: "list".into(),
+                params: vec![],
+                type_: "query".into(),
+                file_name: "mod".into(),
+            },
+            ConvexFunction {
+                name: "list".into(),
+                params: vec![],
+                type_: "query".into(),
+                file_name: "mod".into(),
+            },
+        ];
+        let err = run_codegen(&out, (schema, functions)).unwrap_err();
+        assert!(matches!(err, crate::error::ConvexTypeGeneratorError::InvalidSchema { .. }));
     }
 }

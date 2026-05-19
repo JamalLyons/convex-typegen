@@ -20,7 +20,7 @@ jobs:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: dtolnay/rust-toolchain@nightly
         with:
@@ -40,7 +40,7 @@ jobs:
     name: Clippy, tests, and examples
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: dtolnay/rust-toolchain@1.95.0
         with:
@@ -69,7 +69,7 @@ jobs:
     name: Build without client feature
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: dtolnay/rust-toolchain@1.95.0
 
@@ -85,7 +85,7 @@ jobs:
     name: MSRV (1.95)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: dtolnay/rust-toolchain@1.95.0
         with:
@@ -106,7 +106,7 @@ jobs:
     name: cargo audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -126,7 +126,7 @@ jobs:
     name: cargo deny
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: dtolnay/rust-toolchain@stable
 

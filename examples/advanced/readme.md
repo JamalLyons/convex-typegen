@@ -1,6 +1,6 @@
 # advanced — convex-typegen stress-test example
 
-This example is a **richer Convex backend** than `examples/basic/`: multiple tables, `v.id` links, nested `v.object` args, optional parameters, `action`, and several Convex modules so `convex-typegen` must discover many files and emit many `*Args` structs.
+This example is a **richer Convex backend** than `examples/basic/`: multiple tables, `v.id` links, nested `v.object` args (emitted as named Rust structs such as `ProjectsSettings` and `TasksSearchFilter`), optional parameters, `action`, and several Convex modules so `convex-typegen` must discover many files and emit many `*Args` structs.
 
 ## What Convex covers here
 

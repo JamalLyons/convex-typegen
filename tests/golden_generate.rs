@@ -45,6 +45,35 @@ export const list = query({
 });
 "#;
 
+const NESTED_OBJECT_SCHEMA: &str = r#"
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+
+export default defineSchema({
+    projects: defineTable({
+        settings: v.object({
+            theme: v.string(),
+            notifyEmail: v.boolean(),
+        }),
+    }),
+});
+"#;
+
+const NESTED_OBJECT_FN: &str = r#"
+import { action } from "./_generated/server";
+import { v } from "convex/values";
+
+export const integrationsMirror = action({
+    args: {
+        flags: v.object({
+            verbose: v.boolean(),
+            trace: v.boolean(),
+        }),
+    },
+    handler: async (_ctx, _args) => null,
+});
+"#;
+
 const OPTIONAL_FN: &str = r#"
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
@@ -126,6 +155,16 @@ fn golden_duplicate_exports_unique_struct_names()
     assert!(body.contains("pub struct ModAListArgs"));
     assert!(body.contains("pub struct ModBListArgs"));
     assert!(!body.contains("pub struct ListArgs"));
+}
+
+#[test]
+fn golden_named_nested_object_structs()
+{
+    let body = run_generate(NESTED_OBJECT_SCHEMA, &[("integrations.ts", NESTED_OBJECT_FN)]);
+    assert!(body.contains("pub struct ProjectsSettings"));
+    assert!(body.contains("pub settings: ProjectsSettings"));
+    assert!(body.contains("pub struct IntegrationsMirrorFlags"));
+    assert!(body.contains("pub flags: IntegrationsMirrorFlags"));
 }
 
 #[test]

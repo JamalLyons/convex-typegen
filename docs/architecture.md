@@ -60,8 +60,10 @@ Errors are unified as **`error::ConvexTypeGeneratorError`** (IO, Oxc parse/seman
 | TS → JSON AST | `src/convex/lexer.rs` | Oxc parse + semantic check → `to_estree_ts_json` → `serde_json::Value` |
 | ESTree → IR | `src/convex/parser.rs` | `defineSchema` / `defineTable` / `v.*`; exported `query` / `mutation` / `action` + `args` |
 | IR types | `src/convex/types.rs` | `ConvexSchema`, `ConvexTable`, `ConvexColumn`, `ConvexFunction`, … |
-| Naming | `src/convex/utils.rs` | `capitalize_first_letter`, `to_pascal_case`, `validate_type_name` vs `VALID_CONVEX_TYPES` |
-| Rust text | `src/convex/codegen.rs` | Tables, union enums, `*Args` structs, `TryFrom` for Convex args |
+| Naming | `src/convex/utils.rs` | `capitalize_first_letter`, `to_pascal_case`, `validate_type_name` vs `VALID_CONVEX_TYPES`, nested object struct names |
+| Validator IR | `src/convex/validator.rs` | `ConvexValidator`, `structName` / nesting depth cap for named objects |
+| Oxc AST spike | `src/convex/ast.rs` | Direct `Program` walks for future JSON-path replacement (not on the production path) |
+| Rust text | `src/convex/codegen.rs` | Named object structs, tables, union enums, `*Args` structs, `TryFrom` for Convex args |
 | Client glue | `src/convex/mod.rs` | `IntoConvexValue`, `ConvexValueExt`, `ConvexClientExt`; `create_schema_ast`, `create_function_asts` |
 
 ---
@@ -153,6 +155,9 @@ Most failures are **`InvalidSchema { context, details }`**. When extending the p
 | `ConvexFunction` | `name`, `params`, `type_` (`query` / …), `file_name` (module segment) |
 | `ConvexFunctionParam` | `name`, `data_type: JsonValue` |
 | `ConvexFunctions` | Type alias for `Vec<ConvexFunction>` |
+| `ConvexValidator` (`validator.rs`) | Typed `v.*` tree used for named-object hashing/dedupe; parser JSON remains the source of truth |
+
+Parser output stays JSON; codegen reads `structName` off that JSON. `ConvexValidator::from_json` is the typed view.
 
 `ConvexSchema` / `ConvexFunction` derive `Serialize`/`Deserialize` mainly for **tests** and potential tooling—not required for normal `generate`.
 
@@ -167,16 +172,17 @@ Most failures are **`InvalidSchema { context, details }`**. When extending the p
 
 ### Emission order (`run_codegen`)
 
-1. **`generate_table_enums`** — For each column that is `v.union` (or `v.optional(v.union(...))`), emit a Rust `enum` **before** table structs so types are in scope.
-2. **`generate_table_code`** — `pub struct {Table}Table { ... }` with fields derived from `convex_type_to_rust_type`.
-3. **`generate_function_code`** — For each `ConvexFunction`, emit `{Module}{Export}Args` (see naming below), `FUNCTION_PATH`, serde derives, and **`TryFrom<...> for BTreeMap<String, ConvexJsonValue>`**. Duplicate qualified struct names return **`InvalidSchema`**.
+1. **`collect_named_structs` / `emit_named_struct_definitions`** — Two-pass: gather `v.object` shapes with `structName` from the parser, dedupe by name + field types, emit `pub struct` with serde derives first.
+2. **`generate_table_enums`** — For each column that is `v.union` (or `v.optional(v.union(...))`), emit a Rust `enum` **before** table structs so types are in scope.
+3. **`generate_table_code`** — `pub struct {Table}Table { ... }` with fields derived from `convex_type_to_rust_type`.
+4. **`generate_function_code`** — For each `ConvexFunction`, emit `{Module}{Export}Args` (see naming below), `FUNCTION_PATH`, serde derives, and **`TryFrom<...> for BTreeMap<String, ConvexJsonValue>`**. Duplicate qualified struct names return **`InvalidSchema`**.
 
 ### `convex_type_to_rust_type`
 
 Maps the **normalized JSON** from the parser to Rust type strings used in generated source:
 
 - Scalars: `string` → `String`, `number` → `f64`, `boolean` → `bool`, etc.
-- **`v.object`**: If all property value types map to the **same** Rust type string, emit `BTreeMap<String, T>`; if heterogeneous, emit **`ConvexJsonValue`** (cannot name a single `T` for all values).
+- **`v.object`**: When the parser attached **`structName`**, emit that struct type. Otherwise, if all property types are identical, emit `BTreeMap<String, T>`; if heterogeneous or empty, emit **`ConvexJsonValue`**. Conflicting shapes under the same `structName` fail codegen with **`InvalidSchema`**.
 - **`v.optional`**: `Option<...>`; if inner is **`union`** and table/field context is known, use generated enum name `{Table}Optional{Field}` for optional unions.
 - **`v.union`**: Enum name `{Table}{Field}` (see codegen module docs for collision avoidance).
 
@@ -189,10 +195,11 @@ So for root-level optional parameters, generated `TryFrom` **omits the map key**
 ### Naming (`utils.rs`)
 
 - **`function_args_struct_name`**: `{Module}{Export}Args` unless the export already starts with the PascalCase module segment (`tasks` + `tasksSearch` → `TasksSearchArgs`; `games` + `getGame` → `GamesGetGameArgs`).
+- **Nested object structs**: `schema_column_object_struct_name`, `function_args_struct_stem` + param field, `nested_object_struct_name` for deeper nesting (depth capped by `validator::MAX_OBJECT_NEST_DEPTH`).
 - **`capitalize_first_letter`**: table/field → struct/enum name segments (`games` → `Games`).
 - **`to_pascal_case`**: module file segments and union variants (`mod_a` → `ModA`, `draft` → `Draft`).
 
-Keep naming **stable** and **collision-free** when changing algorithms—users rely on generated type names in application code.
+See [semver-policy.md](semver-policy.md) for when generated type renames require a crate version bump. Keep naming **stable** and **collision-free** when changing algorithms—users rely on generated type names in application code.
 
 ---
 
@@ -228,7 +235,7 @@ When changing parser assumptions, **add or adjust a minimal JSON fixture** in te
 | New Convex `v.*` validator | `VALID_CONVEX_TYPES`, `extract_column_type`, `convex_type_to_rust_type`, tests |
 | New AST shape from Oxc | `lexer` (if serialization changes), `parser` field access, tests |
 | Different Rust mapping for objects / unions | `codegen::convex_type_to_rust_type`, enum emission |
-| Smarter object typing (named nested structs) | New IR + codegen pass; today heterogeneous objects fall back to `ConvexJsonValue` |
+| Named nested object structs | `parser` `structName`, `validator.rs`, `codegen::collect_named_structs` |
 | Optional / null semantics elsewhere | Any new `TryFrom` or serde paths must align with Convex validation rules |
 
 ---
@@ -236,6 +243,8 @@ When changing parser assumptions, **add or adjust a minimal JSON fixture** in te
 ## Related files
 
 - **`readme.md`** — User-facing setup (also included in rustdoc via `lib.rs`).
-- **`CHANGELOG.md`** — Notable behavior changes (e.g. ESTree `Property` support, optional-arg omission in `TryFrom`).
+- **`CHANGELOG.md`** — Notable behavior changes (e.g. named `v.object` structs, optional-arg omission in `TryFrom`).
+- **`docs/semver-policy.md`**, **`docs/api-stability.md`** — versioning and public-API contract.
+- **`docs/oxc-ast-evaluation.md`** — JSON vs direct Oxc AST tradeoffs.
 
 If you add major pipeline stages, update this document so the next contributor does not have to reconstruct intent from git history alone.

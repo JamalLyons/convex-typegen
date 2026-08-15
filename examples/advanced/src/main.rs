@@ -3,15 +3,14 @@
 
 mod convex_types;
 
-use std::collections::BTreeMap;
 use std::path::Path;
 
 use convex::{ConvexClient, FunctionResult, Value as ConvexValue};
 use convex_typegen::prelude::*;
 use convex_types::{
-    IntegrationsMirrorArgs, ProjectsListByTeamArgs, ProjectsUpdateTagsArgs, TasksCreateArgs, TasksSearchArgs,
-    TeamsListByOwnerArgs, UsersCreateArgs, UsersGetByEmailArgs, UsersGetProfileArgs, WorkspaceSeedIfEmptyArgs,
-    WorkspaceSummaryArgs,
+    IntegrationsMirrorArgs, IntegrationsMirrorFlags, ProjectsListByTeamArgs, ProjectsUpdateTagsArgs, TasksCreateArgs,
+    TasksSearchArgs, TasksSearchFilter, TeamsListByOwnerArgs, UsersCreateArgs, UsersGetByEmailArgs, UsersGetProfileArgs,
+    WorkspaceSeedIfEmptyArgs, WorkspaceSummaryArgs,
 };
 
 #[tokio::main]
@@ -78,10 +77,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
         .query(
             TasksSearchArgs::FUNCTION_PATH,
             ConvexClient::prepare_args(TasksSearchArgs {
-                filter: convex_typegen::serde_json::json!({
-                    "projectId": project_id,
-                    "minPriority": "p1",
-                }),
+                filter: TasksSearchFilter {
+                    projectId: project_id.clone(),
+                    minPriority: Some(convex_typegen::serde_json::json!("p1")),
+                },
                 limit: Some(10.0),
             })?,
         )
@@ -94,7 +93,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
             ConvexClient::prepare_args(IntegrationsMirrorArgs {
                 body: "hello from Rust".to_string(),
                 numbers: vec![1.0, 2.0, 3.0],
-                flags: BTreeMap::from([("verbose".to_string(), true), ("trace".to_string(), false)]),
+                flags: IntegrationsMirrorFlags {
+                    verbose: true,
+                    trace: false,
+                },
                 mode: convex_typegen::serde_json::json!("json"),
                 extra: Some(std::collections::HashMap::from([("k".to_string(), "v".to_string())])),
             })?,

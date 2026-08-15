@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-15
+
+Named `v.object` structs in generated code, plus semver/API-stability docs. Library API is unchanged; **generated output is breaking** (allowed in a 0.x minor — see [semver-policy.md](docs/semver-policy.md)).
+
+### Added
+
+- [docs/semver-policy.md](docs/semver-policy.md) and [docs/api-stability.md](docs/api-stability.md): library API vs generated-output semver, MSRV rules, and 1.0 readiness checklist.
+- [docs/oxc-ast-evaluation.md](docs/oxc-ast-evaluation.md): evaluation of direct Oxc AST traversal vs ESTree JSON round-trip (hybrid path recommended).
+- Internal `ConvexValidator` IR (`src/convex/validator.rs`) and `structName` hints on parsed `v.object` trees.
+- Named nested `v.object` structs in generated code (schema columns, function args, nested objects, array element objects) with structural dedupe and collision errors.
+- Oxc AST spike module (`src/convex/ast.rs`) for future migration benchmarking.
+
+### Changed
+
+- **Breaking (codegen):** `v.object({ ... })` validators emit dedicated `pub struct` types (e.g. `ProjectsSettings`, `IntegrationsMirrorFlags`, `TasksSearchFilter`) instead of `ConvexJsonValue` or a homogeneous `BTreeMap` where a stable name applies. Pin the same `convex-typegen` version in `[dependencies]` and `[build-dependencies]`.
+
+
+
 ## [0.3.0] - 2026-05-19
 
 Version 0.3.0 improves stability, supply-chain hygiene, and generated-code correctness for multi-module Convex backends.
@@ -14,13 +32,15 @@ Version 0.3.0 improves stability, supply-chain hygiene, and generated-code corre
 - `prelude` module re-exporting commonly used types and traits.
 - README for the basic example directory.
 - `docs/architecture.md` for contributors.
-- **Schema parsing — `defineTable` builder chains:** `parse_schema_ast` peels `defineTable({ ... })` followed by `.index`, `.searchIndex`, or `.vectorIndex` before reading column validators.
-- **`examples/advanced`:** richer Convex sample with indexes and `withIndex`.
+- **Schema parsing —** `defineTable` **builder chains:** `parse_schema_ast` peels `defineTable({ ... })` followed by `.index`, `.searchIndex`, or `.vectorIndex` before reading column validators.
+- `examples/advanced`**:** richer Convex sample with indexes and `withIndex`.
 - **Tests:** integration golden tests (`tests/golden_generate.rs`), build-script smoke test, `generate` coverage for chained `.index()` and cross-module duplicate export names.
-- **`client` Cargo feature** (default-on): runtime helpers (`ConvexClientExt`, `IntoConvexValue`, `ConvexValueExt`) depend on the official `convex` crate; disable with `default-features = false` for build-only use.
+- `client` **Cargo feature** (default-on): runtime helpers (`ConvexClientExt`, `IntoConvexValue`, `ConvexValueExt`) depend on the official `convex` crate; disable with `default-features = false` for build-only use.
 - **Supply chain:** `deny.toml`, CI jobs for `cargo audit` and `cargo deny`, MSRV job (Rust 1.95), `no-default-features` build job, release workflow for tagged publishes.
 - **Community:** `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`.
 - **Lexer:** maximum source file size (10 MiB) to mitigate accidental or malicious huge inputs.
+
+
 
 ### Changed
 
@@ -29,6 +49,8 @@ Version 0.3.0 improves stability, supply-chain hygiene, and generated-code corre
 - **Breaking:** Renamed `JsonValue` to `ConvexJsonValue` and `JsonError` to `ConvexJsonError` in the prelude.
 - **Breaking:** Generated args structs are `{Module}{Export}Args` when the export name does not already start with the module segment (e.g. `GamesGetGameArgs`, `ModAListArgs`). Exports already prefixed with the module (e.g. `tasksSearch` in `tasks.ts`) become `TasksSearchArgs`. This prevents duplicate `pub struct` definitions when multiple modules export the same short name (e.g. `list`).
 - Crate uses **edition 2024** with `rust-version = "1.95"` in `Cargo.toml`.
+
+
 
 ### Fixed
 
@@ -42,12 +64,18 @@ Version 0.3.0 improves stability, supply-chain hygiene, and generated-code corre
 - Generated `TryFrom` omits keys for top-level `v.optional` parameters when `None` (not JSON `null`).
 - Codegen rejects duplicate qualified args struct names with `InvalidSchema` instead of emitting uncompilable Rust.
 
+
+
 ## [0.2.0] - 2025-01-16
+
+
 
 ### Added
 
 - Added this changelog file for all releases.
 - Added `ConvexValueExt` trait to the [convex::Value](https://docs.rs/convex/0.9.0/convex/enum.Value.html) type.
+
+
 
 ### Changed
 
@@ -55,19 +83,30 @@ Version 0.3.0 improves stability, supply-chain hygiene, and generated-code corre
 - Bumped [oxc](https://oxc.rs) to version 0.46.0
 - Removed the use of `.unwrap()` in the typegen crate's own Rust sources (generated output still used `unwrap` until 0.3.0).
 
+
+
 ### Fixed
 
 - Test generation scripts not deleting generated files.
 
+
+
 ## [0.1.1] - 2024-11-14
+
+
 
 ### Fixed
 
 - Cleaned unnecessary documentation comments.
 - Removed unused library's dependencies.
 
+
+
 ## [0.1.0] - 2024-11-13
+
+
 
 ### Added
 
 - Initial release of the project.
+

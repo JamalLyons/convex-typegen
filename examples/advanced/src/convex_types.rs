@@ -8,6 +8,27 @@
 
 use convex_typegen::prelude::*;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(crate = "convex_typegen::serde")]
+pub struct IntegrationsMirrorFlags {
+    pub trace: bool,
+    pub verbose: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(crate = "convex_typegen::serde")]
+pub struct ProjectsSettings {
+    pub notifyEmail: bool,
+    pub theme: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(crate = "convex_typegen::serde")]
+pub struct TasksSearchFilter {
+    pub minPriority: Option<ConvexJsonValue>,
+    pub projectId: String,
+}
+
 #[derive(Debug, Clone)]
 pub enum UsersRole {
     Admin,
@@ -55,7 +76,7 @@ pub struct ProjectsTable {
     pub title: String,
     pub status: ProjectsStatus,
     pub tags: Vec<String>,
-    pub settings: ConvexJsonValue,
+    pub settings: ProjectsSettings,
     pub budget: Option<f64>,
 }
 
@@ -74,7 +95,7 @@ pub struct TasksTable {
 pub struct IntegrationsMirrorArgs {
     pub body: String,
     pub numbers: Vec<f64>,
-    pub flags: std::collections::BTreeMap<String, bool>,
+    pub flags: IntegrationsMirrorFlags,
     pub mode: ConvexJsonValue,
     pub extra: Option<std::collections::HashMap<String, String>>,
 }
@@ -148,7 +169,7 @@ impl std::convert::TryFrom<ProjectsUpdateTagsArgs> for std::collections::BTreeMa
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(crate = "convex_typegen::serde")]
 pub struct TasksSearchArgs {
-    pub filter: ConvexJsonValue,
+    pub filter: TasksSearchFilter,
     pub limit: Option<f64>,
 }
 

@@ -26,6 +26,7 @@ cargo build --no-default-features
 - Keep changes focused; include tests for behavior changes.
 - Run `just fmt` before pushing if you changed Rust sources.
 - Update `CHANGELOG.md` under `[Unreleased]` for user-visible changes.
+- Follow [docs/semver-policy.md](docs/semver-policy.md) when choosing version bumps (library API vs generated output).
 - MSRV is **1.95** (`rust-version` in `Cargo.toml`); CI enforces it. Use **nightly** rustfmt (`just fmt` / `just fmt-check`) for unstable options in `rustfmt.toml`.
 
 ## Golden tests
@@ -38,7 +39,10 @@ cargo insta test --accept --all-features
 
 ## Publishing (maintainers)
 
-1. Bump version in `Cargo.toml` and finalize `CHANGELOG.md`.
-2. Tag `vX.Y.Z` and push; the [release workflow](.github/workflows/release.yml) publishes to crates.io when `CARGO_REGISTRY_TOKEN` is configured.
+Default branch is **`master`**. Land work on `dev`, then open a PR into `master`. Tagging does **not** publish to crates.io by itself (there is no release workflow).
 
-Manual fallback: `cargo publish --locked`.
+1. Set `version` in `Cargo.toml` (Cargo.lock follows) and move `[Unreleased]` notes into a dated `CHANGELOG.md` heading.
+2. Add GitHub Release notes as `docs/release-vX.Y.Z.md`.
+3. Merge to `master`, tag `vX.Y.Z` on that commit, and push the tag.
+4. Create the GitHub Release from `docs/release-vX.Y.Z.md`.
+5. Publish: `cargo publish --locked` (or `just publish`). Requires a crates.io API token locally.

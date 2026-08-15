@@ -81,4 +81,5 @@ convex-typegen = { version = "0.3", default-features = false }
 4. Handle `prepare_args` / `TryFrom` as `Result` where needed.
 
 **Docs:** https://docs.rs/convex-typegen/0.3.0  
-**Full changelog:** [CHANGELOG.md](https://github.com/JamalLyons/convex-typegen/blob/main/CHANGELOG.md)
+**Full changelog:** [CHANGELOG.md](https://github.com/JamalLyons/convex-typegen/blob/master/CHANGELOG.md)  
+**Versioning (1.0 roadmap):** [semver-policy.md](semver-policy.md), [api-stability.md](api-stability.md)

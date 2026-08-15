@@ -4,6 +4,7 @@
 //! [`to_pascal_case`] (e.g. union variants from string literals).
 
 use crate::convex::parser::VALID_CONVEX_TYPES;
+use crate::convex::validator::MAX_OBJECT_NEST_DEPTH;
 use crate::error::ConvexTypeGeneratorError;
 
 /// `users` → `Users` for struct / enum name prefixes.
@@ -36,6 +37,31 @@ pub(crate) fn function_args_struct_name(module: &str, export: &str) -> String
     };
 
     format!("{base}Args")
+}
+
+/// Stem used for nested object struct names (`GamesGetGameArgs` → `GamesGetGame`).
+pub(crate) fn function_args_struct_stem(module: &str, export: &str) -> String
+{
+    let full = function_args_struct_name(module, export);
+    full.strip_suffix("Args").map(str::to_string).unwrap_or(full)
+}
+
+/// `projects` + `settings` → `ProjectsSettings`.
+pub(crate) fn schema_column_object_struct_name(table: &str, column: &str) -> String
+{
+    format!("{}{}", capitalize_first_letter(table), capitalize_first_letter(column))
+}
+
+/// `ProjectsSettings` + `theme` → `ProjectsSettingsTheme`.
+pub(crate) fn nested_object_struct_name(parent_struct: &str, field: &str) -> String
+{
+    format!("{parent_struct}{}", capitalize_first_letter(field))
+}
+
+/// Whether object nesting depth allows a generated struct (vs `ConvexJsonValue` fallback).
+pub(crate) fn object_depth_allows_struct(depth: usize) -> bool
+{
+    depth < MAX_OBJECT_NEST_DEPTH
 }
 
 /// Split on non-alphanumeric runs and uppercase each word (`foo_bar` → `FooBar`).

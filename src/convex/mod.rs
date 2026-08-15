@@ -6,7 +6,9 @@
 //! - **Lexer** ([`lexer`]) — parse TS to a [`serde_json::Value`] ESTree tree.
 //! - **Parser** ([`parser`]) — interpret Convex `defineSchema` / `defineTable` / `v.*` and exported
 //!   `query`/`mutation`/`action` shapes into [`types`].
+//! - **Validator IR** ([`validator`]) — typed `v.*` tree and `structName` for named object codegen.
 //! - **Codegen** ([`codegen`]) — stringify that model as `src/convex_types.rs`-style output.
+//! - **AST spike** ([`ast`]) — direct Oxc `Program` walks; not used by [`crate::generate`] yet.
 //!
 //! ## JSON at the boundaries
 //!
@@ -27,6 +29,8 @@ use serde_json::Value as JsonValue;
 use crate::convex::lexer::generate_javascript_ast;
 use crate::error::ConvexTypeGeneratorError;
 
+#[allow(dead_code)]
+pub(crate) mod ast;
 #[cfg(feature = "client")]
 mod client;
 pub(crate) mod codegen;
@@ -34,6 +38,8 @@ pub(crate) mod lexer;
 pub(crate) mod parser;
 pub(crate) mod types;
 pub(crate) mod utils;
+#[allow(dead_code)]
+pub(crate) mod validator;
 
 #[cfg(feature = "client")]
 pub use client::{ConvexClientExt, ConvexValueExt, IntoConvexValue};

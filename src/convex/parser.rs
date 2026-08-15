@@ -25,7 +25,10 @@ use std::path::PathBuf;
 use serde_json::{Value as JsonValue, json};
 
 use crate::convex::types::{ConvexColumn, ConvexFunction, ConvexFunctionParam, ConvexFunctions, ConvexSchema, ConvexTable};
-use crate::convex::utils::validate_type_name;
+use crate::convex::utils::{
+    function_args_struct_stem, nested_object_struct_name, object_depth_allows_struct, schema_column_object_struct_name,
+    validate_type_name,
+};
 use crate::error::ConvexTypeGeneratorError;
 
 /// Convex `v.*` validator names we know how to map (must stay in sync with schema reference docs).
@@ -165,7 +168,7 @@ pub(crate) fn parse_schema_ast(ast: JsonValue) -> Result<ConvexSchema, ConvexTyp
                     })?;
 
             // Get column type by looking at the property chain
-            let mut context = TypeContext::new(context.to_string());
+            let mut context = TypeContext::for_schema_column(table_name, column_name);
             let column_type = extract_column_type(column_prop, &mut context)?;
 
             columns.push(ConvexColumn {
@@ -270,7 +273,12 @@ fn extract_column_type(column_prop: &JsonValue, context: &mut TypeContext) -> Re
             }
         }
         "object" => {
-            // For objects, parse each property type
+            context.object_depth += 1;
+            let this_struct = context.current_object_struct_name();
+            if let Some(ref name) = this_struct {
+                context.struct_name_stack.push(name.clone());
+            }
+
             if let Some(obj_def) = args.first()
                 && let Some(properties) = obj_def["properties"].as_array()
             {
@@ -284,12 +292,27 @@ fn extract_column_type(column_prop: &JsonValue, context: &mut TypeContext) -> Re
                             details: "Invalid object property name".to_string(),
                         })?;
 
+                    context.type_path.push(prop_name.to_string());
                     let prop_type = extract_column_type(prop, context)?;
+                    context.type_path.pop();
                     prop_types.insert(prop_name.to_string(), prop_type);
                 }
 
+                let has_props = !prop_types.is_empty();
                 type_obj.insert("properties".to_string(), JsonValue::Object(prop_types));
+
+                if let Some(ref struct_name) = this_struct
+                    && has_props
+                    && object_depth_allows_struct(context.object_depth)
+                {
+                    type_obj.insert("structName".to_string(), JsonValue::String(struct_name.clone()));
+                }
             }
+
+            if this_struct.is_some() {
+                context.struct_name_stack.pop();
+            }
+            context.object_depth -= 1;
         }
         "record" => {
             // For records, parse both key and value types
@@ -347,11 +370,25 @@ fn extract_column_type(column_prop: &JsonValue, context: &mut TypeContext) -> Re
     Ok(type_value)
 }
 
+/// How to name generated structs for `v.object` at the root of a walk.
+#[derive(Debug, Clone)]
+enum ObjectNaming
+{
+    SchemaColumn
+    {
+        table: String, column: String
+    },
+    FunctionParam
+    {
+        module: String, export: String, param: String
+    },
+}
+
 /// Parser-local state for nested `v.*` extraction and cycle detection.
 ///
 /// `type_stack` tracks `object` nesting paths; other composite kinds recurse but only `object`
 /// participates in the “seen this path before?” cycle check.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct TypeContext
 {
     /// `(discriminator, full_path)` for nested `v.object` walks.
@@ -360,16 +397,73 @@ struct TypeContext
     file_name: String,
     /// Dot-separated path inside the validator tree (`inner`, `elements`, field names, …).
     type_path: Vec<String>,
+    naming: Option<ObjectNaming>,
+    object_depth: usize,
+    /// Struct names of enclosing `v.object` nodes (for nested object naming).
+    struct_name_stack: Vec<String>,
 }
 
 impl TypeContext
 {
-    fn new(file_name: String) -> Self
+    fn for_schema_column(table: &str, column: &str) -> Self
     {
         Self {
-            file_name,
+            file_name: format!("table_{table}.{column}"),
             type_stack: Vec::new(),
             type_path: Vec::new(),
+            naming: Some(ObjectNaming::SchemaColumn {
+                table: table.to_string(),
+                column: column.to_string(),
+            }),
+            object_depth: 0,
+            struct_name_stack: Vec::new(),
+        }
+    }
+
+    fn for_function_param(module: &str, export: &str, param: &str) -> Self
+    {
+        Self {
+            file_name: format!("function_{module}.{export}.{param}"),
+            type_stack: Vec::new(),
+            type_path: Vec::new(),
+            naming: Some(ObjectNaming::FunctionParam {
+                module: module.to_string(),
+                export: export.to_string(),
+                param: param.to_string(),
+            }),
+            object_depth: 0,
+            struct_name_stack: Vec::new(),
+        }
+    }
+
+    fn current_object_struct_name(&self) -> Option<String>
+    {
+        if !object_depth_allows_struct(self.object_depth) {
+            return None;
+        }
+        if self.type_path.last().is_some_and(|s| s == "elements") && self.struct_name_stack.is_empty() {
+            if let Some(ObjectNaming::SchemaColumn { table, column }) = &self.naming {
+                return Some(format!("{}Element", schema_column_object_struct_name(table, column)));
+            }
+            if let Some(ObjectNaming::FunctionParam { module, export, param }) = &self.naming {
+                let stem = function_args_struct_stem(module, export);
+                return Some(format!(
+                    "{stem}{}Element",
+                    crate::convex::utils::capitalize_first_letter(param)
+                ));
+            }
+        }
+        if let Some(parent) = self.struct_name_stack.last() {
+            let field = self.type_path.last()?;
+            return Some(nested_object_struct_name(parent, field));
+        }
+        match &self.naming {
+            Some(ObjectNaming::SchemaColumn { table, column }) => Some(schema_column_object_struct_name(table, column)),
+            Some(ObjectNaming::FunctionParam { module, export, param }) => {
+                let stem = function_args_struct_stem(module, export);
+                Some(format!("{stem}{}", crate::convex::utils::capitalize_first_letter(param)))
+            }
+            None => None,
         }
     }
 
@@ -541,7 +635,7 @@ pub(crate) fn parse_function_ast(ast_map: BTreeMap<String, JsonValue>) -> Result
                                 && let Some(config) = args.first()
                             {
                                 // Extract function parameters from the args property
-                                let params = extract_function_params(config, &file_name)?;
+                                let params = extract_function_params(config, &file_name, name)?;
 
                                 convex_functions.push(ConvexFunction {
                                     name: name.to_string(),
@@ -567,8 +661,11 @@ fn is_estree_object_property_like(node: &JsonValue) -> bool
 }
 
 /// Helper function to extract function parameters from the function configuration
-fn extract_function_params(config: &JsonValue, file_name: &str)
--> Result<Vec<ConvexFunctionParam>, ConvexTypeGeneratorError>
+fn extract_function_params(
+    config: &JsonValue,
+    file_name: &str,
+    export_name: &str,
+) -> Result<Vec<ConvexFunctionParam>, ConvexTypeGeneratorError>
 {
     let mut params = Vec::new();
 
@@ -609,7 +706,7 @@ fn extract_function_params(config: &JsonValue, file_name: &str)
                                 })?;
 
                         // Get parameter type using the same extraction logic as schema
-                        let mut context = TypeContext::new(format!("function_{}", param_name));
+                        let mut context = TypeContext::for_function_param(file_name, export_name, param_name);
                         let param_type = extract_column_type(arg_prop, &mut context)?;
 
                         params.push(ConvexFunctionParam {
@@ -964,7 +1061,7 @@ mod extract_function_params_tests
                 "value": { "type": "ArrowFunctionExpression" }
             }]
         });
-        assert!(extract_function_params(&config, "f").unwrap().is_empty());
+        assert!(extract_function_params(&config, "f", "fn").unwrap().is_empty());
     }
 
     #[test]
@@ -978,7 +1075,7 @@ mod extract_function_params_tests
                 "value": { "type": "Identifier", "name": "sharedArgs" }
             }]
         });
-        let err = extract_function_params(&config, "f").unwrap_err();
+        let err = extract_function_params(&config, "f", "fn").unwrap_err();
         assert!(
             matches!(err, ConvexTypeGeneratorError::InvalidSchema { ref details, .. } if details == "Function args must be an object")
         );

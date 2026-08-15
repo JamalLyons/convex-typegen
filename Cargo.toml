@@ -1,6 +1,6 @@
 [package]
 name = "convex-typegen"
-version = "0.3.0"
+version = "0.4.0"
 description = "Type safe bindings for ConvexDB in Rust"
 authors = ["Jamal Lyons"]
 license = "MIT"

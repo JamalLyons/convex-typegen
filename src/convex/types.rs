@@ -1,8 +1,8 @@
 //! Intermediate representation between [`crate::convex::parser`] and [`crate::convex::codegen`].
 //!
 //! Table and function metadata are strongly typed; **column / parameter validators** stay as
-//! [`serde_json::Value`] trees with a `"type"` string discriminator. That mirrors Convex’s nested
-//! `v.*` calls without maintaining a parallel Rust enum that would need updating for every edge case.
+//! [`serde_json::Value`] trees with a `"type"` string discriminator and optional `"structName"` on
+//! `v.object`. See [`crate::convex::validator::ConvexValidator`] for the typed IR used in codegen dedupe.
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;

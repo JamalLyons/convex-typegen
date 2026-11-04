@@ -1,0 +1,16 @@
+---
+source: src/convex/parser/validator_tests.rs
+expression: snapshot
+---
+admin/users:list Query Public args=declared[] returns=declared
+admin/users:echo Query Public args=declared[data] returns=declared
+admin/users:add Mutation Public args=declared[text] returns=declared
+admin/users:docs Query Public args=declared[] returns=declared
+admin/users:fail Action Public args=declared[] returns=declared
+admin/users:hiddenQuery Query Internal args=declared[] returns=declared
+admin/users:hiddenMutation Mutation Internal args=declared[] returns=declared
+admin/users:hiddenAction Action Internal args=declared[] returns=declared
+admin/users:ping Action Public args=declared[] returns=declared
+users:list Query Public args=unknown returns=unknown
+users:optional Query Public args=declared[root,nested] returns=declared
+users:number Query Public args=declared[value] returns=declared

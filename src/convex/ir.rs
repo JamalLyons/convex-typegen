@@ -86,6 +86,7 @@ pub(crate) enum FunctionKind
     Query,
     Mutation,
     Action,
+    #[allow(dead_code)]
     Unknown,
 }
 
@@ -94,6 +95,7 @@ pub(crate) enum Visibility
 {
     Public,
     Internal,
+    #[allow(dead_code)]
     Unknown,
 }
 

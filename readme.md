@@ -71,7 +71,10 @@ Identical shapes under the same name are reused; conflicting shapes under the sa
 
 Paths are relative to the package directory when Cargo runs the build script.
 
-Function sources: every `*.ts` under `convex_dir`, except the schema file, `_generated/`, `node_modules/`, and `*.d.ts`. Set `function_paths` to a non-empty list to skip discovery and pass files explicitly.
+Function sources: every `*.ts` under `convex_dir`, except the schema file, `_generated/`,
+`node_modules/`, reserved modules (`http.ts`, `crons.ts`, `convex.config.ts`), and `*.d.ts`.
+Relative imports of endpoint modules are included for Cargo invalidation. Set `function_paths` to a
+non-empty list to skip directory discovery and pass files explicitly.
 
 To use committed output from `npx convex function-spec` as the complete function inventory:
 

@@ -12,10 +12,10 @@
 
 use crate::config::Configuration;
 use crate::convex::codegen::run_codegen;
+use crate::convex::create_function_asts;
 use crate::convex::ir::GenerationIr;
-use crate::convex::parser::{parse_function_ast, parse_schema_ast};
+use crate::convex::parser::{parse_function_ast, parse_schema_ast_with_modules};
 use crate::convex::spec::parse_function_spec;
-use crate::convex::{create_function_asts, create_schema_ast};
 use crate::error::ConvexTypeGeneratorError;
 use crate::fs::rcfp;
 
@@ -50,7 +50,11 @@ pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError>
             error: e,
         })?;
 
-    let schema_ast = create_schema_ast(&schema_path)?;
+    let schema_modules = create_function_asts(vec![schema_path.clone()])?;
+    let schema_ast = schema_modules
+        .get(schema_path.to_string_lossy().as_ref())
+        .cloned()
+        .ok_or_else(|| ConvexTypeGeneratorError::InvalidPath(schema_path.to_string_lossy().into_owned()))?;
     let convex_root = config.convex_dir.canonicalize().ok();
     let functions = if let Some(spec_path) = &config.function_spec_path {
         parse_function_spec(spec_path)?
@@ -60,7 +64,7 @@ pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError>
         parse_function_ast(function_asts, convex_root.as_deref())?
     };
     let ir = GenerationIr {
-        schema: parse_schema_ast(schema_ast, &schema_path)?,
+        schema: parse_schema_ast_with_modules(schema_ast, &schema_path, Some(&schema_modules))?,
         functions,
     };
     run_codegen(&config.out_file, &ir)?;

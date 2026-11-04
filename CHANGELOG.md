@@ -4,12 +4,6 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Changed
-
-- Route generation through a source-neutral typed IR containing validator trees, table document
-  fields and presence, canonical function identity, kind and visibility, declared/unknown metadata,
-  and source provenance with optional Oxc spans. Existing generated output remains stable.
-
 ### Added
 
 - Direct Serde conversion to and from `convex::Value` via `value_serde::{to_value, from_value}`. It
@@ -24,6 +18,10 @@ All notable changes to this project will be documented in this file.
 
 - **Breaking:** `ConvexClientExt::prepare_args` serializes generated args directly to `convex::Value` and returns `ConvexValueSerdeError`. Generated `TryFrom<Args> for BTreeMap<String, serde_json::Value>` implementations were removed.
 - **Breaking:** Removed the lossy `IntoConvexValue` and `ConvexValueExt` APIs and the `ConvexJsonError` prelude alias. Generated `v.bytes()` fields now use `ConvexBytes` so they serialize as Convex byte strings.
+
+- Route offline generation through a single typed model for schemas, validators, and functions.
+  Preserve source locations, canonical function identity, and known return metadata for future
+  codegen while retaining the current generated names and types.
 
 ### Fixed
 

@@ -1,4 +1,4 @@
-//! Walk ESTree JSON from [`crate::convex::lexer`] into [`crate::convex::types`].
+//! Walk ESTree JSON from [`crate::convex::lexer`] into [`crate::convex::ir`].
 //!
 //! ## Schema
 //!
@@ -12,23 +12,19 @@
 //! Looks for `export const name = query({ args: { ... } })` (also `mutation` / `action`). Argument
 //! shapes reuse the same recursive extractor as schema columns so validator composition stays
 //! consistent.
-//!
-//! ## Cycles
-//!
-//! `v.object` nesting is tracked to catch self-referential object shapes; other wrappers (`array`,
-//! `optional`, …) participate in recursion for validation but only `object` participates in the
-//! stack used to detect cycles (see [`TypeContext`]).
-
 use std::collections::BTreeMap;
-use std::path::PathBuf;
+use std::path::Path;
 
-use serde_json::{Value as JsonValue, json};
+use serde_json::Value as JsonValue;
 
-use crate::convex::types::{ConvexColumn, ConvexFunction, ConvexFunctionParam, ConvexFunctions, ConvexSchema, ConvexTable};
+use crate::convex::ir::{
+    Declared, Field, Function, FunctionIdentity, FunctionKind, Provenance, ReturnValidator, Schema, SourceSpan,
+    TableDocument, Visibility,
+};
 use crate::convex::utils::{
     function_args_struct_stem, nested_object_struct_name, object_depth_allows_struct, schema_column_object_struct_name,
-    validate_type_name,
 };
+use crate::convex::validator::{ConvexValidator as Validator, Literal};
 use crate::error::ConvexTypeGeneratorError;
 
 /// Convex `v.*` validator names we know how to map (must stay in sync with schema reference docs).
@@ -88,8 +84,9 @@ fn peel_to_define_table_call<'a>(expr: &'a JsonValue, table_name: &str) -> Resul
 }
 
 /// Extract tables and columns from a schema program JSON value.
-pub(crate) fn parse_schema_ast(ast: JsonValue) -> Result<ConvexSchema, ConvexTypeGeneratorError>
+pub(crate) fn parse_schema_ast(ast: JsonValue, source: &Path) -> Result<Schema, ConvexTypeGeneratorError>
 {
+    let source = source.to_string_lossy();
     let context = "root";
     // Get the body array
     let body = ast["body"]
@@ -169,21 +166,26 @@ pub(crate) fn parse_schema_ast(ast: JsonValue) -> Result<ConvexSchema, ConvexTyp
 
             // Get column type by looking at the property chain
             let mut context = TypeContext::for_schema_column(table_name, column_name);
-            let column_type = extract_column_type(column_prop, &mut context)?;
+            let validator = parse_validator(&column_prop["value"], &mut context)?;
 
-            columns.push(ConvexColumn {
+            columns.push(Field {
                 name: column_name.to_string(),
-                data_type: column_type,
+                validator,
+                provenance: provenance(&source, column_prop),
             });
         }
 
-        tables.push(ConvexTable {
+        tables.push(TableDocument {
             name: table_name.to_string(),
-            columns,
+            fields: columns,
+            provenance: provenance(&source, table_prop),
         });
     }
 
-    Ok(ConvexSchema { tables })
+    Ok(Schema {
+        tables,
+        provenance: provenance(&source, define_schema),
+    })
 }
 
 /// Helper function to find the defineSchema call in the AST
@@ -217,157 +219,135 @@ fn find_define_schema(body: &[JsonValue]) -> Option<&JsonValue>
     None
 }
 
-/// Helper function to extract the column type from a column property
-fn extract_column_type(column_prop: &JsonValue, context: &mut TypeContext) -> Result<JsonValue, ConvexTypeGeneratorError>
+fn provenance(source: &str, node: &JsonValue) -> Provenance
 {
-    let value = &column_prop["value"];
-    let callee = &value["callee"];
+    let offset = |key: &str| node[key].as_u64().and_then(|offset| u32::try_from(offset).ok());
+    let span = offset("start")
+        .zip(offset("end"))
+        .map(|(start, end)| SourceSpan { start, end });
+    Provenance {
+        source: source.to_string(),
+        span,
+    }
+}
 
-    let type_name = callee["property"]["name"]
+/// Interpret an ESTree validator expression directly as a typed validator.
+fn parse_validator(value: &JsonValue, context: &mut TypeContext) -> Result<Validator, ConvexTypeGeneratorError>
+{
+    let type_name = value["callee"]["property"]["name"]
         .as_str()
         .ok_or_else(|| ConvexTypeGeneratorError::InvalidSchema {
             context: context.get_error_context(),
             details: "Invalid column type".to_string(),
         })?;
+    let args = value["arguments"].as_array().map_or(&[][..], Vec::as_slice);
 
-    // Validate the type name
-    validate_type_name(type_name)?;
-
-    let binding = Vec::new();
-    let args = value["arguments"].as_array().unwrap_or(&binding);
-
-    let mut type_obj = serde_json::Map::new();
-    type_obj.insert("type".to_string(), JsonValue::String(type_name.to_string()));
-
-    // Handle nested types
-    match type_name {
+    Ok(match type_name {
+        "string" => Validator::String,
+        "number" => Validator::Number,
+        "boolean" => Validator::Boolean,
+        "null" => Validator::Null,
+        "int64" => Validator::Int64,
+        "bytes" => Validator::Bytes,
+        "any" => Validator::Any,
+        "id" => Validator::Id(args.first().and_then(|node| node["value"].as_str()).map(str::to_string)),
+        "literal" => Validator::Literal(args.first().and_then(parse_literal)),
         "optional" => {
-            // For optional types, recursively parse the inner type
-            if let Some(inner_type) = args.first() {
-                let inner_type_prop = json!({
-                    "key": { "name": "inner" },
-                    "value": inner_type
-                });
-                context.type_path.push("inner".to_string());
-                let parsed_inner_type = extract_column_type(&inner_type_prop, context)?;
-                context.type_path.pop();
-                type_obj.insert("inner".to_string(), parsed_inner_type);
-            } else {
-                return Err(ConvexTypeGeneratorError::InvalidSchema {
-                    context: context.type_path.join("."),
-                    details: "Optional type must have an inner type".to_string(),
-                });
-            }
+            let inner = args.first().ok_or_else(|| ConvexTypeGeneratorError::InvalidSchema {
+                context: context.type_path.join("."),
+                details: "Optional type must have an inner type".to_string(),
+            })?;
+            context.type_path.push("inner".to_string());
+            let inner = parse_validator(inner, context)?;
+            context.type_path.pop();
+            Validator::Optional(Box::new(inner))
         }
         "array" => {
-            // For arrays, recursively parse the element type
-            if let Some(element_type) = args.first() {
-                let element_type_prop = json!({
-                    "key": { "name": "element" },
-                    "value": element_type
-                });
-                context.type_path.push("elements".to_string());
-                let parsed_element_type = extract_column_type(&element_type_prop, context)?;
-                context.type_path.pop();
-                type_obj.insert("elements".to_string(), parsed_element_type);
-            }
+            context.type_path.push("elements".to_string());
+            let elements = args.first().map(|arg| parse_validator(arg, context)).transpose()?;
+            context.type_path.pop();
+            Validator::Array(Box::new(elements.unwrap_or(Validator::Unknown)))
         }
         "object" => {
             context.object_depth += 1;
-            let this_struct = context.current_object_struct_name();
-            if let Some(ref name) = this_struct {
+            let struct_name = context.current_object_struct_name();
+            if let Some(name) = &struct_name {
                 context.struct_name_stack.push(name.clone());
             }
 
-            if let Some(obj_def) = args.first()
-                && let Some(properties) = obj_def["properties"].as_array()
-            {
-                let mut prop_types = serde_json::Map::new();
-
-                for prop in properties {
-                    let prop_name = prop["key"]["name"]
+            let properties = if let Some(props) = args.first().and_then(|arg| arg["properties"].as_array()) {
+                let mut properties = BTreeMap::new();
+                for prop in props {
+                    let name = prop["key"]["name"]
                         .as_str()
                         .ok_or_else(|| ConvexTypeGeneratorError::InvalidSchema {
                             context: context.type_path.join("."),
                             details: "Invalid object property name".to_string(),
                         })?;
-
-                    context.type_path.push(prop_name.to_string());
-                    let prop_type = extract_column_type(prop, context)?;
+                    context.type_path.push(name.to_string());
+                    let validator = parse_validator(&prop["value"], context)?;
                     context.type_path.pop();
-                    prop_types.insert(prop_name.to_string(), prop_type);
+                    properties.insert(name.to_string(), validator);
                 }
+                Some(properties)
+            } else {
+                None
+            };
 
-                let has_props = !prop_types.is_empty();
-                type_obj.insert("properties".to_string(), JsonValue::Object(prop_types));
-
-                if let Some(ref struct_name) = this_struct
-                    && has_props
-                    && object_depth_allows_struct(context.object_depth)
-                {
-                    type_obj.insert("structName".to_string(), JsonValue::String(struct_name.clone()));
-                }
-            }
-
-            if this_struct.is_some() {
+            if struct_name.is_some() {
                 context.struct_name_stack.pop();
             }
             context.object_depth -= 1;
+            Validator::Object {
+                struct_name: struct_name.filter(|_| properties.as_ref().is_some_and(|props| !props.is_empty())),
+                properties,
+            }
         }
         "record" => {
-            // For records, parse both key and value types
-            if args.len() >= 2 {
-                // First argument is the key type
-                let key_type_prop = json!({
-                    "key": { "name": "key" },
-                    "value": args[0]
-                });
-                let key_type = extract_column_type(&key_type_prop, context)?;
-                type_obj.insert("keyType".to_string(), key_type);
-
-                // Second argument is the value type
-                let value_type_prop = json!({
-                    "key": { "name": "value" },
-                    "value": args[1]
-                });
-                let value_type = extract_column_type(&value_type_prop, context)?;
-                type_obj.insert("valueType".to_string(), value_type);
+            let (key_type, value_type) = if let [key, value, ..] = args {
+                (parse_validator(key, context)?, parse_validator(value, context)?)
+            } else {
+                (Validator::Unknown, Validator::Unknown)
+            };
+            Validator::Record {
+                key_type: Box::new(key_type),
+                value_type: Box::new(value_type),
             }
         }
-        "union" => {
-            // For unions, parse all variant types
-            let mut variants = Vec::new();
-            for variant in args {
-                let variant_prop = json!({
-                    "key": { "name": "variant" },
-                    "value": variant
-                });
-                let variant_type = extract_column_type(&variant_prop, context)?;
-                variants.push(variant_type);
-            }
-            type_obj.insert("variants".to_string(), JsonValue::Array(variants));
-        }
-        "literal" => {
-            // For literals, store the literal value
-            if let Some(literal_value) = args.first() {
-                type_obj.insert("value".to_string(), literal_value.clone());
-            }
-        }
-        // For other types, just include their arguments if any
+        "union" => Validator::Union(
+            args.iter()
+                .map(|arg| parse_validator(arg, context))
+                .collect::<Result<_, _>>()?,
+        ),
         _ => {
-            if !args.is_empty() {
-                type_obj.insert("arguments".to_string(), JsonValue::Array(args.to_vec()));
-            }
+            return Err(ConvexTypeGeneratorError::InvalidType {
+                found: type_name.to_string(),
+                valid_types: VALID_CONVEX_TYPES.iter().map(|&name| name.to_string()).collect(),
+            });
         }
+    })
+}
+
+fn parse_literal(node: &JsonValue) -> Option<Literal>
+{
+    let negative = node["type"] == "UnaryExpression" && node["operator"] == "-";
+    let node = if negative { &node["argument"] } else { node };
+    if node["type"] != "Literal" || node.get("regex").is_some() {
+        return None;
     }
-
-    // Build the type object as before...
-    let type_value = JsonValue::Object(type_obj);
-
-    // Check for circular references
-    check_circular_references(&type_value, context)?;
-
-    Ok(type_value)
+    if let Some(bigint) = node["bigint"].as_str() {
+        let bigint = if negative { format!("-{bigint}") } else { bigint.to_string() };
+        return bigint.parse().ok().map(Literal::Int64);
+    }
+    match node.get("value")? {
+        JsonValue::Number(value) => value
+            .as_f64()
+            .map(|value| Literal::Float64(if negative { -value } else { value })),
+        JsonValue::String(value) if !negative => Some(Literal::String(value.clone())),
+        JsonValue::Bool(value) if !negative => Some(Literal::Boolean(*value)),
+        JsonValue::Null if !negative => Some(Literal::Null),
+        _ => None,
+    }
 }
 
 /// How to name generated structs for `v.object` at the root of a walk.
@@ -384,15 +364,10 @@ enum ObjectNaming
     },
 }
 
-/// Parser-local state for nested `v.*` extraction and cycle detection.
-///
-/// `type_stack` tracks `object` nesting paths; other composite kinds recurse but only `object`
-/// participates in the “seen this path before?” cycle check.
+/// Parser-local state for validator context and generated object names.
 #[derive(Debug)]
 struct TypeContext
 {
-    /// `(discriminator, full_path)` for nested `v.object` walks.
-    type_stack: Vec<(String, String)>,
     /// Prefix for [`crate::error::ConvexTypeGeneratorError::InvalidSchema`] messages.
     file_name: String,
     /// Dot-separated path inside the validator tree (`inner`, `elements`, field names, …).
@@ -409,7 +384,6 @@ impl TypeContext
     {
         Self {
             file_name: format!("table_{table}.{column}"),
-            type_stack: Vec::new(),
             type_path: Vec::new(),
             naming: Some(ObjectNaming::SchemaColumn {
                 table: table.to_string(),
@@ -424,7 +398,6 @@ impl TypeContext
     {
         Self {
             file_name: format!("function_{module}.{export}.{param}"),
-            type_stack: Vec::new(),
             type_path: Vec::new(),
             naming: Some(ObjectNaming::FunctionParam {
                 module: module.to_string(),
@@ -467,129 +440,38 @@ impl TypeContext
         }
     }
 
-    fn push_type(&mut self, type_name: &str) -> Result<(), ConvexTypeGeneratorError>
-    {
-        let current_path = self.type_path.join(".");
-
-        // Only check for circular references in object types
-        // Arrays and other container types can be nested
-        if type_name == "object" {
-            let full_path = if current_path.is_empty() {
-                type_name.to_string()
-            } else {
-                format!("{}.{}", current_path, type_name)
-            };
-
-            // Check if this exact path has been seen before
-            if self.type_stack.iter().any(|(_, path)| path == &full_path) {
-                return Err(ConvexTypeGeneratorError::CircularReference {
-                    path: self.type_stack.iter().map(|(_, path)| path.clone()).collect(),
-                });
-            }
-            self.type_stack.push((type_name.to_string(), full_path));
-        }
-        Ok(())
-    }
-
-    /// Get the current context for error messages
+    /// Get the current context for error messages.
     fn get_error_context(&self) -> String
     {
         format!("{}:{}", self.file_name, self.type_path.join("."))
     }
-
-    /// Removes the most recently pushed type from the stack
-    fn pop_type(&mut self)
-    {
-        // Only pop if the last type was an object (matches push_type behavior)
-        if let Some((type_name, _)) = self.type_stack.last()
-            && type_name == "object"
-        {
-            self.type_stack.pop();
-        }
-    }
-}
-
-fn check_circular_references(type_obj: &JsonValue, context: &mut TypeContext) -> Result<(), ConvexTypeGeneratorError>
-{
-    let type_name = type_obj["type"]
-        .as_str()
-        .ok_or_else(|| ConvexTypeGeneratorError::InvalidSchema {
-            context: context.type_path.join("."),
-            details: "Missing type name".to_string(),
-        })?;
-
-    context.push_type(type_name)?;
-
-    match type_name {
-        "optional" => {
-            if let Some(inner) = type_obj.get("inner") {
-                context.type_path.push("inner".to_string());
-                check_circular_references(inner, context)?;
-                context.type_path.pop();
-            }
-        }
-        "array" => {
-            if let Some(elements) = type_obj.get("elements") {
-                context.type_path.push("elements".to_string());
-                check_circular_references(elements, context)?;
-                context.type_path.pop();
-            }
-        }
-        "object" => {
-            if let Some(properties) = type_obj.get("properties")
-                && let Some(props) = properties.as_object()
-            {
-                for (prop_name, prop_type) in props {
-                    context.type_path.push(prop_name.to_string());
-                    check_circular_references(prop_type, context)?;
-                    context.type_path.pop();
-                }
-            }
-        }
-        "record" => {
-            // Check key type
-            if let Some(key_type) = type_obj.get("keyType") {
-                context.type_path.push("keyType".to_string());
-                check_circular_references(key_type, context)?;
-                context.type_path.pop();
-            }
-            // Check value type
-            if let Some(value_type) = type_obj.get("valueType") {
-                context.type_path.push("valueType".to_string());
-                check_circular_references(value_type, context)?;
-                context.type_path.pop();
-            }
-        }
-        "union" | "intersection" => {
-            if let Some(variants) = type_obj["variants"].as_array() {
-                for (i, variant) in variants.iter().enumerate() {
-                    context.type_path.push(format!("variant_{}", i));
-                    check_circular_references(variant, context)?;
-                    context.type_path.pop();
-                }
-            }
-        }
-        _ => {} // Other types don't have nested types
-    }
-
-    context.pop_type();
-    Ok(())
 }
 
 /// Walk every module’s ESTree JSON and collect exported Convex endpoints.
-pub(crate) fn parse_function_ast(ast_map: BTreeMap<String, JsonValue>) -> Result<ConvexFunctions, ConvexTypeGeneratorError>
+pub(crate) fn parse_function_ast(
+    ast_map: BTreeMap<String, JsonValue>,
+    convex_root: Option<&Path>,
+) -> Result<Vec<Function>, ConvexTypeGeneratorError>
 {
     let mut convex_functions = Vec::new();
 
     for (source_path, ast) in ast_map {
-        let path_buf = PathBuf::from(&source_path);
-        let file_name = path_buf
+        let path = Path::new(&source_path);
+        let file_name = path
             .file_name()
             .ok_or_else(|| ConvexTypeGeneratorError::InvalidPath(source_path.clone()))?
             .to_str()
             .ok_or_else(|| ConvexTypeGeneratorError::InvalidUnicode(source_path.clone()))?;
         // Strip the .ts extension from the file name (Convex module path segment).
         let file_name = file_name.strip_suffix(".ts").unwrap_or(file_name).to_string();
+
+        let module = convex_root.and_then(|root| path.strip_prefix(root).ok()).map(|relative| {
+            relative
+                .with_extension("")
+                .iter()
+                .map(|segment| segment.to_string_lossy().into_owned())
+                .collect::<Vec<_>>()
+        });
 
         // Get the body array
         let body = ast["body"]
@@ -634,26 +516,27 @@ pub(crate) fn parse_function_ast(ast_map: BTreeMap<String, JsonValue>) -> Result
                             if let Some(args) = init["arguments"].as_array()
                                 && let Some(config) = args.first()
                             {
-                                // Extract function parameters from the args property
-                                let params = extract_function_params(config, &file_name, name)?;
-                                let args_declared = config["properties"].as_array().is_some_and(|properties| {
-                                    properties.iter().any(|prop| prop["key"]["name"].as_str() == Some("args"))
-                                });
+                                let (kind, visibility) = match fn_type {
+                                    "query" => (FunctionKind::Query, Visibility::Public),
+                                    "mutation" => (FunctionKind::Mutation, Visibility::Public),
+                                    "action" => (FunctionKind::Action, Visibility::Public),
+                                    "internalQuery" => (FunctionKind::Query, Visibility::Internal),
+                                    "internalMutation" => (FunctionKind::Mutation, Visibility::Internal),
+                                    "internalAction" => (FunctionKind::Action, Visibility::Internal),
+                                    _ => (FunctionKind::Unknown, Visibility::Unknown),
+                                };
 
-                                convex_functions.push(ConvexFunction {
-                                    name: name.to_string(),
-                                    params,
-                                    args_declared,
-                                    type_: fn_type.to_string(),
-                                    file_name: file_name.to_string(),
-                                    source_path: source_path.clone(),
-                                    span: match (init["start"].as_u64(), init["end"].as_u64()) {
-                                        (Some(start), Some(end)) => Some(crate::convex::ir::SourceSpan {
-                                            start: start as u32,
-                                            end: end as u32,
-                                        }),
-                                        _ => None,
+                                convex_functions.push(Function {
+                                    identity: FunctionIdentity {
+                                        module: module.clone(),
+                                        export: name.to_string(),
                                     },
+                                    legacy_module_name: file_name.clone(),
+                                    kind,
+                                    visibility,
+                                    args: extract_function_params(config, &file_name, name, &source_path)?,
+                                    returns: extract_return_validator(config, &source_path),
+                                    provenance: provenance(&source_path, init),
                                 });
                             }
                         }
@@ -677,7 +560,8 @@ fn extract_function_params(
     config: &JsonValue,
     file_name: &str,
     export_name: &str,
-) -> Result<Vec<ConvexFunctionParam>, ConvexTypeGeneratorError>
+    source: &str,
+) -> Result<Declared<Vec<Field>>, ConvexTypeGeneratorError>
 {
     let mut params = Vec::new();
 
@@ -719,20 +603,48 @@ fn extract_function_params(
 
                         // Get parameter type using the same extraction logic as schema
                         let mut context = TypeContext::for_function_param(file_name, export_name, param_name);
-                        let param_type = extract_column_type(arg_prop, &mut context)?;
+                        let validator = parse_validator(&arg_prop["value"], &mut context)?;
 
-                        params.push(ConvexFunctionParam {
+                        params.push(Field {
                             name: param_name.to_string(),
-                            data_type: param_type,
+                            validator,
+                            provenance: provenance(source, arg_prop),
                         });
                     }
                 }
-                break; // Found args object, no need to continue
+                return Ok(Declared::Declared(params));
             }
         }
     }
 
-    Ok(params)
+    Ok(Declared::Unknown)
+}
+
+/// Returns are optional metadata for the current emitter. Unresolved expressions are unknown.
+fn extract_return_validator(config: &JsonValue, source: &str) -> Declared<ReturnValidator>
+{
+    let Some(property) = config["properties"].as_array().and_then(|props| {
+        props
+            .iter()
+            .find(|prop| prop["computed"] != true && member_property_name(&prop["key"]) == Some("returns"))
+    }) else {
+        return Declared::Unknown;
+    };
+    let mut context = TypeContext {
+        file_name: source.to_string(),
+        type_path: Vec::new(),
+        naming: None,
+        object_depth: 0,
+        struct_name_stack: Vec::new(),
+    };
+    let value = &property["value"];
+    match parse_validator(value, &mut context) {
+        Ok(validator) => Declared::Declared(ReturnValidator {
+            validator,
+            provenance: provenance(source, value),
+        }),
+        Err(_) => Declared::Unknown,
+    }
 }
 
 #[cfg(test)]
@@ -754,9 +666,12 @@ mod is_estree_object_property_like_tests
 #[cfg(test)]
 mod parse_schema_ast_tests
 {
+    use std::path::Path;
+
     use serde_json::json;
 
     use super::parse_schema_ast;
+    use crate::convex::validator::ConvexValidator as Validator;
     use crate::error::ConvexTypeGeneratorError;
 
     fn v_member_call(type_name: &str, arguments: Vec<serde_json::Value>) -> serde_json::Value
@@ -845,7 +760,7 @@ mod parse_schema_ast_tests
     #[test]
     fn missing_body_errors()
     {
-        let err = parse_schema_ast(json!({})).unwrap_err();
+        let err = parse_schema_ast(json!({}), Path::new("schema.ts")).unwrap_err();
         assert!(
             matches!(err, ConvexTypeGeneratorError::InvalidSchema { ref details, .. } if details == "Missing body array")
         );
@@ -855,7 +770,7 @@ mod parse_schema_ast_tests
     fn missing_define_schema_errors()
     {
         let ast = json!({ "body": [{ "type": "EmptyStatement" }] });
-        let err = parse_schema_ast(ast).unwrap_err();
+        let err = parse_schema_ast(ast, Path::new("schema.ts")).unwrap_err();
         assert!(matches!(err, ConvexTypeGeneratorError::InvalidSchema { .. }));
     }
 
@@ -863,12 +778,12 @@ mod parse_schema_ast_tests
     fn parses_single_string_column()
     {
         let ast = export_default_define_schema(vec![table("users", vec![col("email", v_member_call("string", vec![]))])]);
-        let schema = parse_schema_ast(ast).unwrap();
+        let schema = parse_schema_ast(ast, Path::new("schema.ts")).unwrap();
         assert_eq!(schema.tables.len(), 1);
         assert_eq!(schema.tables[0].name, "users");
-        assert_eq!(schema.tables[0].columns.len(), 1);
-        assert_eq!(schema.tables[0].columns[0].name, "email");
-        assert_eq!(schema.tables[0].columns[0].data_type["type"], "string");
+        assert_eq!(schema.tables[0].fields.len(), 1);
+        assert_eq!(schema.tables[0].fields[0].name, "email");
+        assert_eq!(schema.tables[0].fields[0].validator, Validator::String);
     }
 
     #[test]
@@ -878,9 +793,9 @@ mod parse_schema_ast_tests
             "users",
             vec![col("email", v_member_call("string", vec![]))],
         )]);
-        let schema = parse_schema_ast(ast).unwrap();
-        assert_eq!(schema.tables[0].columns[0].name, "email");
-        assert_eq!(schema.tables[0].columns[0].data_type["type"], "string");
+        let schema = parse_schema_ast(ast, Path::new("schema.ts")).unwrap();
+        assert_eq!(schema.tables[0].fields[0].name, "email");
+        assert_eq!(schema.tables[0].fields[0].validator, Validator::String);
     }
 
     #[test]
@@ -890,10 +805,11 @@ mod parse_schema_ast_tests
             "t",
             vec![col("x", v_member_call("optional", vec![v_member_call("boolean", vec![])]))],
         )]);
-        let schema = parse_schema_ast(ast).unwrap();
-        let dt = &schema.tables[0].columns[0].data_type;
-        assert_eq!(dt["type"], "optional");
-        assert_eq!(dt["inner"]["type"], "boolean");
+        let schema = parse_schema_ast(ast, Path::new("schema.ts")).unwrap();
+        assert_eq!(
+            schema.tables[0].fields[0].validator,
+            Validator::Optional(Box::new(Validator::Boolean))
+        );
     }
 }
 
@@ -968,11 +884,11 @@ mod parse_function_ast_tests
         );
         let mut m = BTreeMap::new();
         m.insert("/x/api.ts".into(), ast);
-        let fns = parse_function_ast(m).unwrap();
+        let fns = parse_function_ast(m, None).unwrap();
         assert_eq!(fns.len(), 1);
-        assert_eq!(fns[0].name, "list");
-        assert_eq!(fns[0].params.len(), 1);
-        assert_eq!(fns[0].params[0].name, "limit");
+        assert_eq!(fns[0].identity.export, "list");
+        assert_eq!(fns[0].params().len(), 1);
+        assert_eq!(fns[0].params()[0].name, "limit");
     }
 
     #[test]
@@ -984,8 +900,8 @@ mod parse_function_ast_tests
         );
         let mut m = BTreeMap::new();
         m.insert("/y/z.ts".into(), ast);
-        let fns = parse_function_ast(m).unwrap();
-        assert_eq!(fns[0].params.len(), 1);
+        let fns = parse_function_ast(m, None).unwrap();
+        assert_eq!(fns[0].params().len(), 1);
     }
 
     #[test]
@@ -1000,7 +916,7 @@ mod parse_function_ast_tests
         );
         let mut m = BTreeMap::new();
         m.insert("/a/b.ts".into(), ast);
-        let err = parse_function_ast(m).unwrap_err();
+        let err = parse_function_ast(m, None).unwrap_err();
         assert!(matches!(err, ConvexTypeGeneratorError::InvalidSchema { .. }));
     }
 
@@ -1009,7 +925,7 @@ mod parse_function_ast_tests
     {
         let mut m = BTreeMap::new();
         m.insert("/p.ts".into(), json!({}));
-        let err = parse_function_ast(m).unwrap_err();
+        let err = parse_function_ast(m, None).unwrap_err();
         assert!(matches!(err, ConvexTypeGeneratorError::InvalidSchema { .. }));
     }
 }
@@ -1059,7 +975,7 @@ mod extract_function_params_tests
 {
     use serde_json::json;
 
-    use super::extract_function_params;
+    use super::{Declared, extract_function_params};
     use crate::error::ConvexTypeGeneratorError;
 
     #[test]
@@ -1073,7 +989,10 @@ mod extract_function_params_tests
                 "value": { "type": "ArrowFunctionExpression" }
             }]
         });
-        assert!(extract_function_params(&config, "f", "fn").unwrap().is_empty());
+        assert_eq!(
+            extract_function_params(&config, "f", "fn", "f.ts").unwrap(),
+            Declared::Unknown
+        );
     }
 
     #[test]
@@ -1087,9 +1006,98 @@ mod extract_function_params_tests
                 "value": { "type": "Identifier", "name": "sharedArgs" }
             }]
         });
-        let err = extract_function_params(&config, "f", "fn").unwrap_err();
+        let err = extract_function_params(&config, "f", "fn", "f.ts").unwrap_err();
         assert!(
             matches!(err, ConvexTypeGeneratorError::InvalidSchema { ref details, .. } if details == "Function args must be an object")
         );
+    }
+}
+
+#[cfg(test)]
+mod oxc_ir_tests
+{
+    use std::fs;
+
+    use tempfile::tempdir;
+
+    use super::{parse_function_ast, parse_schema_ast};
+    use crate::convex::ir::{Declared, FieldPresence, FunctionKind, Provenance, Visibility};
+    use crate::convex::validator::{ConvexValidator as Validator, Literal};
+    use crate::convex::{create_function_asts, create_schema_ast};
+
+    fn source_excerpt<'a>(text: &'a str, provenance: &Provenance) -> &'a str
+    {
+        let span = provenance.span.expect("Oxc provides a byte span");
+        &text[span.start as usize..span.end as usize]
+    }
+
+    #[test]
+    fn oxc_preserves_identity_validators_and_provenance()
+    {
+        let dir = tempdir().unwrap();
+        let root = dir.path().canonicalize().unwrap();
+        let schema_path = root.join("schema.ts");
+        let module_path = root.join("admin/users.ts");
+        fs::create_dir(root.join("admin")).unwrap();
+        let schema_source = "export default defineSchema({ users: defineTable({ team: v.optional(v.id(\"teams\")) }) });";
+        let function_source = r#"
+            export const list = internalQuery({
+                args: { limit: v.optional(v.number()) },
+                returns: v.union(v.any(), v.literal(-9223372036854775808n), v.literal("none")),
+            });
+            export const empty = query({ args: {}, returns: v.any() });
+            export const absent = query({ handler: () => null });
+            export const unresolved = action({ returns: sharedValidator });
+        "#;
+        fs::write(&schema_path, schema_source).unwrap();
+        fs::write(&module_path, function_source).unwrap();
+
+        let schema = parse_schema_ast(create_schema_ast(&schema_path).unwrap(), &schema_path).unwrap();
+        let table = &schema.tables[0];
+        let field = &table.fields[0];
+        assert_eq!(field.presence(), FieldPresence::Optional);
+        assert_eq!(
+            field.validator,
+            Validator::Optional(Box::new(Validator::Id(Some("teams".into()))))
+        );
+        assert_eq!(schema.provenance.source, schema_path.to_str().unwrap());
+        assert!(source_excerpt(schema_source, &schema.provenance).starts_with("defineSchema("));
+        assert!(source_excerpt(schema_source, &table.provenance).starts_with("users: defineTable("));
+        assert_eq!(
+            source_excerpt(schema_source, &field.provenance),
+            "team: v.optional(v.id(\"teams\"))"
+        );
+
+        let functions = parse_function_ast(create_function_asts(vec![module_path.clone()]).unwrap(), Some(&root)).unwrap();
+        let [list, empty, absent, unresolved] = functions.as_slice() else {
+            panic!("expected four functions, got {functions:?}");
+        };
+        assert_eq!(list.identity.module, Some(vec!["admin".into(), "users".into()]));
+        assert_eq!(list.identity.export, "list");
+        assert_eq!(list.kind, FunctionKind::Query);
+        assert_eq!(list.visibility, Visibility::Internal);
+        assert_eq!(list.provenance.source, module_path.to_str().unwrap());
+        assert!(source_excerpt(function_source, &list.provenance).starts_with("internalQuery("));
+        assert_eq!(
+            source_excerpt(function_source, &list.params()[0].provenance),
+            "limit: v.optional(v.number())"
+        );
+        let Declared::Declared(returns) = &list.returns else {
+            panic!("expected a declared return validator");
+        };
+        assert_eq!(
+            returns.validator,
+            Validator::Union(vec![
+                Validator::Any,
+                Validator::Literal(Some(Literal::Int64(i64::MIN))),
+                Validator::Literal(Some(Literal::String("none".into()))),
+            ])
+        );
+        assert!(source_excerpt(function_source, &returns.provenance).starts_with("v.union("));
+        assert_eq!(empty.args, Declared::Declared(vec![]));
+        assert!(matches!(empty.returns, Declared::Declared(ref returns) if returns.validator == Validator::Any));
+        assert_eq!(absent.args, Declared::Unknown);
+        assert_eq!(absent.returns, Declared::Unknown);
+        assert_eq!(unresolved.returns, Declared::Unknown);
     }
 }

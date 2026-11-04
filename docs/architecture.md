@@ -25,7 +25,7 @@ flowchart LR
   end
   subgraph model [Structured model]
     P[parser]
-    T[types IR]
+    T[typed IR]
   end
   subgraph emit [Emit Rust]
     C[codegen]
@@ -45,9 +45,9 @@ flowchart LR
 4. **`convex::create_function_asts`** — Many files: each path is canonicalized; ASTs are stored in a **`BTreeMap<String, JsonValue>`** keyed by **canonical path string** (stable iteration order, no basename collisions between `convex/a/foo.ts` and `convex/b/foo.ts`).
 5. **`parser::parse_schema_ast`** / **`parser::parse_function_ast`** — Oxc/ESTree adapter that interprets Convex syntax.
 6. **`ir::GenerationIr`** — Source-neutral typed model: validator trees, canonical module path + export identity, function kind/visibility, explicit declared/unknown metadata, field presence, and source provenance with optional offsets.
-7. **`codegen::run_codegen`** — Receives `GenerationIr`; a single compatibility lowering keeps the existing emitter output stable while other source adapters are added.
+7. **`codegen::run_codegen`** — Matches on `GenerationIr` directly and writes generated Rust.
 
-Errors are unified as **`error::ConvexTypeGeneratorError`** (IO, Oxc parse/semantic failures, invalid schema shape, circular `v.object` patterns, invalid `v.*` names, etc.).
+Errors are unified as **`error::ConvexTypeGeneratorError`** (IO, Oxc parse/semantic failures, invalid schema shape, invalid `v.*` names, etc.).
 
 ---
 
@@ -59,13 +59,13 @@ Errors are unified as **`error::ConvexTypeGeneratorError`** (IO, Oxc parse/seman
 | Config | `src/config.rs` | `Configuration` defaults |
 | Discovery | `src/fs.rs` | `rcfp`, walk `convex/**/*.ts`, skip schema / `_generated` / `node_modules` / `*.d.ts` |
 | TS → JSON AST | `src/convex/lexer.rs` | Oxc parse + semantic check → `to_estree_ts_json` → `serde_json::Value` |
-| ESTree → IR | `src/convex/parser.rs` | `defineSchema` / `defineTable` / `v.*`; exported `query` / `mutation` / `action` + `args` |
-| IR types | `src/convex/types.rs` | `ConvexSchema`, `ConvexTable`, `ConvexColumn`, `ConvexFunction`, … |
-| Naming | `src/convex/utils.rs` | `capitalize_first_letter`, `to_pascal_case`, `validate_type_name` vs `VALID_CONVEX_TYPES`, nested object struct names |
-| Validator IR | `src/convex/validator.rs` | `ConvexValidator`, `structName` / nesting depth cap for named objects |
+| ESTree → IR | `src/convex/parser.rs` | Schema and function extraction, including inline argument and return validators |
+| IR types | `src/convex/ir.rs` | Schema, table documents, fields, functions, and provenance |
+| Naming | `src/convex/utils.rs` | `capitalize_first_letter`, `to_pascal_case`, nested object struct names |
+| Validator IR | `src/convex/validator.rs` | `ConvexValidator`, typed literal values, and the nesting depth cap for named objects |
 | Oxc AST spike | `src/convex/ast.rs` | Direct `Program` walks for future JSON-path replacement (not on the production path) |
 | Rust text | `src/convex/codegen.rs` | Named object structs, tables, union enums, and Serde-enabled `*Args` structs |
-| Client glue | `src/convex/mod.rs` | `ConvexClientExt`; `create_schema_ast`, `create_function_asts` |
+| Source loading | `src/convex/mod.rs` | `create_schema_ast`, `create_function_asts` |
 
 ---
 
@@ -73,7 +73,7 @@ Errors are unified as **`error::ConvexTypeGeneratorError`** (IO, Oxc parse/seman
 
 ### Why Oxc and not `tsc`?
 
-The build must be **self-contained in Rust**: Oxc parses TypeScript/TSX, runs semantic checks, and can serialize the program to **ESTree-compatible JSON**. That JSON is what the rest of the crate consumes.
+The build must be **self-contained in Rust**: Oxc parses TypeScript/TSX, runs semantic checks, and can serialize the program to **ESTree-compatible JSON**. The ESTree adapter consumes that JSON.
 
 ### Steps in `generate_javascript_ast`
 
@@ -113,28 +113,21 @@ The parser does **not** use a typed ESTree crate. It uses **ad hoc `serde_json::
   - The code reads **`value.callee.property.name`** as the Convex validator name (e.g. `string`, `optional`, `union`).
   - That name must be in **`VALID_CONVEX_TYPES`** or you get `InvalidType`.
 
-**Normalized column / param type (`data_type`)**
-
-Instead of a Rust enum per `v.*` variant, the parser builds a **small JSON object** per column/parameter:
-
-- Always includes `"type": "<validator>"` (e.g. `"string"`, `"optional"`, `"union"`).
-- Nested validators become nested keys: e.g. `"optional"` → `"inner"`, `"array"` → `"elements"`, `"object"` → `"properties"` map, `"record"` → `"keyType"` / `"valueType"`, `"union"` → `"variants"` array, `"literal"` → `"value"` payload.
-
-**Why JSON inside Rust structs?**
-
-- **Codegen** can pattern-match on `data_type["type"]` without a large hand-maintained mirror of every Convex validator edge case.
-- **Downside**: invalid shapes surface as logic errors or `InvalidSchema` rather than compile-time exhaustiveness. Adding a new Convex validator usually means: extend `VALID_CONVEX_TYPES`, teach `extract_column_type`, then teach `convex_type_to_rust_type` / function arg emission.
-
-**Cycles**
-
-- Recursive `v.object` graphs are checked (`check_circular_references` + `TypeContext`) so pathological schemas fail with `CircularReference` instead of blowing the stack or looping silently.
+The adapter builds a `ConvexValidator` tree directly from the validator call. The same parser
+handles schema fields, argument fields, and inline returns. It records literal values and ID table
+targets when it can read them from the expression. Nested object names carry hints for the current
+emitter.
 
 ### Functions (`parse_function_ast`)
 
-- Input: **`BTreeMap`** from `create_function_asts` (deterministic order).
-- Per file: take basename of path, strip `.ts` → Convex **module segment** (`file_name` field on `ConvexFunction`).
-- Walk `body` for **`ExportNamedDeclaration`** → **`VariableDeclaration`** → declarator `init` is **`CallExpression`** with callee **`query` | `mutation` | `action`** (identifier name).
-- First argument: config object; find property **`args`** whose value is an **`ObjectExpression`**. Each arg field is parsed with the **same `extract_column_type` pipeline** as schema columns.
+- The canonical source paths in the input `BTreeMap` give deterministic order. The adapter derives
+  each module path from its source path relative to the configured Convex root.
+- The parser walks exported variable declarations initialized by a call. It records query, mutation,
+  or action kind and public or internal visibility from the callee. Other callees retain unknown
+  kind and visibility under the existing discovery rules.
+- The first call argument is the config. A supported inline `args` object becomes ordered fields.
+  An inline `returns` validator is parsed as metadata for future consumers. Absent and unresolved
+  returns are unknown.
 
 **ESTree detail — `args` fields**
 
@@ -146,21 +139,21 @@ Most failures are **`InvalidSchema { context, details }`**. When extending the p
 
 ---
 
-## Phase 3 — Intermediate representation (`types.rs`)
+## Phase 3 — Intermediate representation (`ir.rs`, `validator.rs`)
 
 | Type | Role |
 |------|------|
-| `ConvexSchema` | `tables: Vec<ConvexTable>` |
-| `ConvexTable` | `name`, `columns` |
-| `ConvexColumn` | `name`, `data_type: JsonValue` — normalized `v.*` tree |
-| `ConvexFunction` | `name`, `params`, `type_` (`query` / …), `file_name` (module segment) |
-| `ConvexFunctionParam` | `name`, `data_type: JsonValue` |
-| `ConvexFunctions` | Type alias for `Vec<ConvexFunction>` |
-| `ConvexValidator` (`validator.rs`) | Typed `v.*` tree used for named-object hashing/dedupe; parser JSON remains the source of truth |
+| `GenerationIr` | Schema and ordered functions supplied to codegen |
+| `Schema`, `TableDocument` | Ordered tables and document fields |
+| `Field` | Name, validator, and provenance, with presence derived from the optional wrapper |
+| `Function` | Module and export identity, kind, visibility, argument and return metadata |
+| `ConvexValidator` | Recursive validator tree with typed literals and ID targets |
+| `Declared<T>` | Separates unknown metadata from known values such as an empty args object or `v.any()` |
+| `Provenance` | Source identifier and optional byte offsets for diagnostics |
 
-The Oxc/ESTree parser remains an input adapter. After parsing, production generation crosses into `GenerationIr`; validator information is held as `ConvexValidator` and JSON is produced only at the temporary compatibility boundary to the existing emitter. Function identity retains the full module path even while emitted names preserve the current basename behavior. Provenance includes the source path and optional Oxc offsets; sources without offsets represent their absence as `None`.
-
-`ConvexSchema` / `ConvexFunction` derive `Serialize`/`Deserialize` mainly for **tests** and potential tooling—not required for normal `generate`.
+Explicit function paths outside the configured Convex root have an unknown canonical module path.
+The emitter uses the legacy basename for generated args names and `FUNCTION_PATH`. Oxc provides
+byte spans for schemas, tables, fields, functions, parameters, and resolved returns.
 
 ---
 
@@ -173,17 +166,17 @@ The Oxc/ESTree parser remains an input adapter. After parsing, production genera
 
 ### Emission order (`run_codegen`)
 
-1. **`collect_named_structs` / `emit_named_struct_definitions`** — Two-pass: gather `v.object` shapes with `structName` from the parser, dedupe by name + field types, emit `pub struct` with serde derives first.
+1. **`collect_named_structs` / `emit_named_struct_definitions`** — Two-pass: gather `v.object` shapes with a `struct_name` hint from the parser, dedupe by name + field types, emit `pub struct` with serde derives first.
 2. **`generate_table_enums`** — For each column that is `v.union` (or `v.optional(v.union(...))`), emit a Rust `enum` **before** table structs so types are in scope.
 3. **`generate_table_code`** — `pub struct {Table}Table { ... }` with fields derived from `convex_type_to_rust_type`.
-4. **`generate_function_code`** — For each `ConvexFunction`, emit `{Module}{Export}Args` (see naming below), `FUNCTION_PATH`, and Serde derives. `ConvexClientExt::prepare_args` serializes those structs directly to Convex values. Duplicate qualified struct names return **`InvalidSchema`**.
+4. **`generate_function_code`** — For each `Function`, emit `{Module}{Export}Args` (see naming below), `FUNCTION_PATH`, and Serde derives. `ConvexClientExt::prepare_args` serializes those structs directly to Convex values. Duplicate qualified struct names return **`InvalidSchema`**.
 
 ### `convex_type_to_rust_type`
 
-Maps the **normalized JSON** from the parser to Rust type strings used in generated source:
+Maps typed `ConvexValidator` nodes to Rust type strings used in generated source:
 
 - Scalars: `string` → `String`, `number` → `f64`, `boolean` → `bool`, etc.
-- **`v.object`**: When the parser attached **`structName`**, emit that struct type. Otherwise, if all property types are identical, emit `BTreeMap<String, T>`; if heterogeneous or empty, emit **`ConvexJsonValue`**. Conflicting shapes under the same `structName` fail codegen with **`InvalidSchema`**.
+- **`v.object`**: When the parser attached **`struct_name`**, emit that struct type. Otherwise, if all property types are identical, emit `BTreeMap<String, T>`; if heterogeneous or empty, emit **`ConvexJsonValue`**. Conflicting shapes under the same `struct_name` fail codegen with **`InvalidSchema`**.
 - **`v.optional`**: `Option<...>`; if inner is **`union`** and table/field context is known, use generated enum name `{Table}Optional{Field}` for optional unions.
 - **`v.union`**: Enum name `{Table}{Field}` (see codegen module docs for collision avoidance).
 
@@ -231,7 +224,7 @@ args to the official **`convex`** crate at runtime.
 ## Testing strategy (for contributors)
 
 - **Unit tests** live next to modules under `#[cfg(test)]` and cover:
-  - Synthetic ESTree-shaped JSON for `parse_schema_ast` / `parse_function_ast`.
+  - Synthetic ESTree input and an Oxc-backed fixture that verifies spans and function metadata.
   - Lexer edge cases (empty file, invalid TS).
   - Codegen output (`prepare_args`-ready serde models, `convex_type_to_rust_type` cases).
 - **Integration tests** in `tests/golden_generate.rs` and `tests/build_script_smoke.rs` run the full pipeline in `tempfile` directories with inline TypeScript fixtures.

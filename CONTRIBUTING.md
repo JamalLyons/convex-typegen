@@ -2,6 +2,8 @@
 
 Thank you for your interest in contributing.
 
+The v1 target — a generated, fully typed function client — is [docs/v1-roadmap.md](docs/v1-roadmap.md). Coding agents should follow [AGENTS.md](AGENTS.md): read the roadmap, architecture, and semver policy first; test only against a local self-hosted Convex backend; keep `build.rs` offline; do not publish or merge.
+
 ## Development setup
 
 1. Install Rust (stable) and nightly (for `rustfmt` — see `toolchain.toml`).

@@ -14,6 +14,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **Breaking:** Use `convex-typegen` (Rust 1.95) as a build dependency and `convex-typegen-runtime` (Rust 1.85) as a normal dependency. The runtime now owns the client extension, value codecs, and generated-code Serde imports. The generator’s `client` feature and runtime re-exports were removed. Regenerate existing bindings with the matching release.
+
 - **Breaking:** `ConvexClientExt::prepare_args` serializes generated args directly to `convex::Value` and returns `ConvexValueSerdeError`. Generated `TryFrom<Args> for BTreeMap<String, serde_json::Value>` implementations were removed.
 - **Breaking:** Removed the lossy `IntoConvexValue` and `ConvexValueExt` APIs and the `ConvexJsonError` prelude alias. Generated `v.bytes()` fields now use `ConvexBytes` so they serialize as Convex byte strings.
 

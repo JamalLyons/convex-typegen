@@ -6,7 +6,7 @@ use std::io::{self, Write};
 use std::path::Path;
 
 use convex::{ConvexClient, Value as ConvexValue};
-use convex_typegen::prelude::*;
+use convex_typegen_runtime::prelude::*;
 use convex_types::{GamesGetGameArgs, GamesLossGameArgs, GamesWinGameArgs};
 use rand::Rng;
 

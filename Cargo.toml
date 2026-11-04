@@ -6,7 +6,7 @@ authors = ["Jamal Lyons"]
 license = "MIT"
 edition = "2024"
 rust-version = "1.95"
-exclude = ["examples/", ".github/"]
+exclude = ["examples/", ".github/", "runtime/"]
 
 # Documentation and repository links
 documentation = "https://docs.rs/convex-typegen"
@@ -23,14 +23,10 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["client"]
-# Runtime helpers for the official Convex Rust client (`ConvexClientExt`, etc.).
-client = ["dep:convex"]
 # Print Oxc parser/semantic diagnostics to stderr (in addition to `ParsingFailed::details`).
 verbose = []
 
 [dependencies]
-convex = { version = "0.10.4", optional = true }
 oxc = { version = "0.129.0", features = ["semantic", "serialize"], default-features = false }
 serde = { version = "1.0.228", features = ["std", "derive"], default-features = false }
 serde_json = "1.0.149"

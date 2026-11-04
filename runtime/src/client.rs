@@ -32,7 +32,7 @@ mod tests
     use serde::Serialize;
 
     use super::ConvexClientExt;
-    use crate::convex::value_serde::Bytes;
+    use crate::value_serde::Bytes;
 
     #[derive(Serialize)]
     struct Args

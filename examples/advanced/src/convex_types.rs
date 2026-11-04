@@ -6,24 +6,24 @@
 #![allow(non_snake_case)]
 #![allow(dead_code)]
 
-use convex_typegen::prelude::*;
+use convex_typegen_runtime::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen::serde")]
+#[serde(crate = "convex_typegen_runtime::serde")]
 pub struct IntegrationsMirrorFlags {
     pub trace: bool,
     pub verbose: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen::serde")]
+#[serde(crate = "convex_typegen_runtime::serde")]
 pub struct ProjectsSettings {
     pub notifyEmail: bool,
     pub theme: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen::serde")]
+#[serde(crate = "convex_typegen_runtime::serde")]
 pub struct TasksSearchFilter {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub minPriority: Option<ConvexJsonValue>,
@@ -92,7 +92,7 @@ pub struct TasksTable {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen::serde")]
+#[serde(crate = "convex_typegen_runtime::serde")]
 pub struct IntegrationsMirrorArgs {
     pub body: String,
     pub numbers: Vec<f64>,
@@ -107,7 +107,7 @@ impl IntegrationsMirrorArgs {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen::serde")]
+#[serde(crate = "convex_typegen_runtime::serde")]
 pub struct ProjectsListByTeamArgs {
     pub teamId: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -119,7 +119,7 @@ impl ProjectsListByTeamArgs {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen::serde")]
+#[serde(crate = "convex_typegen_runtime::serde")]
 pub struct ProjectsUpdateTagsArgs {
     pub projectId: String,
     pub tags: Vec<String>,
@@ -130,7 +130,7 @@ impl ProjectsUpdateTagsArgs {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen::serde")]
+#[serde(crate = "convex_typegen_runtime::serde")]
 pub struct TasksSearchArgs {
     pub filter: TasksSearchFilter,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -142,7 +142,7 @@ impl TasksSearchArgs {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen::serde")]
+#[serde(crate = "convex_typegen_runtime::serde")]
 pub struct TasksCreateArgs {
     pub projectId: String,
     pub title: String,
@@ -160,7 +160,7 @@ impl TasksCreateArgs {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen::serde")]
+#[serde(crate = "convex_typegen_runtime::serde")]
 pub struct TeamsListByOwnerArgs {
     pub ownerUserId: String,
 }
@@ -170,7 +170,7 @@ impl TeamsListByOwnerArgs {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen::serde")]
+#[serde(crate = "convex_typegen_runtime::serde")]
 pub struct TeamsCreateArgs {
     pub name: String,
     pub slug: String,
@@ -184,7 +184,7 @@ impl TeamsCreateArgs {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen::serde")]
+#[serde(crate = "convex_typegen_runtime::serde")]
 pub struct UsersGetByEmailArgs {
     pub email: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -196,7 +196,7 @@ impl UsersGetByEmailArgs {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen::serde")]
+#[serde(crate = "convex_typegen_runtime::serde")]
 pub struct UsersGetProfileArgs {
     pub userId: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -208,7 +208,7 @@ impl UsersGetProfileArgs {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen::serde")]
+#[serde(crate = "convex_typegen_runtime::serde")]
 pub struct UsersCreateArgs {
     pub email: String,
     pub displayName: String,
@@ -226,7 +226,7 @@ impl UsersCreateArgs {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen::serde")]
+#[serde(crate = "convex_typegen_runtime::serde")]
 pub struct WorkspaceSeedIfEmptyArgs {
 }
 
@@ -235,7 +235,7 @@ impl WorkspaceSeedIfEmptyArgs {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen::serde")]
+#[serde(crate = "convex_typegen_runtime::serde")]
 pub struct WorkspaceSummaryArgs {
 }
 

@@ -23,7 +23,7 @@ v1 closes that gap: the Rust side of the wire should be as typed as `api.*` is i
 
 **A generated, fully typed function client — the Rust equivalent of `api.*`.** This is decided.
 
-It is an extension over the official client. Auth, the builder, and the rest of `convex::ConvexClient` stay available. `ConvexClient` methods take `&mut self` and the client is `Clone`; the wrapper has to respect that. Today’s `ConvexClientExt` in `src/convex/client.rs` only prepares arguments.
+It is an extension over the official client. Auth, the builder, and the rest of `convex::ConvexClient` stay available. `ConvexClient` methods take `&mut self` and the client is `Clone`; the wrapper has to respect that. Today’s `ConvexClientExt` in `runtime/src/client.rs` only prepares arguments.
 
 The generated surface:
 
@@ -52,7 +52,7 @@ Sketch, meant to be improved. Names and method signatures are not frozen.
 
 These are what make the headline trustworthy. A workable order: value layer and coverage, then the IR and spec source, then the typed client, with local-backend tests as a gate throughout.
 
-- **Serde-correct value layer.** `Serializer` / `Deserializer` for `convex::Value`: exact int64 and float64, bytes, nested optionals omitted (Convex treats `v.optional` as absent, [validation](https://docs.convex.dev/functions/validation)), `Id<T>` newtypes, and serde on tables, unions, and literal enums. Replace the `serde_json` conversion in `src/convex/client.rs`.
+- **Serde-correct value layer.** `Serializer` / `Deserializer` for `convex::Value`: exact int64 and float64, bytes, nested optionals omitted (Convex treats `v.optional` as absent, [validation](https://docs.convex.dev/functions/validation)), `Id<T>` newtypes, and serde on tables, unions, and literal enums. The runtime already converts directly against `convex::Value`.
 - **Validator and function-discovery coverage.** The full `v.*` set ([values](https://docs.convex.dev/api/modules/values)), table-level unions, real module paths, public vs internal ([internal functions](https://docs.convex.dev/functions/internal-functions)), `returns`, and non-function files skipped with a warning.
 - **Spec-driven IR.** One neutral IR, fed by a committed [`npx convex function-spec`](https://docs.convex.dev/cli/reference/function-spec) JSON (canonical `module:name`, `functionType`, visibility, resolved `args` and `returns`) with the Oxc parser as the offline fallback. `build.rs` stays offline; a CLI or Just target refreshes the spec. Function-spec does not include table schemas, so `schema.ts` parsing remains until an official introspection path exists. Validators the deployment did not declare come back as `any`.
 - **Local-backend end-to-end testing.** CI boots the open-source backend ([self-hosting](https://docs.convex.dev/self-hosting), [testing](https://docs.convex.dev/testing/convex-backend)), deploys a fixture, regenerates, and runs the typed client (query, mutation, action, subscription). That is the v1 acceptance gate.
@@ -74,17 +74,15 @@ Checked against this tree (0.4.0). Items marked unverified have not been re-run 
 - [ ] `{Table}Table` structs and union enums derive only `Debug, Clone`: no serde, no `_id`, no `_creationTime`. `v.id(...)` maps to `String` (`convex_type_to_rust_type`). Fields keep their camelCase names under `#![allow(non_snake_case)]`. Named `v.object` structs and `*Args` do derive serde. A union in function args has no table context and becomes `ConvexJsonValue` (see `TasksSearchFilter.minPriority` in `examples/advanced/src/convex_types.rs`).
 - [ ] Optional args and named-object fields now emit `skip_serializing_if`; `Option<Option<T>>` encodes omitted vs explicit null. Table structs still do not derive Serde, and nested omission has not been rechecked on a live backend.
 - [x] Direct Serde conversion against `convex::Value` is available under `value_serde::{to_value, from_value}` and used by `ConvexClientExt::prepare_args`. It preserves int64/float64 wire kinds, non-finite floats, signed zero, bytes (`ConvexBytes`), and recursive values, with path-aware errors for unsupported values and overflow. The lossy JSON bridge was removed.
-- [ ] The default `client` feature depends on `convex` 0.10.4. That crate’s default feature is `native-tls-vendored` (tokio, tungstenite, vendored OpenSSL). `cargo add --build convex-typegen` pulls it into the build-script graph. Build-only use is `default-features = false`.
+- [x] `convex-typegen` is build-only and has no Convex client or TLS dependency. `convex-typegen-runtime` owns the codecs, Serde re-exports, and extension over the official client.
 - [ ] Tests are unit tests plus `tests/golden_generate.rs` and `tests/build_script_smoke.rs`. `.github/workflows/rust.yml` does not start a Convex backend. The examples call whatever `CONVEX_URL` points at.
 - [ ] Default `Configuration::out_file` is `src/convex_types.rs`, rewritten on `cargo build`.
 
 ## Open decisions
 
-- **Crate split.** Stay one crate, or move the runtime (serde, `Id<T>`, typed client traits) into a small crate so `build-dependencies` stay light.
-- **MSRV.** Declared `rust-version` is **1.95**, and CI enforces it. Oxc 0.129.0 sets a high floor. Raising MSRV is a major bump ([semver policy](semver-policy.md)).
+- **MSRV.** The generator requires Rust **1.95** and the runtime requires Rust **1.85**. CI enforces both. Oxc 0.129.0 sets a high floor. Raising MSRV is a major bump ([semver policy](semver-policy.md)).
 - **`OUT_DIR` vs a committed file.** Keep writing `src/convex_types.rs`, or emit into `OUT_DIR` and `include!` it.
 - **Naming scheme.** Module-nested refs that match Convex paths (`admin/users:list`) will rename today’s `{Module}{Export}Args` types. That is a breaking codegen change under [semver policy](semver-policy.md). On 0.x it may ship in a minor; from 1.0 it needs a major.
-- **Client dependency vs a trait.** A hard dependency on the official `convex` client (Apache-2.0, MSRV 1.85 in that crate), or a trait so the typed layer can sit on another transport. The headline is an extension of the official client; the open part is how thick that coupling is.
 
 Also unresolved: whether table schemas can be read from an official API (function-spec does not include them), and which ideas to reuse from the [nickcomua fork](https://github.com/nickcomua/convex-typegen) and [rustex](https://github.com/LucaLeukert/rustex).
 

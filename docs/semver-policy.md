@@ -6,10 +6,10 @@ This document defines how [convex-typegen](https://github.com/JamalLyons/convex-
 
 | Surface | What it is | Semver |
 | --- | --- | --- |
-| **Library API** | Rust items you import from `convex_typegen` (`generate`, `Configuration`, errors, prelude, features) | Standard [SemVer 2.0](https://semver.org/) on the crate version |
+| **Library API** | Rust items you import from `convex_typegen` (`generate`, `Configuration`, errors, prelude, features) or `convex_typegen_runtime` (client helpers, codecs, generated-code support) | Standard [SemVer 2.0](https://semver.org/) on the crate version |
 | **Generated output** | `convex_types.rs` (or your `out_file`) emitted at build time | **Not** the crate’s public API, but changes are **breaking for your app** — we bump the **crate major** when we intentionally change generated shapes |
 
-Always pin the **same** `convex-typegen` version in `[dependencies]` and `[build-dependencies]` so runtime helpers and codegen stay aligned.
+Matching release versions of `convex-typegen` and `convex-typegen-runtime` are supported. Declare the generator in `[build-dependencies]` and the runtime in `[dependencies]`. After upgrading, regenerate the bindings against the matching runtime.
 
 ## Library API (stable at 1.0)
 
@@ -20,8 +20,9 @@ These items are covered by semver once we tag **1.0.0**:
 - `convex_typegen::fs::rcfp`
 - `convex_typegen::error::ConvexTypeGeneratorError` (new variants = minor; removed/renamed variants = major)
 - `convex_typegen::prelude` re-exports
-- Cargo features: `client` (default), `verbose`
-- Crate-root `serde` / `serde_json` re-exports used by generated code
+- Generator Cargo feature `verbose`
+- Runtime `ConvexClientExt`, `value_serde`, and `prelude`
+- Runtime crate-root `serde` / `serde_json` re-exports used by generated code
 
 See [api-stability.md](api-stability.md) for a per-item table.
 
@@ -57,9 +58,9 @@ When in doubt, bump **major**.
 
 ## MSRV policy
 
-- `rust-version` in `Cargo.toml` is the minimum supported Rust compiler.
+- The generator requires Rust **1.95**. The runtime requires Rust **1.85**, matching the official Convex client. A project that runs the generator in `build.rs` requires Rust 1.95. Pregenerated bindings can use the matching runtime on Rust 1.85.
 - Raising MSRV is a **major** version change.
-- CI runs a dedicated job at the declared MSRV.
+- CI verifies each crate at its declared MSRV.
 
 ## Pre-1.0 history
 

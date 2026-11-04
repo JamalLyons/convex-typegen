@@ -6,23 +6,27 @@ default:
 build *ARGS:
     cargo build --all-features --release {{ ARGS }}
 
-# Run the workspace tests for `convex-typegen`.
+# Run tests for the generator and runtime.
 test *ARGS:
     cargo test {{ ARGS }}
+    cargo test --manifest-path runtime/Cargo.toml {{ ARGS }}
 
 # Clippy on all targets and features (warnings denied).
 lint:
     cargo clippy --all-targets --all-features -- -D warnings
+    cargo clippy --manifest-path runtime/Cargo.toml --all-targets --all-features -- -D warnings
 
 # Apply Rustfmt using nightly so options in `rustfmt.toml` apply (`rustup toolchain install nightly`).
 fmt:
     cargo +nightly fmt --all
+    cargo +nightly fmt --manifest-path runtime/Cargo.toml
     cargo +nightly fmt --manifest-path examples/basic/Cargo.toml
     cargo +nightly fmt --manifest-path examples/advanced/Cargo.toml
 
 # Fail if the tree is not rustfmt-clean (same as `fmt` but check-only).
 fmt-check:
     cargo +nightly fmt --all --check
+    cargo +nightly fmt --manifest-path runtime/Cargo.toml --check
     cargo +nightly fmt --manifest-path examples/basic/Cargo.toml --check
     cargo +nightly fmt --manifest-path examples/advanced/Cargo.toml --check
 

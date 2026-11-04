@@ -31,8 +31,6 @@ use crate::error::ConvexTypeGeneratorError;
 
 #[allow(dead_code)]
 pub(crate) mod ast;
-#[cfg(feature = "client")]
-mod client;
 pub(crate) mod codegen;
 pub(crate) mod lexer;
 pub(crate) mod parser;
@@ -40,11 +38,6 @@ pub(crate) mod types;
 pub(crate) mod utils;
 #[allow(dead_code)]
 pub(crate) mod validator;
-#[cfg(feature = "client")]
-pub mod value_serde;
-
-#[cfg(feature = "client")]
-pub use client::ConvexClientExt;
 
 /// Parse `schema.ts` through Oxc; returns the ESTree program as JSON ([`lexer::generate_javascript_ast`]).
 pub(crate) fn create_schema_ast(path: PathBuf) -> Result<JsonValue, ConvexTypeGeneratorError>

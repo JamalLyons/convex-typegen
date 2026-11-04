@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+  --> tests/ui/wrong_function_args.rs:11:32
+   |
+11 |     accept(admin::users::list, users::NumberArgs { value: 1.0 });
+   |     ------                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `ListArgs`, found `NumberArgs`
+   |     |
+   |     arguments to this function are incorrect
+   |
+note: function defined here
+  --> tests/ui/wrong_function_args.rs:7:4
+   |
+ 7 | fn accept<F: FunctionReference>(_: F, _: F::Args) {}
+   |    ^^^^^^                             ----------

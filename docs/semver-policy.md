@@ -21,7 +21,7 @@ These items are covered by semver once we tag **1.0.0**:
 - `convex_typegen::error::ConvexTypeGeneratorError` (new variants = minor; removed/renamed variants = major)
 - `convex_typegen::prelude` re-exports
 - Generator Cargo feature `verbose`
-- Runtime `ConvexClientExt`, `value_serde`, and `prelude`
+- Runtime `ConvexClientExt`, `function`, `value_serde`, and `prelude`
 - Runtime crate-root `serde` / `serde_json` re-exports used by generated code
 
 See [api-stability.md](api-stability.md) for a per-item table.
@@ -33,7 +33,7 @@ Treat **any intentional change** to generated Rust that breaks consumer code as 
 - Renaming or removing `pub struct` / `pub enum` types
 - Changing field types on generated structs
 - Changing `TryFrom` / `Serialize` behavior for args structs
-- Adding or removing `FUNCTION_PATH` constants (rare)
+- Renaming or removing generated `api` references
 
 **Non-breaking codegen** (minor crate bump):
 

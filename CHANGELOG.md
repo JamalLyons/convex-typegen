@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **Breaking generated output:** Emit nested, typed public function references such as
+  `api::admin::users::list`. Declared args and returns now live beside the reference
+  (e.g. `api::admin::users::ListArgs`). Model names omit a redundant leading module
+  name, and `path()` replaces `FUNCTION_PATH`.
+  Undeclared validators use explicit `RawArgs` and `RawValue` fallbacks. See
+  [generated models](docs/generated-models.md) for migration.
+
 - Add a Criterion harness in the unpublished `convex-typegen-bench` workspace crate. `just bench`
   measures generated-project discovery/parsing, IR lowering, codegen and end-to-end generation;
   the benchmark-only `bench-internals` feature exposes those production stages to the harness.

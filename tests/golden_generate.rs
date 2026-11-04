@@ -92,7 +92,9 @@ fn run_generate(schema: &str, extra_files: &[(&str, &str)]) -> String
     let schema_path = convex.join("schema.ts");
     fs::write(&schema_path, schema).unwrap();
     for (name, body) in extra_files {
-        fs::write(convex.join(name), body).unwrap();
+        let path = convex.join(name);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, body).unwrap();
     }
     let out = tmp.path().join("out.rs");
     let cfg = Configuration {
@@ -116,10 +118,15 @@ fn golden_minimal_schema_and_function()
 #[test]
 fn golden_duplicate_exports_unique_struct_names()
 {
-    let body = run_generate(MINIMAL_SCHEMA, &[("mod_a.ts", DUP_MOD_A), ("mod_b.ts", DUP_MOD_B)]);
-    assert!(body.contains("pub struct ModAListArgs"));
-    assert!(body.contains("pub struct ModBListArgs"));
-    assert!(!body.contains("pub struct ListArgs"));
+    let body = run_generate(
+        MINIMAL_SCHEMA,
+        &[
+            ("users.ts", DUP_MOD_A),
+            ("admin/users.ts", DUP_MOD_B),
+            ("type/9-tools.ts", OPTIONAL_FN),
+        ],
+    );
+    insta::assert_snapshot!("nested_api_duplicate_modules", body);
 }
 
 #[test]
@@ -128,17 +135,20 @@ fn golden_named_nested_object_structs()
     let body = run_generate(NESTED_OBJECT_SCHEMA, &[("integrations.ts", NESTED_OBJECT_FN)]);
     assert!(body.contains("pub struct ProjectsDocSettings"));
     assert!(body.contains("pub settings: ProjectsDocSettings"));
-    assert!(body.contains("pub struct IntegrationsIntegrationsMirrorArgsFlags"));
-    assert!(body.contains("pub flags: IntegrationsIntegrationsMirrorArgsFlags"));
+    assert!(body.contains("pub struct MirrorArgsFlags"));
+    assert!(body.contains("pub flags: MirrorArgsFlags"));
+    assert!(body.contains("pub const integrations_mirror:"));
+    assert!(body.contains("\"integrations:integrationsMirror\""));
+    insta::assert_snapshot!("scoped_function_model_names", body);
 }
 
 #[test]
 fn golden_optional_root_omits_key_during_serde()
 {
     let body = run_generate(MINIMAL_SCHEMA, &[("opts.ts", OPTIONAL_FN)]);
-    assert!(body.contains("pub struct OptsUpdateArgs"));
+    assert!(body.contains("pub struct UpdateArgs"));
     assert!(body.contains(
-        "deserialize_with = \"convex_typegen_runtime::model::deserialize_present\")]\n    pub flag: Option<bool>"
+        "deserialize_with = \"::convex_typegen_runtime::model::deserialize_present\")]\n            pub flag: Option<bool>"
     ));
 }
 
@@ -186,4 +196,25 @@ fn reports_identifier_collisions_with_both_wire_names()
     assert!(err.contains("Rust identifier collision for `camel_case`"), "{err}");
     assert!(err.contains("camelCase") && err.contains("camel-case"), "{err}");
     assert_eq!(fs::read_to_string(out_file).unwrap(), "previous output");
+}
+
+#[test]
+fn reports_module_spelling_collisions()
+{
+    let tmp = tempdir().unwrap();
+    let convex = tmp.path();
+    let schema_path = convex.join("schema.ts");
+    fs::write(&schema_path, MINIMAL_SCHEMA).unwrap();
+    fs::write(convex.join("foo-bar.ts"), DUP_MOD_A).unwrap();
+    fs::write(convex.join("foo_bar.ts"), DUP_MOD_B).unwrap();
+    let err = generate(Configuration {
+        schema_path,
+        convex_dir: convex.into(),
+        out_file: convex.join("models.rs"),
+        ..Configuration::default()
+    })
+    .unwrap_err()
+    .to_string();
+    assert!(err.contains("Rust identifier collision for `foo_bar`"), "{err}");
+    assert!(err.contains("foo-bar") && err.contains("foo_bar"), "{err}");
 }

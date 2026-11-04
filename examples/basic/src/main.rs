@@ -6,9 +6,9 @@ use std::io::{self, Write};
 use std::path::Path;
 
 use convex::{ConvexClient, Value as ConvexValue};
-use convex_typegen_runtime::model::RawValue;
+use convex_typegen_runtime::function::RawArgs;
 use convex_typegen_runtime::prelude::*;
-use convex_types::{GamesGetGameArgs, GamesLossGameArgs, GamesWinGameArgs};
+use convex_types::api::games;
 use rand::Rng;
 
 #[tokio::main]
@@ -21,8 +21,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     // Get current game stats using the extension trait
     let game_stats = client
         .query(
-            GamesGetGameArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(GamesGetGameArgs { log_data: None })?,
+            games::get_game.path(),
+            ConvexClient::prepare_args(games::GetGameArgs { log_data: None })?,
         )
         .await?;
 
@@ -69,10 +69,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
                 println!("Congratulations! You won in {} attempts!", attempts);
                 // Save win to Convex using winGame mutation
                 match client
-                    .mutation(
-                        GamesWinGameArgs::FUNCTION_PATH,
-                        ConvexClient::prepare_args(GamesWinGameArgs(RawValue(ConvexValue::Object(Default::default()))))?,
-                    )
+                    .mutation(games::win_game.path(), ConvexClient::prepare_args(RawArgs::new())?)
                     .await
                 {
                     Ok(result) => println!("Save win result: {:?}", result),
@@ -86,10 +83,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
             println!("Sorry, you've run out of attempts! The number was {}", secret_number);
             // Save loss to Convex using lossGame mutation
             match client
-                .mutation(
-                    GamesLossGameArgs::FUNCTION_PATH,
-                    ConvexClient::prepare_args(GamesLossGameArgs(RawValue(ConvexValue::Object(Default::default()))))?,
-                )
+                .mutation(games::loss_game.path(), ConvexClient::prepare_args(RawArgs::new())?)
                 .await
             {
                 Ok(_) => (),
@@ -107,8 +101,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     // Get and display updated stats
     match client
         .query(
-            GamesGetGameArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(GamesGetGameArgs { log_data: None })?,
+            games::get_game.path(),
+            ConvexClient::prepare_args(games::GetGameArgs { log_data: None })?,
         )
         .await
     {

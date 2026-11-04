@@ -6,9 +6,10 @@ mod convex_types;
 use std::path::Path;
 
 use convex::{ConvexClient, FunctionResult, Value as ConvexValue};
+use convex_typegen_runtime::function::RawArgs;
 use convex_typegen_runtime::model::RawValue;
 use convex_typegen_runtime::prelude::*;
-use convex_types::*;
+use convex_types::api::{integrations, projects, tasks, teams, users, workspace};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>>
@@ -18,10 +19,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     let Ok(url) = std::env::var("CONVEX_URL") else {
         eprintln!("CONVEX_URL is not set. Add it to .env.local next to this crate’s Cargo.toml.");
         eprintln!("Example paths from codegen:");
-        eprintln!("  {}", IntegrationsIntegrationsMirrorArgs::FUNCTION_PATH);
-        eprintln!("  {}", ProjectsProjectsListByTeamArgs::FUNCTION_PATH);
-        eprintln!("  {}", TasksTasksSearchArgs::FUNCTION_PATH);
-        eprintln!("  {}", WorkspaceWorkspaceSummaryArgs::FUNCTION_PATH);
+        eprintln!("  {}", integrations::integrations_mirror.path());
+        eprintln!("  {}", projects::projects_list_by_team.path());
+        eprintln!("  {}", tasks::tasks_search.path());
+        eprintln!("  {}", workspace::workspace_summary.path());
         return Ok(());
     };
 
@@ -29,20 +30,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let seed = client
         .mutation(
-            WorkspaceWorkspaceSeedIfEmptyArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(WorkspaceWorkspaceSeedIfEmptyArgs(RawValue(ConvexValue::Object(
-                Default::default(),
-            ))))?,
+            workspace::workspace_seed_if_empty.path(),
+            ConvexClient::prepare_args(RawArgs::new())?,
         )
         .await?;
     println!("workspaceSeedIfEmpty → {:?}", seed);
 
     let summary = client
         .query(
-            WorkspaceWorkspaceSummaryArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(WorkspaceWorkspaceSummaryArgs(RawValue(ConvexValue::Object(
-                Default::default(),
-            ))))?,
+            workspace::workspace_summary.path(),
+            ConvexClient::prepare_args(RawArgs::new())?,
         )
         .await?;
     println!("workspaceSummary → {:?}", summary);
@@ -55,8 +52,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let teams = client
         .query(
-            TeamsTeamsListByOwnerArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(TeamsTeamsListByOwnerArgs {
+            teams::teams_list_by_owner.path(),
+            ConvexClient::prepare_args(teams::ListByOwnerArgs {
                 owner_user_id: user_id.clone().into(),
             })?,
         )
@@ -65,11 +62,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let projects = client
         .query(
-            ProjectsProjectsListByTeamArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(ProjectsProjectsListByTeamArgs {
+            projects::projects_list_by_team.path(),
+            ConvexClient::prepare_args(projects::ListByTeamArgs {
                 team_id: team_id.into(),
-                status_filter: Some(ProjectsProjectsListByTeamArgsStatusFilter::Branch2(
-                    ProjectsProjectsListByTeamArgsStatusFilterBranch2,
+                status_filter: Some(projects::ListByTeamArgsStatusFilter::Branch2(
+                    projects::ListByTeamArgsStatusFilterBranch2,
                 )),
             })?,
         )
@@ -78,12 +75,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let tasks = client
         .query(
-            TasksTasksSearchArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(TasksTasksSearchArgs {
-                filter: TasksTasksSearchArgsFilter {
+            tasks::tasks_search.path(),
+            ConvexClient::prepare_args(tasks::SearchArgs {
+                filter: tasks::SearchArgsFilter {
                     project_id: project_id.clone().into(),
-                    min_priority: Some(TasksTasksSearchArgsFilterMinPriority::Branch2(
-                        TasksTasksSearchArgsFilterMinPriorityBranch2,
+                    min_priority: Some(tasks::SearchArgsFilterMinPriority::Branch2(
+                        tasks::SearchArgsFilterMinPriorityBranch2,
                     )),
                 },
                 limit: Some(10.0),
@@ -94,15 +91,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let mirror = client
         .action(
-            IntegrationsIntegrationsMirrorArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(IntegrationsIntegrationsMirrorArgs {
+            integrations::integrations_mirror.path(),
+            ConvexClient::prepare_args(integrations::MirrorArgs {
                 body: "hello from Rust".to_string(),
                 numbers: vec![1.0, 2.0, 3.0],
-                flags: IntegrationsIntegrationsMirrorArgsFlags {
+                flags: integrations::MirrorArgsFlags {
                     verbose: true,
                     trace: false,
                 },
-                mode: IntegrationsIntegrationsMirrorArgsMode::Branch1(IntegrationsIntegrationsMirrorArgsModeBranch1),
+                mode: integrations::MirrorArgsMode::Branch1(integrations::MirrorArgsModeBranch1),
                 extra: Some(std::collections::BTreeMap::from([("k".to_string(), "v".to_string())])),
             })?,
         )
@@ -111,8 +108,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let profile = client
         .query(
-            UsersUsersGetProfileArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(UsersUsersGetProfileArgs {
+            users::users_get_profile.path(),
+            ConvexClient::prepare_args(users::GetProfileArgs {
                 user_id: user_id.clone().into(),
                 with_bytes: None,
             })?,
@@ -122,8 +119,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let by_email = client
         .query(
-            UsersUsersGetByEmailArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(UsersUsersGetByEmailArgs {
+            users::users_get_by_email.path(),
+            ConvexClient::prepare_args(users::GetByEmailArgs {
                 email: "demo@example.com".to_string(),
                 include_inactive: None,
             })?,
@@ -133,8 +130,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let _tag_update = client
         .mutation(
-            ProjectsProjectsUpdateTagsArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(ProjectsProjectsUpdateTagsArgs {
+            projects::projects_update_tags.path(),
+            ConvexClient::prepare_args(projects::UpdateTagsArgs {
                 project_id: project_id.clone().into(),
                 tags: vec!["rust".to_string(), "convex".to_string(), "typegen".to_string()],
             })?,
@@ -144,11 +141,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let _task = client
         .mutation(
-            TasksTasksCreateArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(TasksTasksCreateArgs {
+            tasks::tasks_create.path(),
+            ConvexClient::prepare_args(tasks::CreateArgs {
                 project_id: project_id.clone().into(),
                 title: "From Rust client".to_string(),
-                priority: TasksTasksCreateArgsPriority::Branch3(TasksTasksCreateArgsPriorityBranch3),
+                priority: tasks::CreateArgsPriority::Branch3(tasks::CreateArgsPriorityBranch3),
                 assignee_user_id: Some(user_id.into()),
                 payload: Some(RawValue(ConvexValue::Object(std::collections::BTreeMap::from([(
                     "source".into(),
@@ -163,11 +160,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     let ts = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_secs();
     let _alt_user = client
         .mutation(
-            UsersUsersCreateArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(UsersUsersCreateArgs {
+            users::users_create.path(),
+            ConvexClient::prepare_args(users::CreateArgs {
                 email: format!("rust-{ts}@example.com"),
                 display_name: "Rust-created".to_string(),
-                role: UsersUsersCreateArgsRole::Branch2(UsersUsersCreateArgsRoleBranch2),
+                role: users::CreateArgsRole::Branch2(users::CreateArgsRoleBranch2),
                 metadata: Some(std::collections::BTreeMap::from([(
                     "channel".to_string(),
                     "advanced-example".to_string(),

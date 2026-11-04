@@ -4,17 +4,31 @@ The generator emits Serde models from schema and function validators. Use them w
 `convex_typegen_runtime::value_serde::{to_value, from_value}` to preserve Convex wire kinds.
 Existing consumers should regenerate their bindings and update Rust names and field types.
 
-## Names and documents
+## Function references and model names
 
-The function model name combines the PascalCase forms of every canonical module path
-segment and the export, followed by `Args` or `Return`. For example, `admin/users:list`
-emits `AdminUsersListArgs` and `AdminUsersListReturn`. An explicitly configured file
-outside the Convex root uses the `Unscoped` prefix and has no `FUNCTION_PATH` constant.
+Public queries, mutations, and actions generate constants under `api`. For example,
+`convex/admin/users.ts` exporting `list` emits `api::admin::users::list`, whose
+`path()` returns `"admin/users:list"`. Each reference implements
+`convex_typegen_runtime::function::FunctionReference` with associated `Args`,
+`Returns`, and `Kind` types. The kind markers are `Query`, `Mutation`, and `Action`.
 
-Nested types extend the enclosing model's name with their field or container role. Rust
-field identifiers use snake_case, escape keywords and normalize punctuation. Serde
-uses the original wire names, including camelCase and quoted keys. If distinct inputs
-normalize to the same Rust identifier in a scope, generation reports both origins.
+Module segments and exports use snake_case, escape Rust keywords where possible,
+and normalize punctuation and leading digits. The generator reports both origins
+when distinct names collide in the same Rust namespace. Internal functions, HTTP
+actions, crons, and explicitly configured functions outside the Convex root are
+omitted from the generated API.
+
+Regenerate your bindings and move imports from flat types such as
+`AdminUsersListArgs` and `AdminUsersListReturn` to
+`api::admin::users::{ListArgs, ListReturn}`. Replace
+`AdminUsersListArgs::FUNCTION_PATH` with `api::admin::users::list.path()` when using
+the official SDK directly. Nested models extend the enclosing model's name with
+their field or container role. Model names drop a repeated prefix at a word boundary
+when it matches the final module segment and leaves a nonempty name. For example,
+`integrations:integrationsMirror` emits `api::integrations::MirrorArgs` while its
+reference is `api::integrations::integrations_mirror`. Struct fields use snake_case
+and Serde preserves
+the original wire names, including camelCase and quoted keys.
 
 `model::Id<tables::Tasks>` is a string on the wire with a distinct Rust type for each
 table. The backend checks the underlying ID string and table against the deployment.
@@ -41,10 +55,14 @@ document branch has its own `_id` and `_creation_time` fields. The latter uses t
 
 ## Raw values
 
-`convex_typegen_runtime::model::RawValue` wraps the official SDK's `convex::Value`
-for `v.any()` and shapes absent from the IR. For example, construct an unknown args
-model as `UsersListArgs(RawValue(convex::Value::Object(Default::default())))` to send
-an empty object. An unknown return is a `RawValue` directly. The wrapper retains
-bytes, numeric wire kinds, and nested values when passed through the runtime codec.
-Unsupported TypeScript expressions can still produce adapter diagnostics. A committed
-function-spec can supply resolved validators for functions with dynamic composition.
+`convex_typegen_runtime::function::RawArgs` is a `BTreeMap<String, RawValue>` and
+is the associated `Args` type when the endpoint has no declared args validator.
+Use `RawArgs::new()` to send an empty argument object. A declared empty args
+validator still produces an empty endpoint-specific args struct.
+
+The associated `Returns` type for an undeclared return validator is
+`convex_typegen_runtime::model::RawValue`. This wrapper also represents `v.any()`
+values and retains bytes, numeric wire kinds, and nested values through the
+runtime codec. A declared `v.null()` return uses `()`. Unsupported TypeScript
+expressions can still produce adapter diagnostics. A committed function-spec can
+supply resolved validators for functions with dynamic composition.

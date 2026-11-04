@@ -8,16 +8,9 @@ Where convex-typegen is going. Crate version today: **0.4.0**. This is the lasti
 
 Rust is a client language. Backend functions stay TypeScript. The official [`convex` crate](https://docs.rs/convex/latest/convex/struct.ConvexClient.html) is stringly typed: `client.query("tasks:get", BTreeMap::new())` takes a function-name string and a `BTreeMap<String, Value>`, and returns an untyped [`FunctionResult`](https://docs.rs/convex/latest/convex/enum.FunctionResult.html) ([Rust quickstart](https://docs.convex.dev/quickstart/rust.md)). `Value` has no `Id` type and no generated document layer.
 
-convex-typegen already runs in `build.rs` and emits argument structs, table structs, and `FUNCTION_PATH` constants (default `src/convex_types.rs`). Callers still do this:
-
-```rust
-client.query(
-    TasksSearchArgs::FUNCTION_PATH,
-    ConvexClient::prepare_args(args)?,
-)?; // FunctionResult
-```
-
-v1 closes that gap: the Rust side of the wire should be as typed as `api.*` is in TypeScript.
+convex-typegen runs in `build.rs` and emits argument structs, table structs, and typed
+public function references. The reference's `path()` works with the official client.
+Typed client methods and subscriptions complete the v1 client surface.
 
 ## v1 headline
 

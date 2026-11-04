@@ -1,4 +1,4 @@
-error[E0609]: no field `camelCase` on type `ModelsRoundTripArgs`
+error[E0609]: no field `camelCase` on type `RoundTripArgs`
  --> tests/ui/unescaped_identifier.rs:6:18
   |
 6 |     let _ = args.camelCase;

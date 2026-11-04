@@ -278,10 +278,11 @@ mod tests
             assert!(rust.contains("pub struct AccountsDoc"));
             assert!(rust.contains("pub request_id: String"));
             assert!(rust.contains("pub recorded_at: i64"));
-            for (_, operation) in OPERATIONS {
-                assert!(
+            for (builder, operation) in OPERATIONS {
+                assert_eq!(
                     rust.contains(&format!(":{operation}\"")),
-                    "missing {operation} for seed {seed}"
+                    !builder.starts_with("internal"),
+                    "unexpected API visibility for {operation} with seed {seed}"
                 );
             }
         }

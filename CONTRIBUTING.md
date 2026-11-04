@@ -41,10 +41,14 @@ cargo insta test --accept --all-features
 
 ## Publishing (maintainers)
 
-Default branch is **`master`**. Land work on `dev`, then open a PR into `master`. Tagging does **not** publish to crates.io by itself (there is no release workflow).
+Default branch is **`master`**. Land work on `dev`, then open a PR into `master`.
 
-1. Set `version` in `Cargo.toml` (Cargo.lock follows) and move `[Unreleased]` notes into a dated `CHANGELOG.md` heading.
-2. Add GitHub Release notes as `docs/release-vX.Y.Z.md`.
-3. Merge to `master`, tag `vX.Y.Z` on that commit, and push the tag.
-4. Create the GitHub Release from `docs/release-vX.Y.Z.md`.
-5. Publish: `cargo publish --locked` (or `just publish`). Requires a crates.io API token locally.
+**CI (`.github/workflows/rust.yml`)** runs rustfmt, clippy, tests, MSRV, `cargo audit`, and `cargo deny` on pushes to `master`/`dev` and on pull requests. It is not triggered by version tags and does **not** publish to crates.io. There is no separate release or publish workflow in this repository.
+
+**Release steps** (see also [docs/semver-policy.md](docs/semver-policy.md#releases)):
+
+1. Set `version` in `Cargo.toml` (update `Cargo.lock` with `cargo check` or your usual flow) and move `[Unreleased]` notes into a dated `CHANGELOG.md` heading.
+2. Add GitHub Release notes as `docs/release-vX.Y.Z.md` (see existing `docs/release-v0.3.0.md` and `docs/release-v0.4.0.md`).
+3. Merge to `master`, tag `vX.Y.Z` on that commit, and push the tag (tags are for GitHub Release metadata only—they do not trigger an automated crates.io publish).
+4. Create the GitHub Release on GitHub, pasting or linking content from `docs/release-vX.Y.Z.md`.
+5. Publish manually: `cargo publish --locked` or `just publish` (optional dry run: `just publish-test`). Requires a [crates.io](https://crates.io) API token in your local Cargo credentials.

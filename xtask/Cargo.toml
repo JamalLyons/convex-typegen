@@ -12,5 +12,6 @@ publish = false
 getrandom = "0.4"
 
 [dev-dependencies]
+convex.workspace = true
 convex-typegen.workspace = true
 tempfile.workspace = true

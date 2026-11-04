@@ -46,6 +46,31 @@ the positional seed passed through by Just) takes precedence over `CONVEX_TYPEGE
 Run `cargo test --locked -p xtask` to check reproducibility and exercise the offline
 parser and codegen on generated projects.
 
+## Generated-project correctness properties
+
+`just check` runs `xtask/tests/property_generated_projects.rs` on the `small` tier. Each run
+chooses a fresh seed unless `CONVEX_TYPEGEN_SEED` is set, executes the full parse → IR → codegen
+pipeline for four consecutive seeds, then compiles and runs one generated consumer. The consumer
+round-trips 16 seeded values through the emitted `AccountsDoc` and the direct Convex `Value` codec.
+The values cover Int64 and Float64 (including integral floats), bytes, nested records, optional
+field omission/presence, nullable values, literals, and unions. A failing assertion or generated
+consumer diagnostic includes its seed and tier.
+
+Set a tier and seed to replay a run or broaden the source projects while keeping compile cost
+bounded to one representative consumer:
+
+```sh
+CONVEX_TYPEGEN_SEED=42 CONVEX_TYPEGEN_TIER=small cargo test --locked -p xtask --test property_generated_projects
+CONVEX_TYPEGEN_SEED=42 CONVEX_TYPEGEN_TIER=medium cargo test --locked -p xtask --test property_generated_projects
+CONVEX_TYPEGEN_SEED=42 CONVEX_TYPEGEN_TIER=large cargo test --locked -p xtask --test property_generated_projects
+CONVEX_TYPEGEN_SEED=42 CONVEX_TYPEGEN_TIER=huge cargo test --locked -p xtask --test property_generated_projects
+```
+
+The generator is seed-driven rather than shrink-based, so failures replay exactly instead of
+being minimized automatically. When a failure is reduced to a smaller input, retain that input
+under `tests/fixtures/property-regressions/` and keep its seed and tier in the fixture name or
+metadata.
+
 ## Pipeline benchmarks
 
 The unpublished `convex-typegen-bench` workspace crate benchmarks four production stages using

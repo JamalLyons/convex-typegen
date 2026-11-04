@@ -44,6 +44,16 @@ fn generated_models_compile_and_preserve_wire_semantics()
         "#,
     )
     .unwrap();
+    fs::create_dir(convex.join("type")).unwrap();
+    fs::write(
+        convex.join("type/9-tools.ts"),
+        r#"
+        import { query } from "../_generated/server";
+        import { v } from "convex/values";
+        export const value = query({ args: {}, returns: v.literal("test"), handler: () => "test" });
+        "#,
+    )
+    .unwrap();
     let out = root.join("target/model-tests/models.rs");
     fs::create_dir_all(out.parent().unwrap()).unwrap();
     generate(Configuration {
@@ -58,4 +68,7 @@ fn generated_models_compile_and_preserve_wire_semantics()
     cases.pass("tests/ui/model_round_trip.rs");
     cases.compile_fail("tests/ui/wrong_table_id.rs");
     cases.compile_fail("tests/ui/unescaped_identifier.rs");
+    cases.compile_fail("tests/ui/wrong_function_args.rs");
+    cases.compile_fail("tests/ui/internal_function.rs");
+    cases.compile_fail("tests/ui/wrong_function_kind.rs");
 }

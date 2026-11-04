@@ -23,6 +23,7 @@ The generator prelude exports `Configuration`, `generate`, `rcfp`, and
 | --- | --- |
 | `serde`, `serde_json` | Re-exports used by generated bindings |
 | `ConvexClientExt` | Generated args to Convex values runtime helper |
+| `function` | Typed endpoint references, kind markers, and raw args |
 | `value_serde::{to_value, from_value, Bytes, Error}` | Direct Serde conversion to and from `convex::Value` |
 | `prelude::*` | Serde derives, client extension, codecs, and `ConvexJsonValue`, `ConvexBytes`, and `ConvexValueSerdeError` aliases |
 

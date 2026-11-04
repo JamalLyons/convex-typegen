@@ -57,7 +57,7 @@ export const ping = query({
 
     generate(config).expect("generate");
     let body = fs::read_to_string(&out).unwrap();
-    assert!(body.contains("ApiPingArgs"));
+    assert!(body.contains("PingArgs"));
     assert!(body.contains("TDoc"));
 }
 
@@ -90,7 +90,7 @@ fn configured_spec_is_authoritative_and_tracked()
     assert_eq!(rcfp(&config).unwrap(), vec![spec.clone()]);
     generate(config.clone()).expect("generate from spec without parsing TypeScript functions");
     let body = fs::read_to_string(&out).unwrap();
-    assert!(body.contains("TasksPingArgs"), "expected spec function: {body}");
+    assert!(body.contains("PingArgs"), "expected spec function: {body}");
     assert!(body.contains("tasks:ping"), "expected normalized function path: {body}");
     assert!(!body.contains("Ignored"), "must not parse TypeScript function inputs: {body}");
     assert!(
@@ -102,7 +102,7 @@ fn configured_spec_is_authoritative_and_tracked()
     generate(config).expect("an empty spec is an authoritative empty function set");
     let body = fs::read_to_string(&out).unwrap();
     assert!(
-        !body.contains("TasksPingArgs") && !body.contains("tasks:ping"),
+        !body.contains("PingArgs") && !body.contains("tasks:ping"),
         "empty spec must produce no functions: {body}"
     );
 }

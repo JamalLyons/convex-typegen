@@ -169,8 +169,9 @@ The emitter walks the IR and builds Rust source in memory. It claims each emitte
 within its scope and reports both origins on a collision. The output file is written after model
 generation succeeds. Naming and wire behavior are documented in [generated models](generated-models.md).
 
-Tables supply document shapes with system fields and associated table markers. Function args
-and returns use names derived from canonical paths. Matching document validators reuse the
+Tables supply document shapes with system fields and associated table markers. The emitter
+groups public functions by canonical path under `api` and emits scoped args and returns
+alongside runtime `FunctionRef` constants. Matching document validators reuse the
 associated document type. Object models reject unknown fields, and union decoders dispatch by a
 required distinct literal field when available. Other unions try members in declaration order
 using the runtime codec so branch selection preserves wire kinds.

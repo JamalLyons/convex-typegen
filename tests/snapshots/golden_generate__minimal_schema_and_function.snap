@@ -6,10 +6,10 @@ expression: body
 #![allow(dead_code)]
 
 #[allow(unused_imports)]
-use convex_typegen_runtime::{
+use ::convex_typegen_runtime::{
     model::{Id, RawValue},
     serde::{Deserialize, Serialize},
-    value_serde::{Bytes, from_value},
+    value_serde::Bytes,
 };
 
 pub mod tables {
@@ -18,7 +18,7 @@ pub mod tables {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
+#[serde(crate = "::convex_typegen_runtime::serde")]
 #[serde(deny_unknown_fields)]
 pub struct ItemsDoc {
     #[serde(rename = "_creationTime")]
@@ -33,16 +33,25 @@ impl convex_typegen_runtime::model::Table for tables::Items {
     type Document = ItemsDoc;
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
-pub struct ApiGetItemArgs {
-    #[serde(rename = "id")]
-    pub id: String,
-}
+pub mod api {
+    pub mod api {
+        #[allow(unused_imports)]
+        use ::convex_typegen_runtime::{
+            model::{Id, RawValue},
+            serde::{Deserialize, Serialize},
+            value_serde::Bytes,
+        };
 
-impl ApiGetItemArgs {
-    pub const FUNCTION_PATH: &'static str = "api:getItem";
-}
+        #[derive(Debug, Clone, Serialize, Deserialize)]
+        #[serde(crate = "::convex_typegen_runtime::serde")]
+        #[serde(deny_unknown_fields)]
+        pub struct GetItemArgs {
+            #[serde(rename = "id")]
+            pub id: String,
+        }
 
-pub type ApiGetItemReturn = RawValue;
+        #[allow(non_upper_case_globals)]
+        pub const get_item: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, GetItemArgs, RawValue> =
+            ::convex_typegen_runtime::function::FunctionRef::new("api:getItem");
+    }
+}

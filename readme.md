@@ -39,11 +39,12 @@ A full minimal setup lives in [examples/basic](https://github.com/JamalLyons/con
 
 ## Generated models
 
-Each function uses the full Convex module path and export to name its `Args` and `Return` models.
-For example, `users:list` emits `UsersListArgs` and `UsersListReturn`, and `admin/users:list` emits
-`AdminUsersListArgs` and `AdminUsersListReturn`. The args model exposes the canonical
-`FUNCTION_PATH`. Nested models extend the enclosing type name. Struct fields use snake_case
-and Serde preserves their exact wire spelling.
+Public endpoints generate typed references such as `api::admin::users::list` for
+`admin/users:list`. Its declared argument and return models live in the same Rust
+module, for example `api::admin::users::{ListArgs, ListReturn}`. Use the reference's
+`path()` to get the canonical Convex identifier for the official SDK. Nested models
+extend the enclosing type name. Struct fields use snake_case and Serde preserves
+their exact wire spelling.
 
 Import `convex_typegen_runtime::model::{Doc, Id, RawValue}` alongside the generated `tables`
 module. A `Doc<tables::Tasks>` contains `_id: Id<tables::Tasks>` and `_creation_time: f64`.

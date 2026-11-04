@@ -2,10 +2,10 @@
 #![allow(dead_code)]
 
 #[allow(unused_imports)]
-use convex_typegen_runtime::{
+use ::convex_typegen_runtime::{
     model::{Id, RawValue},
     serde::{Deserialize, Serialize},
-    value_serde::{Bytes, from_value},
+    value_serde::Bytes,
 };
 
 pub mod tables {
@@ -14,7 +14,7 @@ pub mod tables {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
+#[serde(crate = "::convex_typegen_runtime::serde")]
 #[serde(deny_unknown_fields)]
 pub struct GamesDoc {
     #[serde(rename = "_creationTime")]
@@ -31,42 +31,34 @@ impl convex_typegen_runtime::model::Table for tables::Games {
     type Document = GamesDoc;
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
-pub struct GamesGetGameArgs {
-    #[serde(rename = "logData")]
-    #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "convex_typegen_runtime::model::deserialize_present")]
-    pub log_data: Option<bool>,
+pub mod api {
+    pub mod games {
+        #[allow(unused_imports)]
+        use ::convex_typegen_runtime::{
+            model::{Id, RawValue},
+            serde::{Deserialize, Serialize},
+            value_serde::Bytes,
+        };
+
+        #[derive(Debug, Clone, Serialize, Deserialize)]
+        #[serde(crate = "::convex_typegen_runtime::serde")]
+        #[serde(deny_unknown_fields)]
+        pub struct GetGameArgs {
+            #[serde(rename = "logData")]
+            #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+            pub log_data: Option<bool>,
+        }
+
+        #[allow(non_upper_case_globals)]
+        pub const get_game: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, GetGameArgs, RawValue> =
+            ::convex_typegen_runtime::function::FunctionRef::new("games:getGame");
+
+        #[allow(non_upper_case_globals)]
+        pub const win_game: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Mutation, ::convex_typegen_runtime::function::RawArgs, RawValue> =
+            ::convex_typegen_runtime::function::FunctionRef::new("games:winGame");
+
+        #[allow(non_upper_case_globals)]
+        pub const loss_game: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Mutation, ::convex_typegen_runtime::function::RawArgs, RawValue> =
+            ::convex_typegen_runtime::function::FunctionRef::new("games:lossGame");
+    }
 }
-
-impl GamesGetGameArgs {
-    pub const FUNCTION_PATH: &'static str = "games:getGame";
-}
-
-pub type GamesGetGameReturn = RawValue;
-
-/// Raw arguments for an endpoint without a declared args validator.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(transparent)]
-pub struct GamesWinGameArgs(pub RawValue);
-
-impl GamesWinGameArgs {
-    pub const FUNCTION_PATH: &'static str = "games:winGame";
-}
-
-pub type GamesWinGameReturn = RawValue;
-
-/// Raw arguments for an endpoint without a declared args validator.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(transparent)]
-pub struct GamesLossGameArgs(pub RawValue);
-
-impl GamesLossGameArgs {
-    pub const FUNCTION_PATH: &'static str = "games:lossGame";
-}
-
-pub type GamesLossGameReturn = RawValue;
-

@@ -6,10 +6,10 @@ expression: "fs::read_to_string(out).unwrap()"
 #![allow(dead_code)]
 
 #[allow(unused_imports)]
-use convex_typegen_runtime::{
+use ::convex_typegen_runtime::{
     model::{Id, RawValue},
     serde::{Deserialize, Serialize},
-    value_serde::{Bytes, from_value},
+    value_serde::Bytes,
 };
 
 pub mod tables {
@@ -20,7 +20,7 @@ pub mod tables {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
+#[serde(crate = "::convex_typegen_runtime::serde")]
 #[serde(deny_unknown_fields)]
 pub struct TasksDoc {
     #[serde(rename = "_creationTime")]
@@ -39,24 +39,24 @@ impl convex_typegen_runtime::model::Table for tables::Tasks {
 pub struct EventsDocBranch1Kind;
 
 impl Serialize for EventsDocBranch1Kind {
-    fn serialize<S: convex_typegen_runtime::serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        ("created").serialize(serializer)
+    fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
+        ("created").serialize(__serializer)
     }
 }
 
 impl<'de> Deserialize<'de> for EventsDocBranch1Kind {
-    fn deserialize<D: convex_typegen_runtime::serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let value = String::deserialize(deserializer)?;
-        if value == "created" {
+    fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
+        let __value = String::deserialize(__deserializer)?;
+        if __value == "created" {
             Ok(Self)
         } else {
-            Err(convex_typegen_runtime::serde::de::Error::custom("expected literal for EventsDocBranch1Kind"))
+            Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for EventsDocBranch1Kind"))
         }
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
+#[serde(crate = "::convex_typegen_runtime::serde")]
 #[serde(deny_unknown_fields)]
 pub struct EventsDocBranch1 {
     #[serde(rename = "_creationTime")]
@@ -73,24 +73,24 @@ pub struct EventsDocBranch1 {
 pub struct EventsDocBranch2Kind;
 
 impl Serialize for EventsDocBranch2Kind {
-    fn serialize<S: convex_typegen_runtime::serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        ("deleted").serialize(serializer)
+    fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
+        ("deleted").serialize(__serializer)
     }
 }
 
 impl<'de> Deserialize<'de> for EventsDocBranch2Kind {
-    fn deserialize<D: convex_typegen_runtime::serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let value = String::deserialize(deserializer)?;
-        if value == "deleted" {
+    fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
+        let __value = String::deserialize(__deserializer)?;
+        if __value == "deleted" {
             Ok(Self)
         } else {
-            Err(convex_typegen_runtime::serde::de::Error::custom("expected literal for EventsDocBranch2Kind"))
+            Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for EventsDocBranch2Kind"))
         }
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
+#[serde(crate = "::convex_typegen_runtime::serde")]
 #[serde(deny_unknown_fields)]
 pub struct EventsDocBranch2 {
     #[serde(rename = "_creationTime")]
@@ -104,7 +104,7 @@ pub struct EventsDocBranch2 {
 }
 
 #[derive(Debug, Clone, Serialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
+#[serde(crate = "::convex_typegen_runtime::serde")]
 #[serde(untagged)]
 pub enum EventsDoc {
     Branch1(EventsDocBranch1),
@@ -112,15 +112,15 @@ pub enum EventsDoc {
 }
 
 impl<'de> Deserialize<'de> for EventsDoc {
-    fn deserialize<D: convex_typegen_runtime::serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let raw = RawValue::deserialize(deserializer)?;
-        if raw.field("kind").is_some_and(|tag| from_value::<EventsDocBranch1Kind>(tag.clone()).is_ok()) {
-            return from_value::<EventsDocBranch1>(raw.0).map(Self::Branch1).map_err(convex_typegen_runtime::serde::de::Error::custom);
+    fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
+        let __raw = RawValue::deserialize(__deserializer)?;
+        if __raw.field("kind").is_some_and(|__tag| ::convex_typegen_runtime::value_serde::from_value::<EventsDocBranch1Kind>(__tag.clone()).is_ok()) {
+            return ::convex_typegen_runtime::value_serde::from_value::<EventsDocBranch1>(__raw.0).map(Self::Branch1).map_err(::convex_typegen_runtime::serde::de::Error::custom);
         }
-        if raw.field("kind").is_some_and(|tag| from_value::<EventsDocBranch2Kind>(tag.clone()).is_ok()) {
-            return from_value::<EventsDocBranch2>(raw.0).map(Self::Branch2).map_err(convex_typegen_runtime::serde::de::Error::custom);
+        if __raw.field("kind").is_some_and(|__tag| ::convex_typegen_runtime::value_serde::from_value::<EventsDocBranch2Kind>(__tag.clone()).is_ok()) {
+            return ::convex_typegen_runtime::value_serde::from_value::<EventsDocBranch2>(__raw.0).map(Self::Branch2).map_err(::convex_typegen_runtime::serde::de::Error::custom);
         }
-        Err(convex_typegen_runtime::serde::de::Error::custom("no matching branch of EventsDoc"))
+        Err(::convex_typegen_runtime::serde::de::Error::custom("no matching branch of EventsDoc"))
     }
 }
 
@@ -128,404 +128,381 @@ impl convex_typegen_runtime::model::Table for tables::Events {
     type Document = EventsDoc;
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
-pub struct AdminUsersListArgs {
-}
+pub mod api {
+    pub mod admin {
+        pub mod users {
+            #[allow(unused_imports)]
+            use ::convex_typegen_runtime::{
+                model::{Id, RawValue},
+                serde::{Deserialize, Serialize},
+                value_serde::Bytes,
+            };
 
-impl AdminUsersListArgs {
-    pub const FUNCTION_PATH: &'static str = "admin/users:list";
-}
+            #[derive(Debug, Clone, Serialize, Deserialize)]
+            #[serde(crate = "::convex_typegen_runtime::serde")]
+            #[serde(deny_unknown_fields)]
+            pub struct ListArgs {
+            }
 
-pub type AdminUsersListReturn = Vec<String>;
+            pub type ListReturn = Vec<String>;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct AdminUsersEchoArgsDataChoiceBranch1;
+            #[allow(non_upper_case_globals)]
+            pub const list: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, ListArgs, ListReturn> =
+                ::convex_typegen_runtime::function::FunctionRef::new("admin/users:list");
 
-impl Serialize for AdminUsersEchoArgsDataChoiceBranch1 {
-    fn serialize<S: convex_typegen_runtime::serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        ("red").serialize(serializer)
-    }
-}
+            #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+            pub struct EchoArgsDataChoiceBranch1;
 
-impl<'de> Deserialize<'de> for AdminUsersEchoArgsDataChoiceBranch1 {
-    fn deserialize<D: convex_typegen_runtime::serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let value = String::deserialize(deserializer)?;
-        if value == "red" {
-            Ok(Self)
-        } else {
-            Err(convex_typegen_runtime::serde::de::Error::custom("expected literal for AdminUsersEchoArgsDataChoiceBranch1"))
+            impl Serialize for EchoArgsDataChoiceBranch1 {
+                fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
+                    ("red").serialize(__serializer)
+                }
+            }
+
+            impl<'de> Deserialize<'de> for EchoArgsDataChoiceBranch1 {
+                fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
+                    let __value = String::deserialize(__deserializer)?;
+                    if __value == "red" {
+                        Ok(Self)
+                    } else {
+                        Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for EchoArgsDataChoiceBranch1"))
+                    }
+                }
+            }
+
+            #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+            pub struct EchoArgsDataChoiceBranch2;
+
+            impl Serialize for EchoArgsDataChoiceBranch2 {
+                fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
+                    ("blue").serialize(__serializer)
+                }
+            }
+
+            impl<'de> Deserialize<'de> for EchoArgsDataChoiceBranch2 {
+                fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
+                    let __value = String::deserialize(__deserializer)?;
+                    if __value == "blue" {
+                        Ok(Self)
+                    } else {
+                        Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for EchoArgsDataChoiceBranch2"))
+                    }
+                }
+            }
+
+            #[derive(Debug, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+            #[serde(crate = "::convex_typegen_runtime::serde")]
+            #[serde(untagged)]
+            pub enum EchoArgsDataChoice {
+                Branch1(EchoArgsDataChoiceBranch1),
+                Branch2(EchoArgsDataChoiceBranch2),
+            }
+
+            impl<'de> Deserialize<'de> for EchoArgsDataChoice {
+                fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
+                    let __raw = RawValue::deserialize(__deserializer)?;
+                    if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<EchoArgsDataChoiceBranch1>(__raw.0.clone()) {
+                        return Ok(Self::Branch1(__value));
+                    }
+                    if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<EchoArgsDataChoiceBranch2>(__raw.0.clone()) {
+                        return Ok(Self::Branch2(__value));
+                    }
+                    Err(::convex_typegen_runtime::serde::de::Error::custom("no matching branch of EchoArgsDataChoice"))
+                }
+            }
+
+            #[derive(Debug, Clone, Serialize)]
+            #[serde(crate = "::convex_typegen_runtime::serde")]
+            #[serde(untagged)]
+            pub enum EchoArgsDataNestedNullable {
+                Branch1(String),
+                Branch2(()),
+            }
+
+            impl<'de> Deserialize<'de> for EchoArgsDataNestedNullable {
+                fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
+                    let __raw = RawValue::deserialize(__deserializer)?;
+                    if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<String>(__raw.0.clone()) {
+                        return Ok(Self::Branch1(__value));
+                    }
+                    if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<()>(__raw.0.clone()) {
+                        return Ok(Self::Branch2(__value));
+                    }
+                    Err(::convex_typegen_runtime::serde::de::Error::custom("no matching branch of EchoArgsDataNestedNullable"))
+                }
+            }
+
+            #[derive(Debug, Clone, Serialize, Deserialize)]
+            #[serde(crate = "::convex_typegen_runtime::serde")]
+            #[serde(deny_unknown_fields)]
+            pub struct EchoArgsDataNested {
+                #[serde(rename = "note")]
+                #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+                pub note: Option<String>,
+                #[serde(rename = "nullable")]
+                pub nullable: EchoArgsDataNestedNullable,
+            }
+
+            #[derive(Debug, Clone, Serialize, Deserialize)]
+            #[serde(crate = "::convex_typegen_runtime::serde")]
+            #[serde(deny_unknown_fields)]
+            pub struct EchoArgsData {
+                #[serde(rename = "bytes")]
+                pub bytes: Bytes,
+                #[serde(rename = "choice")]
+                pub choice: EchoArgsDataChoice,
+                #[serde(rename = "count")]
+                pub count: i64,
+                #[serde(rename = "nested")]
+                pub nested: EchoArgsDataNested,
+                #[serde(rename = "number")]
+                pub number: f64,
+                #[serde(rename = "record")]
+                pub record: ::std::collections::BTreeMap<String, i64>,
+            }
+
+            #[derive(Debug, Clone, Serialize, Deserialize)]
+            #[serde(crate = "::convex_typegen_runtime::serde")]
+            #[serde(deny_unknown_fields)]
+            pub struct EchoArgs {
+                #[serde(rename = "data")]
+                pub data: EchoArgsData,
+            }
+
+            #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+            pub struct EchoReturnChoiceBranch1;
+
+            impl Serialize for EchoReturnChoiceBranch1 {
+                fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
+                    ("red").serialize(__serializer)
+                }
+            }
+
+            impl<'de> Deserialize<'de> for EchoReturnChoiceBranch1 {
+                fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
+                    let __value = String::deserialize(__deserializer)?;
+                    if __value == "red" {
+                        Ok(Self)
+                    } else {
+                        Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for EchoReturnChoiceBranch1"))
+                    }
+                }
+            }
+
+            #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+            pub struct EchoReturnChoiceBranch2;
+
+            impl Serialize for EchoReturnChoiceBranch2 {
+                fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
+                    ("blue").serialize(__serializer)
+                }
+            }
+
+            impl<'de> Deserialize<'de> for EchoReturnChoiceBranch2 {
+                fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
+                    let __value = String::deserialize(__deserializer)?;
+                    if __value == "blue" {
+                        Ok(Self)
+                    } else {
+                        Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for EchoReturnChoiceBranch2"))
+                    }
+                }
+            }
+
+            #[derive(Debug, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+            #[serde(crate = "::convex_typegen_runtime::serde")]
+            #[serde(untagged)]
+            pub enum EchoReturnChoice {
+                Branch1(EchoReturnChoiceBranch1),
+                Branch2(EchoReturnChoiceBranch2),
+            }
+
+            impl<'de> Deserialize<'de> for EchoReturnChoice {
+                fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
+                    let __raw = RawValue::deserialize(__deserializer)?;
+                    if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<EchoReturnChoiceBranch1>(__raw.0.clone()) {
+                        return Ok(Self::Branch1(__value));
+                    }
+                    if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<EchoReturnChoiceBranch2>(__raw.0.clone()) {
+                        return Ok(Self::Branch2(__value));
+                    }
+                    Err(::convex_typegen_runtime::serde::de::Error::custom("no matching branch of EchoReturnChoice"))
+                }
+            }
+
+            #[derive(Debug, Clone, Serialize)]
+            #[serde(crate = "::convex_typegen_runtime::serde")]
+            #[serde(untagged)]
+            pub enum EchoReturnNestedNullable {
+                Branch1(String),
+                Branch2(()),
+            }
+
+            impl<'de> Deserialize<'de> for EchoReturnNestedNullable {
+                fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
+                    let __raw = RawValue::deserialize(__deserializer)?;
+                    if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<String>(__raw.0.clone()) {
+                        return Ok(Self::Branch1(__value));
+                    }
+                    if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<()>(__raw.0.clone()) {
+                        return Ok(Self::Branch2(__value));
+                    }
+                    Err(::convex_typegen_runtime::serde::de::Error::custom("no matching branch of EchoReturnNestedNullable"))
+                }
+            }
+
+            #[derive(Debug, Clone, Serialize, Deserialize)]
+            #[serde(crate = "::convex_typegen_runtime::serde")]
+            #[serde(deny_unknown_fields)]
+            pub struct EchoReturnNested {
+                #[serde(rename = "note")]
+                #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+                pub note: Option<String>,
+                #[serde(rename = "nullable")]
+                pub nullable: EchoReturnNestedNullable,
+            }
+
+            #[derive(Debug, Clone, Serialize, Deserialize)]
+            #[serde(crate = "::convex_typegen_runtime::serde")]
+            #[serde(deny_unknown_fields)]
+            pub struct EchoReturn {
+                #[serde(rename = "bytes")]
+                pub bytes: Bytes,
+                #[serde(rename = "choice")]
+                pub choice: EchoReturnChoice,
+                #[serde(rename = "count")]
+                pub count: i64,
+                #[serde(rename = "nested")]
+                pub nested: EchoReturnNested,
+                #[serde(rename = "number")]
+                pub number: f64,
+                #[serde(rename = "record")]
+                pub record: ::std::collections::BTreeMap<String, i64>,
+            }
+
+            #[allow(non_upper_case_globals)]
+            pub const echo: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, EchoArgs, EchoReturn> =
+                ::convex_typegen_runtime::function::FunctionRef::new("admin/users:echo");
+
+            #[derive(Debug, Clone, Serialize, Deserialize)]
+            #[serde(crate = "::convex_typegen_runtime::serde")]
+            #[serde(deny_unknown_fields)]
+            pub struct AddArgs {
+                #[serde(rename = "text")]
+                pub text: String,
+            }
+
+            pub type AddReturn = Id<super::super::super::tables::Tasks>;
+
+            #[allow(non_upper_case_globals)]
+            pub const add: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Mutation, AddArgs, AddReturn> =
+                ::convex_typegen_runtime::function::FunctionRef::new("admin/users:add");
+
+            #[derive(Debug, Clone, Serialize, Deserialize)]
+            #[serde(crate = "::convex_typegen_runtime::serde")]
+            #[serde(deny_unknown_fields)]
+            pub struct DocsArgs {
+            }
+
+            pub type DocsReturn = Vec<::convex_typegen_runtime::model::Doc<super::super::super::tables::Tasks>>;
+
+            #[allow(non_upper_case_globals)]
+            pub const docs: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, DocsArgs, DocsReturn> =
+                ::convex_typegen_runtime::function::FunctionRef::new("admin/users:docs");
+
+            #[derive(Debug, Clone, Serialize, Deserialize)]
+            #[serde(crate = "::convex_typegen_runtime::serde")]
+            #[serde(deny_unknown_fields)]
+            pub struct FailArgs {
+            }
+
+            pub type FailReturn = ();
+
+            #[allow(non_upper_case_globals)]
+            pub const fail: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Action, FailArgs, FailReturn> =
+                ::convex_typegen_runtime::function::FunctionRef::new("admin/users:fail");
+
+            #[derive(Debug, Clone, Serialize, Deserialize)]
+            #[serde(crate = "::convex_typegen_runtime::serde")]
+            #[serde(deny_unknown_fields)]
+            pub struct PingArgs {
+            }
+
+            #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+            pub struct PingReturn;
+
+            impl Serialize for PingReturn {
+                fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
+                    ("pong").serialize(__serializer)
+                }
+            }
+
+            impl<'de> Deserialize<'de> for PingReturn {
+                fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
+                    let __value = String::deserialize(__deserializer)?;
+                    if __value == "pong" {
+                        Ok(Self)
+                    } else {
+                        Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for PingReturn"))
+                    }
+                }
+            }
+
+            #[allow(non_upper_case_globals)]
+            pub const ping: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Action, PingArgs, PingReturn> =
+                ::convex_typegen_runtime::function::FunctionRef::new("admin/users:ping");
         }
     }
-}
+    pub mod users {
+        #[allow(unused_imports)]
+        use ::convex_typegen_runtime::{
+            model::{Id, RawValue},
+            serde::{Deserialize, Serialize},
+            value_serde::Bytes,
+        };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct AdminUsersEchoArgsDataChoiceBranch2;
+        #[allow(non_upper_case_globals)]
+        pub const list: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, ::convex_typegen_runtime::function::RawArgs, RawValue> =
+            ::convex_typegen_runtime::function::FunctionRef::new("users:list");
 
-impl Serialize for AdminUsersEchoArgsDataChoiceBranch2 {
-    fn serialize<S: convex_typegen_runtime::serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        ("blue").serialize(serializer)
+        #[derive(Debug, Clone, Serialize, Deserialize)]
+        #[serde(crate = "::convex_typegen_runtime::serde")]
+        #[serde(deny_unknown_fields)]
+        pub struct OptionalArgsNested {
+            #[serde(rename = "note")]
+            #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+            pub note: Option<String>,
+        }
+
+        #[derive(Debug, Clone, Serialize, Deserialize)]
+        #[serde(crate = "::convex_typegen_runtime::serde")]
+        #[serde(deny_unknown_fields)]
+        pub struct OptionalArgs {
+            #[serde(rename = "root")]
+            #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+            pub root: Option<String>,
+            #[serde(rename = "nested")]
+            pub nested: OptionalArgsNested,
+        }
+
+        pub type OptionalReturn = bool;
+
+        #[allow(non_upper_case_globals)]
+        pub const optional: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, OptionalArgs, OptionalReturn> =
+            ::convex_typegen_runtime::function::FunctionRef::new("users:optional");
+
+        #[derive(Debug, Clone, Serialize, Deserialize)]
+        #[serde(crate = "::convex_typegen_runtime::serde")]
+        #[serde(deny_unknown_fields)]
+        pub struct NumberArgs {
+            #[serde(rename = "value")]
+            pub value: f64,
+        }
+
+        pub type NumberReturn = f64;
+
+        #[allow(non_upper_case_globals)]
+        pub const number: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, NumberArgs, NumberReturn> =
+            ::convex_typegen_runtime::function::FunctionRef::new("users:number");
     }
 }
-
-impl<'de> Deserialize<'de> for AdminUsersEchoArgsDataChoiceBranch2 {
-    fn deserialize<D: convex_typegen_runtime::serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let value = String::deserialize(deserializer)?;
-        if value == "blue" {
-            Ok(Self)
-        } else {
-            Err(convex_typegen_runtime::serde::de::Error::custom("expected literal for AdminUsersEchoArgsDataChoiceBranch2"))
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(untagged)]
-pub enum AdminUsersEchoArgsDataChoice {
-    Branch1(AdminUsersEchoArgsDataChoiceBranch1),
-    Branch2(AdminUsersEchoArgsDataChoiceBranch2),
-}
-
-impl<'de> Deserialize<'de> for AdminUsersEchoArgsDataChoice {
-    fn deserialize<D: convex_typegen_runtime::serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let raw = RawValue::deserialize(deserializer)?;
-        if let Ok(value) = from_value::<AdminUsersEchoArgsDataChoiceBranch1>(raw.0.clone()) {
-            return Ok(Self::Branch1(value));
-        }
-        if let Ok(value) = from_value::<AdminUsersEchoArgsDataChoiceBranch2>(raw.0.clone()) {
-            return Ok(Self::Branch2(value));
-        }
-        Err(convex_typegen_runtime::serde::de::Error::custom("no matching branch of AdminUsersEchoArgsDataChoice"))
-    }
-}
-
-#[derive(Debug, Clone, Serialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(untagged)]
-pub enum AdminUsersEchoArgsDataNestedNullable {
-    Branch1(String),
-    Branch2(()),
-}
-
-impl<'de> Deserialize<'de> for AdminUsersEchoArgsDataNestedNullable {
-    fn deserialize<D: convex_typegen_runtime::serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let raw = RawValue::deserialize(deserializer)?;
-        if let Ok(value) = from_value::<String>(raw.0.clone()) {
-            return Ok(Self::Branch1(value));
-        }
-        if let Ok(value) = from_value::<()>(raw.0.clone()) {
-            return Ok(Self::Branch2(value));
-        }
-        Err(convex_typegen_runtime::serde::de::Error::custom("no matching branch of AdminUsersEchoArgsDataNestedNullable"))
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
-pub struct AdminUsersEchoArgsDataNested {
-    #[serde(rename = "note")]
-    #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "convex_typegen_runtime::model::deserialize_present")]
-    pub note: Option<String>,
-    #[serde(rename = "nullable")]
-    pub nullable: AdminUsersEchoArgsDataNestedNullable,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
-pub struct AdminUsersEchoArgsData {
-    #[serde(rename = "bytes")]
-    pub bytes: Bytes,
-    #[serde(rename = "choice")]
-    pub choice: AdminUsersEchoArgsDataChoice,
-    #[serde(rename = "count")]
-    pub count: i64,
-    #[serde(rename = "nested")]
-    pub nested: AdminUsersEchoArgsDataNested,
-    #[serde(rename = "number")]
-    pub number: f64,
-    #[serde(rename = "record")]
-    pub record: std::collections::BTreeMap<String, i64>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
-pub struct AdminUsersEchoArgs {
-    #[serde(rename = "data")]
-    pub data: AdminUsersEchoArgsData,
-}
-
-impl AdminUsersEchoArgs {
-    pub const FUNCTION_PATH: &'static str = "admin/users:echo";
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct AdminUsersEchoReturnChoiceBranch1;
-
-impl Serialize for AdminUsersEchoReturnChoiceBranch1 {
-    fn serialize<S: convex_typegen_runtime::serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        ("red").serialize(serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for AdminUsersEchoReturnChoiceBranch1 {
-    fn deserialize<D: convex_typegen_runtime::serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let value = String::deserialize(deserializer)?;
-        if value == "red" {
-            Ok(Self)
-        } else {
-            Err(convex_typegen_runtime::serde::de::Error::custom("expected literal for AdminUsersEchoReturnChoiceBranch1"))
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct AdminUsersEchoReturnChoiceBranch2;
-
-impl Serialize for AdminUsersEchoReturnChoiceBranch2 {
-    fn serialize<S: convex_typegen_runtime::serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        ("blue").serialize(serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for AdminUsersEchoReturnChoiceBranch2 {
-    fn deserialize<D: convex_typegen_runtime::serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let value = String::deserialize(deserializer)?;
-        if value == "blue" {
-            Ok(Self)
-        } else {
-            Err(convex_typegen_runtime::serde::de::Error::custom("expected literal for AdminUsersEchoReturnChoiceBranch2"))
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(untagged)]
-pub enum AdminUsersEchoReturnChoice {
-    Branch1(AdminUsersEchoReturnChoiceBranch1),
-    Branch2(AdminUsersEchoReturnChoiceBranch2),
-}
-
-impl<'de> Deserialize<'de> for AdminUsersEchoReturnChoice {
-    fn deserialize<D: convex_typegen_runtime::serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let raw = RawValue::deserialize(deserializer)?;
-        if let Ok(value) = from_value::<AdminUsersEchoReturnChoiceBranch1>(raw.0.clone()) {
-            return Ok(Self::Branch1(value));
-        }
-        if let Ok(value) = from_value::<AdminUsersEchoReturnChoiceBranch2>(raw.0.clone()) {
-            return Ok(Self::Branch2(value));
-        }
-        Err(convex_typegen_runtime::serde::de::Error::custom("no matching branch of AdminUsersEchoReturnChoice"))
-    }
-}
-
-#[derive(Debug, Clone, Serialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(untagged)]
-pub enum AdminUsersEchoReturnNestedNullable {
-    Branch1(String),
-    Branch2(()),
-}
-
-impl<'de> Deserialize<'de> for AdminUsersEchoReturnNestedNullable {
-    fn deserialize<D: convex_typegen_runtime::serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let raw = RawValue::deserialize(deserializer)?;
-        if let Ok(value) = from_value::<String>(raw.0.clone()) {
-            return Ok(Self::Branch1(value));
-        }
-        if let Ok(value) = from_value::<()>(raw.0.clone()) {
-            return Ok(Self::Branch2(value));
-        }
-        Err(convex_typegen_runtime::serde::de::Error::custom("no matching branch of AdminUsersEchoReturnNestedNullable"))
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
-pub struct AdminUsersEchoReturnNested {
-    #[serde(rename = "note")]
-    #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "convex_typegen_runtime::model::deserialize_present")]
-    pub note: Option<String>,
-    #[serde(rename = "nullable")]
-    pub nullable: AdminUsersEchoReturnNestedNullable,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
-pub struct AdminUsersEchoReturn {
-    #[serde(rename = "bytes")]
-    pub bytes: Bytes,
-    #[serde(rename = "choice")]
-    pub choice: AdminUsersEchoReturnChoice,
-    #[serde(rename = "count")]
-    pub count: i64,
-    #[serde(rename = "nested")]
-    pub nested: AdminUsersEchoReturnNested,
-    #[serde(rename = "number")]
-    pub number: f64,
-    #[serde(rename = "record")]
-    pub record: std::collections::BTreeMap<String, i64>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
-pub struct AdminUsersAddArgs {
-    #[serde(rename = "text")]
-    pub text: String,
-}
-
-impl AdminUsersAddArgs {
-    pub const FUNCTION_PATH: &'static str = "admin/users:add";
-}
-
-pub type AdminUsersAddReturn = Id<tables::Tasks>;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
-pub struct AdminUsersDocsArgs {
-}
-
-impl AdminUsersDocsArgs {
-    pub const FUNCTION_PATH: &'static str = "admin/users:docs";
-}
-
-pub type AdminUsersDocsReturn = Vec<convex_typegen_runtime::model::Doc<tables::Tasks>>;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
-pub struct AdminUsersFailArgs {
-}
-
-impl AdminUsersFailArgs {
-    pub const FUNCTION_PATH: &'static str = "admin/users:fail";
-}
-
-pub type AdminUsersFailReturn = ();
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
-pub struct AdminUsersHiddenQueryArgs {
-}
-
-impl AdminUsersHiddenQueryArgs {
-    pub const FUNCTION_PATH: &'static str = "admin/users:hiddenQuery";
-}
-
-pub type AdminUsersHiddenQueryReturn = ();
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
-pub struct AdminUsersHiddenMutationArgs {
-}
-
-impl AdminUsersHiddenMutationArgs {
-    pub const FUNCTION_PATH: &'static str = "admin/users:hiddenMutation";
-}
-
-pub type AdminUsersHiddenMutationReturn = ();
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
-pub struct AdminUsersHiddenActionArgs {
-}
-
-impl AdminUsersHiddenActionArgs {
-    pub const FUNCTION_PATH: &'static str = "admin/users:hiddenAction";
-}
-
-pub type AdminUsersHiddenActionReturn = ();
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
-pub struct AdminUsersPingArgs {
-}
-
-impl AdminUsersPingArgs {
-    pub const FUNCTION_PATH: &'static str = "admin/users:ping";
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct AdminUsersPingReturn;
-
-impl Serialize for AdminUsersPingReturn {
-    fn serialize<S: convex_typegen_runtime::serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        ("pong").serialize(serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for AdminUsersPingReturn {
-    fn deserialize<D: convex_typegen_runtime::serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let value = String::deserialize(deserializer)?;
-        if value == "pong" {
-            Ok(Self)
-        } else {
-            Err(convex_typegen_runtime::serde::de::Error::custom("expected literal for AdminUsersPingReturn"))
-        }
-    }
-}
-
-/// Raw arguments for an endpoint without a declared args validator.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(transparent)]
-pub struct UsersListArgs(pub RawValue);
-
-impl UsersListArgs {
-    pub const FUNCTION_PATH: &'static str = "users:list";
-}
-
-pub type UsersListReturn = RawValue;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
-pub struct UsersOptionalArgsNested {
-    #[serde(rename = "note")]
-    #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "convex_typegen_runtime::model::deserialize_present")]
-    pub note: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
-pub struct UsersOptionalArgs {
-    #[serde(rename = "root")]
-    #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "convex_typegen_runtime::model::deserialize_present")]
-    pub root: Option<String>,
-    #[serde(rename = "nested")]
-    pub nested: UsersOptionalArgsNested,
-}
-
-impl UsersOptionalArgs {
-    pub const FUNCTION_PATH: &'static str = "users:optional";
-}
-
-pub type UsersOptionalReturn = bool;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
-pub struct UsersNumberArgs {
-    #[serde(rename = "value")]
-    pub value: f64,
-}
-
-impl UsersNumberArgs {
-    pub const FUNCTION_PATH: &'static str = "users:number";
-}
-
-pub type UsersNumberReturn = f64;

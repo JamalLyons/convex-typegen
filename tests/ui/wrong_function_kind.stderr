@@ -1,0 +1,13 @@
+error[E0271]: type mismatch resolving `<FunctionRef<Mutation, AddArgs, Id<Tasks>> as FunctionReference>::Kind == Query`
+  --> tests/ui/wrong_function_kind.rs:11:18
+   |
+11 |     accept_query(users::add);
+   |     ------------ ^^^^^^^^^^ expected `Query`, found `Mutation`
+   |     |
+   |     required by a bound introduced by this call
+   |
+note: required by a bound in `accept_query`
+  --> tests/ui/wrong_function_kind.rs:7:43
+   |
+ 7 | fn accept_query(_: impl FunctionReference<Kind = Query>) {}
+   |                                           ^^^^^^^^^^^^ required by this bound in `accept_query`

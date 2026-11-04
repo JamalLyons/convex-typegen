@@ -4,6 +4,7 @@
 //! build dependency. The runtime supports Rust 1.85.
 
 mod client;
+pub mod function;
 pub mod model;
 pub mod value_serde;
 

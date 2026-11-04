@@ -202,7 +202,7 @@ export default defineSchema({
         assert!(body.contains("pub email: String,"), "expected email column: {body}");
     }
 
-    /// Args structs are `{Module}{Export}Args`, so the same export name in two modules is unique.
+    /// Each module scopes its own `{Export}Args` structs.
     #[test]
     fn generate_duplicate_export_names_produce_unique_args_structs()
     {
@@ -255,8 +255,7 @@ export const list = query({
 
         generate(cfg).unwrap();
         let body = fs::read_to_string(&out).unwrap();
-        assert!(body.contains("pub struct ModAListArgs"), "expected mod_a:list args struct");
-        assert!(body.contains("pub struct ModBListArgs"), "expected mod_b:list args struct");
+        assert_eq!(body.matches("pub struct ListArgs").count(), 2);
         assert!(body.contains("\"mod_a:list\""), "expected first module path in emitted Rust");
         assert!(body.contains("\"mod_b:list\""), "expected second module path in emitted Rust");
     }

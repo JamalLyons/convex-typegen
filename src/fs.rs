@@ -1,7 +1,8 @@
 //! Discover Convex function modules on disk for `build.rs`.
 //!
-//! With an empty [`crate::config::Configuration::function_paths`], walks `convex_dir` for `*.ts`,
-//! skips `_generated/`, `node_modules/`, `*.d.ts`, reserved modules, and the canonical
+//! With [`crate::config::Configuration::function_spec_path`] set, returns only that spec path.
+//! Otherwise, with an empty [`crate::config::Configuration::function_paths`], walks `convex_dir`
+//! for `*.ts`, skips `_generated/`, `node_modules/`, `*.d.ts`, reserved modules, and the canonical
 //! [`Configuration::schema_path`]. Relative imports are included for Cargo invalidation. A missing
 //! `convex_dir` returns an empty `Vec` (no error) so callers can use explicit inputs.
 
@@ -21,6 +22,9 @@ const RESERVED_MODULES: &[&str] = &["http.ts", "crons.ts", "convex.config.ts"];
 /// invalidate the build.
 pub fn rcfp(config: &Configuration) -> Result<Vec<PathBuf>, ConvexTypeGeneratorError>
 {
+    if let Some(spec) = &config.function_spec_path {
+        return Ok(vec![spec.clone()]);
+    }
     let paths = if !config.function_paths.is_empty() {
         config.function_paths.clone()
     } else {

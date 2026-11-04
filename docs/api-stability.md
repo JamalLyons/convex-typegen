@@ -7,7 +7,7 @@ Quick reference for what is **stable** vs **unstable** in convex-typegen. Full r
 | Item | Stability | Notes |
 | --- | --- | --- |
 | `generate(config) -> Result<(), ConvexTypeGeneratorError>` | Stable | Entry point for build scripts |
-| `Configuration` | Stable | Additive fields only in minors |
+| `Configuration` | Stable | Additive fields only in minors; `function_spec_path` is optional and defaults to `None` |
 | `Configuration::default()` | Stable | Default paths documented in readme |
 | `rcfp(&Configuration) -> Result<Vec<PathBuf>, _>` | Stable | For `cargo:rerun-if-changed` |
 | `ConvexTypeGeneratorError` | Stable | Additive variants in minors only |

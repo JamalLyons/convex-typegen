@@ -1,0 +1,32 @@
+---
+source: src/convex/spec.rs
+expression: shape
+---
+[
+    (
+        "admin/users",
+        "list",
+        Query,
+        Internal,
+        Unknown,
+        Unknown,
+    ),
+    (
+        "users",
+        "nullValue",
+        Mutation,
+        Public,
+        Declared(
+            [],
+        ),
+        Declared(
+            ReturnValidator {
+                validator: Null,
+                provenance: Provenance {
+                    source: "function-spec.json",
+                    span: None,
+                },
+            },
+        ),
+    ),
+]

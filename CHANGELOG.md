@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Read a committed Convex function-spec JSON as the authoritative function inventory when
+  `Configuration::function_spec_path` is set. `rcfp` tracks that file for Cargo rebuilds; schema
+  parsing remains TypeScript-based. The new optional public configuration field defaults to `None`.
+  Existing `Configuration { ... }` literals must add `function_spec_path: None` or use
+  `..Configuration::default()`.
+
 - Resolve function builders through recognized Convex server imports and aliases. Resolve static
   local/imported validator constants and object spreads with bounded cycle diagnostics, preserve
   root-relative module identities, and skip reserved endpoint modules.

@@ -67,10 +67,28 @@ Identical shapes under the same name are reused; conflicting shapes under the sa
 | `schema_path` | `convex/schema.ts` |
 | `out_file` | `src/convex_types.rs` |
 | `convex_dir` | `convex` |
+| `function_spec_path` | `None` |
 
 Paths are relative to the package directory when Cargo runs the build script.
 
-Function sources: every `*.ts` under `convex_dir`, except the schema file, `_generated/`, `node_modules/`, and `*.d.ts`. Set `function_paths` to a non-empty list to skip discovery and pass files explicitly.
+Function sources: every `*.ts` under `convex_dir`, except the schema file, `_generated/`,
+`node_modules/`, reserved modules (`http.ts`, `crons.ts`, `convex.config.ts`), and `*.d.ts`.
+Relative imports of endpoint modules are included for Cargo invalidation. Set `function_paths` to a
+non-empty list to skip directory discovery and pass files explicitly.
+
+To use committed output from `npx convex function-spec` as the complete function inventory:
+
+```rust,ignore
+let config = Configuration {
+    function_spec_path: Some("convex/function-spec.json".into()),
+    ..Default::default()
+};
+```
+
+The spec replaces TypeScript function discovery and parsing; the schema remains TypeScript. `rcfp`
+returns the spec path so a build script can emit `cargo:rerun-if-changed` for it. Builds only read
+the committed JSON and never run the Convex CLI or contact a backend. Refresh the v1 review capture
+with `scripts/refresh-function-spec.sh` after deploying that fixture to the documented local backend.
 
 ## Features
 

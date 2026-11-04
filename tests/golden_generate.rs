@@ -100,6 +100,7 @@ fn run_generate(schema: &str, extra_files: &[(&str, &str)]) -> String
         out_file: out.clone(),
         convex_dir: convex,
         function_paths: Vec::new(),
+        function_spec_path: None,
     };
     generate(cfg).unwrap();
     fs::read_to_string(&out).unwrap()

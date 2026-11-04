@@ -1,0 +1,403 @@
+{
+  "functions": [
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Action",
+      "identifier": "admin/users.js:fail",
+      "returns": {
+        "type": "null"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Action",
+      "identifier": "admin/users.js:hiddenAction",
+      "returns": {
+        "type": "null"
+      },
+      "visibility": {
+        "kind": "internal"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Action",
+      "identifier": "admin/users.js:ping",
+      "returns": {
+        "type": "literal",
+        "value": "pong"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "functionType": "HttpAction",
+      "method": "GET",
+      "path": "/ping"
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "text": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Mutation",
+      "identifier": "admin/users.js:add",
+      "returns": {
+        "tableName": "tasks",
+        "type": "id"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Mutation",
+      "identifier": "admin/users.js:hiddenMutation",
+      "returns": {
+        "type": "null"
+      },
+      "visibility": {
+        "kind": "internal"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "admin/users.js:docs",
+      "returns": {
+        "type": "array",
+        "value": {
+          "type": "object",
+          "value": {
+            "_creationTime": {
+              "fieldType": {
+                "type": "number"
+              },
+              "optional": false
+            },
+            "_id": {
+              "fieldType": {
+                "tableName": "tasks",
+                "type": "id"
+              },
+              "optional": false
+            },
+            "text": {
+              "fieldType": {
+                "type": "string"
+              },
+              "optional": false
+            }
+          }
+        }
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "data": {
+            "fieldType": {
+              "type": "object",
+              "value": {
+                "bytes": {
+                  "fieldType": {
+                    "type": "bytes"
+                  },
+                  "optional": false
+                },
+                "choice": {
+                  "fieldType": {
+                    "type": "union",
+                    "value": [
+                      {
+                        "type": "literal",
+                        "value": "red"
+                      },
+                      {
+                        "type": "literal",
+                        "value": "blue"
+                      }
+                    ]
+                  },
+                  "optional": false
+                },
+                "count": {
+                  "fieldType": {
+                    "type": "bigint"
+                  },
+                  "optional": false
+                },
+                "nested": {
+                  "fieldType": {
+                    "type": "object",
+                    "value": {
+                      "note": {
+                        "fieldType": {
+                          "type": "string"
+                        },
+                        "optional": true
+                      },
+                      "nullable": {
+                        "fieldType": {
+                          "type": "union",
+                          "value": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "optional": false
+                      }
+                    }
+                  },
+                  "optional": false
+                },
+                "number": {
+                  "fieldType": {
+                    "type": "number"
+                  },
+                  "optional": false
+                },
+                "record": {
+                  "fieldType": {
+                    "keys": {
+                      "type": "string"
+                    },
+                    "type": "record",
+                    "values": {
+                      "fieldType": {
+                        "type": "bigint"
+                      },
+                      "optional": false
+                    }
+                  },
+                  "optional": false
+                }
+              }
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "admin/users.js:echo",
+      "returns": {
+        "type": "object",
+        "value": {
+          "bytes": {
+            "fieldType": {
+              "type": "bytes"
+            },
+            "optional": false
+          },
+          "choice": {
+            "fieldType": {
+              "type": "union",
+              "value": [
+                {
+                  "type": "literal",
+                  "value": "red"
+                },
+                {
+                  "type": "literal",
+                  "value": "blue"
+                }
+              ]
+            },
+            "optional": false
+          },
+          "count": {
+            "fieldType": {
+              "type": "bigint"
+            },
+            "optional": false
+          },
+          "nested": {
+            "fieldType": {
+              "type": "object",
+              "value": {
+                "note": {
+                  "fieldType": {
+                    "type": "string"
+                  },
+                  "optional": true
+                },
+                "nullable": {
+                  "fieldType": {
+                    "type": "union",
+                    "value": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "optional": false
+                }
+              }
+            },
+            "optional": false
+          },
+          "number": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": false
+          },
+          "record": {
+            "fieldType": {
+              "keys": {
+                "type": "string"
+              },
+              "type": "record",
+              "values": {
+                "fieldType": {
+                  "type": "bigint"
+                },
+                "optional": false
+              }
+            },
+            "optional": false
+          }
+        }
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "admin/users.js:hiddenQuery",
+      "returns": {
+        "type": "null"
+      },
+      "visibility": {
+        "kind": "internal"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {}
+      },
+      "functionType": "Query",
+      "identifier": "admin/users.js:list",
+      "returns": {
+        "type": "array",
+        "value": {
+          "type": "string"
+        }
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "any"
+      },
+      "functionType": "Query",
+      "identifier": "users.js:list",
+      "returns": null,
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "value": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": false
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "users.js:number",
+      "returns": {
+        "type": "number"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    },
+    {
+      "args": {
+        "type": "object",
+        "value": {
+          "nested": {
+            "fieldType": {
+              "type": "object",
+              "value": {
+                "note": {
+                  "fieldType": {
+                    "type": "string"
+                  },
+                  "optional": true
+                }
+              }
+            },
+            "optional": false
+          },
+          "root": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": true
+          }
+        }
+      },
+      "functionType": "Query",
+      "identifier": "users.js:optional",
+      "returns": {
+        "type": "boolean"
+      },
+      "visibility": {
+        "kind": "public"
+      }
+    }
+  ]
+}

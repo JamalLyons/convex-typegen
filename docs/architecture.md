@@ -39,12 +39,12 @@ flowchart LR
   C --> R
 ```
 
-1. **`config::Configuration`** — Paths for schema, output file, Convex directory, and optional explicit `function_paths` (skips directory discovery).
-2. **`fs::rcfp`** — Resolves endpoint inputs and their relative imports so build scripts can emit Cargo invalidation lines for every parsed source.
+1. **`config::Configuration`** — Paths for schema, output file, Convex directory, optional explicit `function_paths`, and optional authoritative `function_spec_path`.
+2. **`fs::rcfp`** — Resolves the configured spec path or TypeScript endpoint inputs and their relative imports so build scripts can emit Cargo invalidation lines for every parsed source.
 3. **`convex::create_function_asts`** — Canonicalizes each input and follows named relative imports; schema and function inputs share this loader. ASTs are stored in a **`BTreeMap<String, JsonValue>`** keyed by canonical path string (stable iteration order, no basename collisions between `convex/a/foo.ts` and `convex/b/foo.ts`).
-5. **`parser::parse_schema_ast`** / **`parser::parse_function_ast`** — Oxc/ESTree adapters that share the bounded static binding and spread resolver.
-6. **`ir::GenerationIr`** — Source-neutral typed model: validator trees, canonical module path + export identity, function kind/visibility, explicit declared/unknown metadata, field presence, and source provenance with optional offsets.
-7. **`codegen::run_codegen`** — Matches on `GenerationIr` directly and writes generated Rust.
+4. **Function adapters** — The TypeScript parser uses Oxc/ESTree and the bounded static binding/spread resolver; the committed function-spec adapter validates JSON and lowers it directly to the same IR.
+5. **`ir::GenerationIr`** — Source-neutral typed model: validator trees, canonical module path + export identity, function kind/visibility, explicit declared/unknown metadata, field presence, and source provenance with optional offsets.
+6. **`codegen::run_codegen`** — Matches on `GenerationIr` directly and writes generated Rust.
 
 Errors are unified as **`error::ConvexTypeGeneratorError`** (IO, Oxc parse/semantic failures, invalid schema shape, invalid `v.*` names, etc.).
 
@@ -56,7 +56,8 @@ Errors are unified as **`error::ConvexTypeGeneratorError`** (IO, Oxc parse/seman
 |------|-----------------|------------------|
 | Entry | `src/lib.rs` | `generate` and crate docs |
 | Config | `src/config.rs` | `Configuration` defaults |
-| Discovery | `src/fs.rs` | `rcfp`, walk `convex/**/*.ts`, skip schema / `_generated` / `node_modules` / `*.d.ts` |
+| Discovery | `src/fs.rs` | `rcfp`, walk `convex/**/*.ts`, skip schema / `_generated` / `node_modules` / reserved modules / `*.d.ts`, or track configured spec JSON |
+| Function spec | `src/convex/spec.rs` | Validate function-spec JSON and lower it directly to the shared IR |
 | TS → JSON AST | `src/convex/lexer.rs` | Oxc parse + semantic check → `to_estree_ts_json` → `serde_json::Value` |
 | ESTree → IR | `src/convex/parser.rs` | Schema and function extraction, including inline argument and return validators |
 | IR types | `src/convex/ir.rs` | Schema, table documents, fields, functions, and provenance |

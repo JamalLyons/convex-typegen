@@ -4,6 +4,7 @@ use serde_json::json;
 use tempfile::tempdir;
 
 use super::*;
+use crate::convex::spec::parse_function_spec;
 use crate::convex::{create_function_asts, create_schema_ast};
 
 fn schema_from_source(source: &str) -> Result<Schema, ConvexTypeGeneratorError>
@@ -400,6 +401,39 @@ fn spec_object<'a>(fields: impl Iterator<Item = (&'a str, &'a Validator)>) -> Js
     json!({ "type": "object", "value": fields })
 }
 
+fn clear_struct_name_hints(validator: &mut Validator)
+{
+    match validator {
+        Validator::Object { struct_name, properties } => {
+            *struct_name = None;
+            if let Some(properties) = properties {
+                for child in properties.values_mut() {
+                    clear_struct_name_hints(child);
+                }
+            }
+        }
+        Validator::Array(inner) | Validator::Optional(inner) => clear_struct_name_hints(inner),
+        Validator::Record { key_type, value_type } => {
+            clear_struct_name_hints(key_type);
+            clear_struct_name_hints(value_type);
+        }
+        Validator::Union(variants) => {
+            for variant in variants {
+                clear_struct_name_hints(variant);
+            }
+        }
+        Validator::FunctionHandle(signature) => {
+            if let Some(args) = &mut signature.args {
+                clear_struct_name_hints(args);
+            }
+            if let Some(returns) = &mut signature.returns {
+                clear_struct_name_hints(returns);
+            }
+        }
+        _ => {}
+    }
+}
+
 #[test]
 fn review_fixture_matches_function_spec_for_inline_validators()
 {
@@ -476,5 +510,69 @@ fn review_fixture_matches_function_spec_for_inline_validators()
         };
         assert_eq!(args, expected["args"], "{identifier} args");
         assert_eq!(returns, expected["returns"], "{identifier} returns");
+    }
+
+    // The real CLI capture also includes resolved imported validators, internal/public visibility,
+    // and an HTTP action. Compare its overlap with source parsing after ignoring provenance.
+    let capture_path = root.parent().unwrap().join("function-spec.json");
+    let captured = parse_function_spec(&capture_path).unwrap();
+    for source in &functions {
+        let module = source.identity.module.as_ref().unwrap();
+        let spec = captured
+            .iter()
+            .find(|candidate| {
+                candidate.identity.module.as_ref() == Some(module) && candidate.identity.export == source.identity.export
+            })
+            .unwrap_or_else(|| panic!("missing capture endpoint {module:?}:{}", source.identity.export));
+        assert_eq!(source.kind, spec.kind);
+        assert_eq!(source.visibility, spec.visibility);
+        match (&source.args, &spec.args) {
+            (Declared::Unknown, Declared::Unknown) => {}
+            (Declared::Declared(source_fields), Declared::Declared(spec_fields)) => {
+                assert_eq!(source_fields.len(), spec_fields.len());
+                for source_field in source_fields {
+                    let spec_field = spec_fields
+                        .iter()
+                        .find(|candidate| candidate.name == source_field.name)
+                        .unwrap_or_else(|| {
+                            panic!(
+                                "missing field {}:{}:{}",
+                                module.join("/"),
+                                source.identity.export,
+                                source_field.name
+                            )
+                        });
+                    let mut source_validator = source_field.validator.clone();
+                    let mut spec_validator = spec_field.validator.clone();
+                    clear_struct_name_hints(&mut source_validator);
+                    clear_struct_name_hints(&mut spec_validator);
+                    assert_eq!(
+                        source_validator,
+                        spec_validator,
+                        "{}:{} args",
+                        module.join("/"),
+                        source.identity.export
+                    );
+                }
+            }
+            _ => panic!("{}:{} args declaration differs", module.join("/"), source.identity.export),
+        }
+        match (&source.returns, &spec.returns) {
+            (Declared::Unknown, Declared::Unknown) => {}
+            (Declared::Declared(source_return), Declared::Declared(spec_return)) => {
+                let mut source_validator = source_return.validator.clone();
+                let mut spec_validator = spec_return.validator.clone();
+                clear_struct_name_hints(&mut source_validator);
+                clear_struct_name_hints(&mut spec_validator);
+                assert_eq!(
+                    source_validator,
+                    spec_validator,
+                    "{}:{} returns",
+                    module.join("/"),
+                    source.identity.export
+                );
+            }
+            _ => panic!("{}:{} return declaration differs", module.join("/"), source.identity.export),
+        }
     }
 }

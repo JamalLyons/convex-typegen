@@ -22,10 +22,16 @@ pub struct Configuration
     /// `crons.ts`, `convex.config.ts`, and `*.d.ts`.
     pub convex_dir: PathBuf,
 
-    /// When non-empty, only these files are parsed as Convex functions (directory discovery is
-    /// skipped). Use this in tests or for unusual layouts. Files outside [`convex_dir`](Self::convex_dir)
-    /// have no root-relative module identity.
+    /// When non-empty and [`function_spec_path`](Self::function_spec_path) is `None`, only these
+    /// files are parsed as Convex functions (directory discovery is skipped). Use this in tests or
+    /// for unusual layouts. Files outside [`convex_dir`](Self::convex_dir) have no root-relative
+    /// module identity.
     pub function_paths: Vec<PathBuf>,
+
+    /// Optional committed output from `npx convex function-spec`. When set, it takes precedence
+    /// over [`function_paths`](Self::function_paths) and is the complete authoritative function
+    /// inventory; TypeScript is still parsed for the schema.
+    pub function_spec_path: Option<PathBuf>,
 }
 
 impl Default for Configuration
@@ -37,6 +43,7 @@ impl Default for Configuration
             out_file: PathBuf::from("src/convex_types.rs"),
             convex_dir: PathBuf::from("convex"),
             function_paths: Vec::new(),
+            function_spec_path: None,
         }
     }
 }
@@ -54,6 +61,7 @@ mod default_tests
         assert_eq!(c.out_file, PathBuf::from("src/convex_types.rs"));
         assert_eq!(c.convex_dir, PathBuf::from("convex"));
         assert!(c.function_paths.is_empty());
+        assert!(c.function_spec_path.is_none());
     }
 
     #[test]
@@ -64,6 +72,7 @@ mod default_tests
             out_file: PathBuf::from("b/out.rs"),
             convex_dir: PathBuf::from("c"),
             function_paths: vec![PathBuf::from("d/e.ts")],
+            function_spec_path: None,
         };
         assert_eq!(c.clone().schema_path, c.schema_path);
         assert_eq!(c.clone().function_paths, c.function_paths);

@@ -1,13 +1,16 @@
 [package]
 name = "xtask"
 version = "0.0.0"
-edition = "2024"
-rust-version = "1.95"
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
 publish = false
 
 [dependencies]
 getrandom = "0.4"
 
 [dev-dependencies]
-convex-typegen = { path = ".." }
-tempfile = "3"
+convex-typegen.workspace = true
+tempfile.workspace = true

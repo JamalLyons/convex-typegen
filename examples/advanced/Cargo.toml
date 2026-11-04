@@ -2,12 +2,16 @@
 name = "advanced"
 version = "0.1.0"
 edition = "2021"
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
 
 [dependencies]
-convex = "0.10.4"
-dotenvy = "0.15.7"
-tokio = { version = "1.52.3", features = ["full"] }
-convex-typegen-runtime = { path = "../../runtime" }
+convex.workspace = true
+dotenvy.workspace = true
+tokio.workspace = true
+convex-typegen-runtime.workspace = true
 
 [build-dependencies]
-convex-typegen = { path = "../../" }
+convex-typegen.workspace = true

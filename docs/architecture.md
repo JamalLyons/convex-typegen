@@ -211,7 +211,8 @@ See [semver-policy.md](semver-policy.md) for when generated type renames require
 
 ## Runtime crate (`runtime/`)
 
-Generated Rust uses the runtime prelude and runtime Serde re-exports. The generator and runtime have independent dependency graphs and lockfiles.
+Generated Rust uses the runtime prelude and runtime Serde re-exports. The generator and runtime share a workspace lockfile. The runtime owns the Convex client
+dependency, and its Rust 1.85 check selects only the runtime package.
 
 - **`ConvexClientExt::prepare_args`** — Serde args struct → `BTreeMap<String, convex::Value>` through `value_serde`; conversion errors carry the failing value path.
 
@@ -231,6 +232,14 @@ arrays.
 args to the official **`convex`** crate at runtime.
 
 ---
+
+## Cargo workspace
+
+The generator package lives at the repository root. The runtime, examples, and `xtask` share
+the root `Cargo.lock`, `target/`, and profiles. Use `cargo build --workspace --all-features` and
+`cargo test --workspace --all-features` from the root to build and test every member. The examples
+run their offline build scripts when built. Use `cargo +1.85 check --locked -p convex-typegen-runtime`
+to check the runtime at its own MSRV.
 
 ## Testing strategy (for contributors)
 

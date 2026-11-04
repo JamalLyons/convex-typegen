@@ -48,10 +48,17 @@ pub(crate) struct ConvexFunction
     /// Rust-friendly export name (`export const foo = …`).
     pub name: String,
     pub params: Vec<ConvexFunctionParam>,
+    #[serde(default)]
+    pub args_declared: bool,
     /// Callee identifier from TS: `"query"`, `"mutation"`, or `"action"` (informational for now).
     pub type_: String,
     /// Convex module path segment: file stem without `.ts` (`api` for `convex/api.ts`).
     pub file_name: String,
+    /// Canonical source path and optional Oxc offsets carried into the source-neutral IR.
+    #[serde(default)]
+    pub source_path: String,
+    #[serde(default)]
+    pub span: Option<crate::convex::ir::SourceSpan>,
 }
 
 /// A parameter in a convex function.
@@ -96,8 +103,11 @@ mod serde_roundtrip_tests
                 name: "x".into(),
                 data_type: json!({ "type": "number" }),
             }],
+            args_declared: true,
             type_: "query".into(),
             file_name: "api".into(),
+            source_path: "api.ts".into(),
+            span: None,
         };
         let s = serde_json::to_string(&f).unwrap();
         let back: ConvexFunction = serde_json::from_str(&s).unwrap();

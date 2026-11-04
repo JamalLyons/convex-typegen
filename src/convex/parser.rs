@@ -636,12 +636,24 @@ pub(crate) fn parse_function_ast(ast_map: BTreeMap<String, JsonValue>) -> Result
                             {
                                 // Extract function parameters from the args property
                                 let params = extract_function_params(config, &file_name, name)?;
+                                let args_declared = config["properties"].as_array().is_some_and(|properties| {
+                                    properties.iter().any(|prop| prop["key"]["name"].as_str() == Some("args"))
+                                });
 
                                 convex_functions.push(ConvexFunction {
                                     name: name.to_string(),
                                     params,
+                                    args_declared,
                                     type_: fn_type.to_string(),
                                     file_name: file_name.to_string(),
+                                    source_path: source_path.clone(),
+                                    span: match (init["start"].as_u64(), init["end"].as_u64()) {
+                                        (Some(start), Some(end)) => Some(crate::convex::ir::SourceSpan {
+                                            start: start as u32,
+                                            end: end as u32,
+                                        }),
+                                        _ => None,
+                                    },
                                 });
                             }
                         }

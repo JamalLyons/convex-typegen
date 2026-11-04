@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Route generation through a source-neutral typed IR containing validator trees, table document
+  fields and presence, canonical function identity, kind and visibility, declared/unknown metadata,
+  and source provenance with optional Oxc spans. Existing generated output remains stable.
+
 ### Added
 
 - Direct Serde conversion to and from `convex::Value` via `value_serde::{to_value, from_value}`. It

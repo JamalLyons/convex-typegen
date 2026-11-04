@@ -18,6 +18,7 @@
 
 use crate::config::Configuration;
 use crate::convex::codegen::run_codegen;
+use crate::convex::ir::GenerationIr;
 use crate::convex::parser::{parse_function_ast, parse_schema_ast};
 use crate::convex::{create_function_asts, create_schema_ast};
 use crate::error::ConvexTypeGeneratorError;
@@ -67,14 +68,16 @@ pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError>
             error: e,
         })?;
 
-    let schema_ast = create_schema_ast(schema_path)?;
+    let schema_ast = create_schema_ast(schema_path.clone())?;
     let function_paths = rcfp(&config)?;
     let function_asts = create_function_asts(function_paths)?;
 
     let parsed_schema = parse_schema_ast(schema_ast)?;
     let parsed_functions = parse_function_ast(function_asts)?;
 
-    run_codegen(&config.out_file, (parsed_schema, parsed_functions))?;
+    let convex_root = config.convex_dir.canonicalize().unwrap_or(config.convex_dir.clone());
+    let ir = GenerationIr::from_legacy(parsed_schema, parsed_functions, &convex_root, &schema_path)?;
+    run_codegen(&config.out_file, ir)?;
 
     Ok(())
 }

@@ -6,7 +6,9 @@
 //! - **Lexer** ([`lexer`]) — parse TS to a [`serde_json::Value`] ESTree tree.
 //! - **Parser** ([`parser`]) — interpret Convex `defineSchema` / `defineTable` / `v.*` and exported
 //!   `query`/`mutation`/`action` shapes into [`types`].
-//! - **Validator IR** ([`validator`]) — typed `v.*` tree and `structName` for named object codegen.
+//! - **Source-neutral IR** ([`ir`]) — typed validators, canonical function identity, metadata,
+//!   optional field presence, and source provenance shared by adapters and codegen.
+//! - **Validator model** ([`validator`]) — typed `v.*` tree used by the source-neutral IR.
 //! - **Codegen** ([`codegen`]) — stringify that model as `src/convex_types.rs`-style output.
 //! - **AST spike** ([`ast`]) — direct Oxc `Program` walks; not used by [`crate::generate`] yet.
 //!
@@ -34,6 +36,7 @@ pub(crate) mod ast;
 #[cfg(feature = "client")]
 mod client;
 pub(crate) mod codegen;
+pub(crate) mod ir;
 pub(crate) mod lexer;
 pub(crate) mod parser;
 pub(crate) mod types;

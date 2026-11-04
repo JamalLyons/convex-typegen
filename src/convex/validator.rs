@@ -33,6 +33,7 @@ pub(crate) enum ConvexValidator
     },
     Object
     {
+        #[serde(rename = "structName")]
         #[serde(skip_serializing_if = "Option::is_none")]
         struct_name: Option<String>,
         properties: BTreeMap<String, ConvexValidator>,
@@ -182,12 +183,15 @@ mod validator_tests
         });
         let v = ConvexValidator::from_json(&j).unwrap();
         assert!(matches!(
-            v,
+            &v,
             ConvexValidator::Object {
                 struct_name: Some(name),
                 ..
             } if name == "ProjectsSettings"
         ));
+        let encoded = serde_json::to_value(&v).unwrap();
+        assert_eq!(encoded["structName"], "ProjectsSettings");
+        assert!(encoded.get("struct_name").is_none());
     }
 
     #[test]

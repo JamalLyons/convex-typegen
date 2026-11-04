@@ -43,8 +43,9 @@ flowchart LR
 2. **`fs::rcfp`** — Resolves which `.ts` files are treated as function sources (same set as `generate`, intended for `cargo:rerun-if-changed`).
 3. **`convex::create_schema_ast`** — One file: canonical `schema_path` → ESTree JSON (`serde_json::Value`).
 4. **`convex::create_function_asts`** — Many files: each path is canonicalized; ASTs are stored in a **`BTreeMap<String, JsonValue>`** keyed by **canonical path string** (stable iteration order, no basename collisions between `convex/a/foo.ts` and `convex/b/foo.ts`).
-5. **`parser::parse_schema_ast`** / **`parser::parse_function_ast`** — Walk ESTree JSON into Rust structs + embedded JSON for column/param types.
-6. **`codegen::run_codegen`** — Write header + generated Rust from `(ConvexSchema, ConvexFunctions)`.
+5. **`parser::parse_schema_ast`** / **`parser::parse_function_ast`** — Oxc/ESTree adapter that interprets Convex syntax.
+6. **`ir::GenerationIr`** — Source-neutral typed model: validator trees, canonical module path + export identity, function kind/visibility, explicit declared/unknown metadata, field presence, and source provenance with optional offsets.
+7. **`codegen::run_codegen`** — Receives `GenerationIr`; a single compatibility lowering keeps the existing emitter output stable while other source adapters are added.
 
 Errors are unified as **`error::ConvexTypeGeneratorError`** (IO, Oxc parse/semantic failures, invalid schema shape, circular `v.object` patterns, invalid `v.*` names, etc.).
 
@@ -157,7 +158,7 @@ Most failures are **`InvalidSchema { context, details }`**. When extending the p
 | `ConvexFunctions` | Type alias for `Vec<ConvexFunction>` |
 | `ConvexValidator` (`validator.rs`) | Typed `v.*` tree used for named-object hashing/dedupe; parser JSON remains the source of truth |
 
-Parser output stays JSON; codegen reads `structName` off that JSON. `ConvexValidator::from_json` is the typed view.
+The Oxc/ESTree parser remains an input adapter. After parsing, production generation crosses into `GenerationIr`; validator information is held as `ConvexValidator` and JSON is produced only at the temporary compatibility boundary to the existing emitter. Function identity retains the full module path even while emitted names preserve the current basename behavior. Provenance includes the source path and optional Oxc offsets; sources without offsets represent their absence as `None`.
 
 `ConvexSchema` / `ConvexFunction` derive `Serialize`/`Deserialize` mainly for **tests** and potential tooling—not required for normal `generate`.
 

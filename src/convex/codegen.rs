@@ -19,6 +19,7 @@ use std::path::PathBuf;
 
 use serde_json::Value as JsonValue;
 
+use crate::convex::ir::GenerationIr;
 use crate::convex::types::{ConvexFunction, ConvexFunctions, ConvexSchema, ConvexTable};
 use crate::convex::utils::{capitalize_first_letter, function_args_struct_name, to_pascal_case};
 use crate::error::ConvexTypeGeneratorError;
@@ -31,8 +32,31 @@ struct NamedStructDef
 }
 
 /// Truncate `path`, write the standard generated header + tables + function arg structs.
-pub(crate) fn run_codegen(path: &PathBuf, data: (ConvexSchema, ConvexFunctions)) -> Result<(), ConvexTypeGeneratorError>
+pub(crate) trait IntoGenerationIr
 {
+    fn into_ir(self) -> Result<GenerationIr, ConvexTypeGeneratorError>;
+}
+
+impl IntoGenerationIr for GenerationIr
+{
+    fn into_ir(self) -> Result<GenerationIr, ConvexTypeGeneratorError>
+    {
+        Ok(self)
+    }
+}
+
+impl IntoGenerationIr for (ConvexSchema, ConvexFunctions)
+{
+    fn into_ir(self) -> Result<GenerationIr, ConvexTypeGeneratorError>
+    {
+        GenerationIr::from_legacy(self.0, self.1, std::path::Path::new(""), std::path::Path::new("schema.ts"))
+    }
+}
+
+pub(crate) fn run_codegen(path: &PathBuf, input: impl IntoGenerationIr) -> Result<(), ConvexTypeGeneratorError>
+{
+    let ir = input.into_ir()?;
+    let data = ir.into_emitter_input()?;
     let mut file = std::fs::File::create(path)?;
 
     // Clear the file
@@ -620,8 +644,11 @@ mod generate_function_code_tests
                 name: "msg".into(),
                 data_type: json!({ "type": "string" }),
             }],
+            args_declared: true,
             type_: "query".into(),
             file_name: "net".into(),
+            source_path: "net.ts".into(),
+            span: None,
         };
         let code = generate_function_code(f);
         assert!(code.contains("\"net:ping\""));
@@ -639,8 +666,11 @@ mod generate_function_code_tests
                 name: "x".into(),
                 data_type: json!({ "type": "optional", "inner": { "type": "boolean" } }),
             }],
+            args_declared: true,
             type_: "mutation".into(),
             file_name: "m".into(),
+            source_path: "m.ts".into(),
+            span: None,
         };
         let code = generate_function_code(f);
         assert!(code.contains("#[serde(skip_serializing_if = \"Option::is_none\")]"));
@@ -652,8 +682,11 @@ mod generate_function_code_tests
         let f = ConvexFunction {
             name: "noop".into(),
             params: vec![],
+            args_declared: true,
             type_: "query".into(),
             file_name: "api".into(),
+            source_path: "api.ts".into(),
+            span: None,
         };
         let code = generate_function_code(f);
         assert!(code.contains("pub struct ApiNoopArgs {\n}"));
@@ -688,8 +721,11 @@ mod run_codegen_tests
         let functions = vec![ConvexFunction {
             name: "f".into(),
             params: vec![],
+            args_declared: true,
             type_: "query".into(),
             file_name: "api".into(),
+            source_path: "api.ts".into(),
+            span: None,
         }];
         run_codegen(&out, (schema, functions)).unwrap();
         let body = fs::read_to_string(&out).unwrap();
@@ -740,14 +776,20 @@ mod run_codegen_tests
             ConvexFunction {
                 name: "list".into(),
                 params: vec![],
+                args_declared: true,
                 type_: "query".into(),
                 file_name: "mod".into(),
+                source_path: "mod.ts".into(),
+                span: None,
             },
             ConvexFunction {
                 name: "list".into(),
                 params: vec![],
+                args_declared: true,
                 type_: "query".into(),
                 file_name: "mod".into(),
+                source_path: "mod.ts".into(),
+                span: None,
             },
         ];
         let err = run_codegen(&out, (schema, functions)).unwrap_err();

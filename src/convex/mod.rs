@@ -6,6 +6,8 @@
 //! - **Lexer** ([`lexer`]) — parse TS to a [`serde_json::Value`] ESTree tree.
 //! - **Parser** ([`parser`]) — interpret Convex `defineSchema` / `defineTable` / `v.*` and exported
 //!   `query`/`mutation`/`action` shapes into [`ir`].
+//! - **Function spec** ([`spec`]) — validate committed `convex function-spec` JSON and lower it to
+//!   the same function IR.
 //! - **Source-neutral IR** ([`ir`]) — typed validators, canonical function identity, metadata,
 //!   optional field presence, and source provenance shared by adapters and codegen.
 //! - **Validator model** ([`validator`]) — typed `v.*` tree used by the source-neutral IR.
@@ -26,6 +28,7 @@ pub(crate) mod codegen;
 pub(crate) mod ir;
 pub(crate) mod lexer;
 pub(crate) mod parser;
+pub(crate) mod spec;
 pub(crate) mod utils;
 pub(crate) mod validator;
 

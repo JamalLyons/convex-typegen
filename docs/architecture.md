@@ -39,8 +39,8 @@ flowchart LR
   C --> R
 ```
 
-1. **`config::Configuration`** — Paths for schema, output file, Convex directory, and optional explicit `function_paths` (skips directory discovery).
-2. **`fs::rcfp`** — Resolves which `.ts` files are treated as function sources (same set as `generate`, intended for `cargo:rerun-if-changed`).
+1. **`config::Configuration`** — Paths for schema, output file, Convex directory, optional explicit `function_paths` (skips directory discovery), and optional authoritative `function_spec_path`.
+2. **`fs::rcfp`** — Resolves which `.ts` files are treated as function sources, or returns the configured function-spec JSON path (intended for `cargo:rerun-if-changed`).
 3. **`convex::create_schema_ast`** — One file: canonical `schema_path` → ESTree JSON (`serde_json::Value`).
 4. **`convex::create_function_asts`** — Many files: each path is canonicalized; ASTs are stored in a **`BTreeMap<String, JsonValue>`** keyed by **canonical path string** (stable iteration order, no basename collisions between `convex/a/foo.ts` and `convex/b/foo.ts`).
 5. **`parser::parse_schema_ast`** / **`parser::parse_function_ast`** — Oxc/ESTree adapter that interprets Convex syntax.
@@ -57,7 +57,8 @@ Errors are unified as **`error::ConvexTypeGeneratorError`** (IO, Oxc parse/seman
 |------|-----------------|------------------|
 | Entry | `src/lib.rs` | `generate` and crate docs |
 | Config | `src/config.rs` | `Configuration` defaults |
-| Discovery | `src/fs.rs` | `rcfp`, walk `convex/**/*.ts`, skip schema / `_generated` / `node_modules` / `*.d.ts` |
+| Discovery | `src/fs.rs` | `rcfp`, walk `convex/**/*.ts`, skip schema / `_generated` / `node_modules` / `*.d.ts`, or track configured spec JSON |
+| Function spec | `src/convex/spec.rs` | Validate function-spec JSON and lower it directly to the shared IR |
 | TS → JSON AST | `src/convex/lexer.rs` | Oxc parse + semantic check → `to_estree_ts_json` → `serde_json::Value` |
 | ESTree → IR | `src/convex/parser.rs` | Schema and function extraction, including inline argument and return validators |
 | IR types | `src/convex/ir.rs` | Schema, table documents, fields, functions, and provenance |
@@ -235,10 +236,9 @@ args to the official **`convex`** crate at runtime.
   - Codegen output (`prepare_args`-ready serde models, `convex_type_to_rust_type` cases).
 - **Integration tests** in `tests/golden_generate.rs` and `tests/build_script_smoke.rs` run the full pipeline in `tempfile` directories with inline TypeScript fixtures.
 - **SDK parity** compares the v1 review fixture's inline validators against
-  `tests/fixtures/v1-review/inline-function-spec.json`. Refresh it from an explicit local
-  self-hosted capture using the steps in [the v1 review](v1-review.md#docker-and-cli). Project
-  the capture to `identifier`, `args` and `returns`, keeping entries with an identifier
-  except `admin/users.js:echo`, and sort by identifier.
+  `tests/fixtures/v1-review/function-spec.json`. Refresh it only against the self-hosted backend
+  using `scripts/refresh-function-spec.sh` after following [the v1 review](v1-review.md#docker-and-cli).
+  The script allowlists function structure, sorts entries and recursively sorts map keys.
 - **Golden snapshots** (`insta`) guard stable codegen output for minimal schema/function and cross-module duplicate exports.
 
 When changing parser assumptions, **add or adjust a minimal JSON fixture** in tests before touching production code when possible.

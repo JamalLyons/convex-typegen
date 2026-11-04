@@ -39,7 +39,12 @@ The local 1.49.0 CLI capture has top-level `url` and `functions`. For example:
 
 The wire path becomes `admin/users:list` after removing the terminal `.js` from the module portion. Each object field has `fieldType` and `optional`. The observed spec encodes int64 as `bigint`, float64 as `number`, nullable as a union, and records with `keys` and `values`. The omitted args on `users.js:list` became `{"type":"any"}` and omitted returns became JSON `null`, distinct from declared `{"type":"null"}`. HTTP entries have `functionType: "HttpAction"`, `method` and `path` rather than a callable identifier. No thrown error schema or tables were present. [CLI function-spec](https://docs.convex.dev/cli/reference/function-spec) · [Application errors](https://docs.convex.dev/functions/error-handling/application-errors).
 
-Use the committed spec as the complete function inventory when configured. It replaces builder discovery, visibility, paths and validator resolution for deployed endpoints. Keep TypeScript for tables and the function fallback. Warn on missing validation metadata and use raw `Value` for unknown returns and an argument map for unknown args. Preserve explicit empty args and explicit `v.null()` in IR. Never silently fall back on malformed spec input. Pin the fixture CLI, verify its format on upgrade and canonicalize the capture by stripping deployment URL and sorting object keys and entries. Spec refresh is an explicit command. Cargo consumes files only.
+Set `Configuration::function_spec_path` to use a committed spec as the complete authoritative function inventory. It replaces TypeScript function discovery, paths, visibility, and validator resolution; TypeScript remains the source for tables and the fallback when no spec is configured. Omitted args and returns remain unknown in the IR, while an empty object and declared `v.null()` remain distinct. HTTP actions are excluded from callable functions. Unsupported or malformed entries fail with the spec path and function/validator context; generation never falls back silently. Cargo consumes only the committed file.
+
+The adapter preserves canonical nested module identity in the IR. The current emitter still derives
+`FUNCTION_PATH` and argument struct names from the module basename, so `users.js:list` and
+`admin/users.js:list` collide. The full capture is tested at the adapter/IR layer; the consumer
+compile smoke uses a collision-free subset until the separate emitter naming work is done.
 
 ## Proposed v1 architecture
 
@@ -141,13 +146,16 @@ curl -fsS --retry 20 --retry-connrefused "$CONVEX_SELF_HOSTED_URL/version"
 export CONVEX_SELF_HOSTED_ADMIN_KEY="$(docker exec convex-v1-review ./generate_admin_key.sh | tail -1)"
 test -n "$CONVEX_SELF_HOSTED_ADMIN_KEY" || exit 1
 cd tests/fixtures/v1-review
-npm install --no-audit --no-fund
+npm ci --no-audit --no-fund
 npx --no-install convex dev --once --typecheck enable
-npx --no-install convex function-spec > /tmp/convex-v1-spec.json
-jq -r '.functions[] | [.functionType,.identifier,.visibility.kind] | @tsv' /tmp/convex-v1-spec.json
+jq --version
+cd ../..
+CONVEX_SELF_HOSTED_URL=http://127.0.0.1:13210 scripts/refresh-function-spec.sh
+jq -r '.functions[] | [.functionType,.identifier,.visibility.kind] | @tsv' tests/fixtures/v1-review/function-spec.json
+cd tests/fixtures/v1-review
 ```
 
-The commands below include deliberate failures. The Docker backend accepts extended JSON literals through `convex run`. [Self-hosting](https://docs.convex.dev/self-hosting) · [Local backend testing](https://docs.convex.dev/testing/convex-backend).
+The refresh script requires `CONVEX_SELF_HOSTED_URL=http://127.0.0.1:13210` and the admin key exported above. It runs the pinned fixture CLI, keeps only function structure, sorts entries and recursively sorts object keys, and replaces `tests/fixtures/v1-review/function-spec.json` only after a successful command and canonicalization. The commands below include deliberate failures. The Docker backend accepts extended JSON literals through `convex run`. [Self-hosting](https://docs.convex.dev/self-hosting) · [Local backend testing](https://docs.convex.dev/testing/convex-backend).
 
 ```bash
 npx --no-install convex run users:optional '{"nested":{}}'

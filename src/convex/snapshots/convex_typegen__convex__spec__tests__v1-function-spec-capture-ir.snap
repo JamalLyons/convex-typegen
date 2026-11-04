@@ -1,0 +1,388 @@
+---
+source: src/convex/spec.rs
+expression: shape
+---
+[
+    (
+        "admin/users",
+        "add",
+        Mutation,
+        Public,
+        Declared(
+            [
+                Field {
+                    name: "text",
+                    validator: String,
+                    provenance: Provenance {
+                        source: "function-spec.json",
+                        span: None,
+                    },
+                },
+            ],
+        ),
+        Declared(
+            ReturnValidator {
+                validator: Id(
+                    Some(
+                        "tasks",
+                    ),
+                ),
+                provenance: Provenance {
+                    source: "function-spec.json",
+                    span: None,
+                },
+            },
+        ),
+    ),
+    (
+        "admin/users",
+        "docs",
+        Query,
+        Public,
+        Declared(
+            [],
+        ),
+        Declared(
+            ReturnValidator {
+                validator: Array(
+                    Object {
+                        struct_name: None,
+                        properties: Some(
+                            {
+                                "_creationTime": Number,
+                                "_id": Id(
+                                    Some(
+                                        "tasks",
+                                    ),
+                                ),
+                                "text": String,
+                            },
+                        ),
+                    },
+                ),
+                provenance: Provenance {
+                    source: "function-spec.json",
+                    span: None,
+                },
+            },
+        ),
+    ),
+    (
+        "admin/users",
+        "echo",
+        Query,
+        Public,
+        Declared(
+            [
+                Field {
+                    name: "data",
+                    validator: Object {
+                        struct_name: None,
+                        properties: Some(
+                            {
+                                "bytes": Bytes,
+                                "choice": Union(
+                                    [
+                                        Literal(
+                                            Some(
+                                                String(
+                                                    "red",
+                                                ),
+                                            ),
+                                        ),
+                                        Literal(
+                                            Some(
+                                                String(
+                                                    "blue",
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                                "count": Int64,
+                                "nested": Object {
+                                    struct_name: None,
+                                    properties: Some(
+                                        {
+                                            "note": Optional(
+                                                String,
+                                            ),
+                                            "nullable": Union(
+                                                [
+                                                    String,
+                                                    Null,
+                                                ],
+                                            ),
+                                        },
+                                    ),
+                                },
+                                "number": Number,
+                                "record": Record {
+                                    key_type: String,
+                                    value_type: Int64,
+                                },
+                            },
+                        ),
+                    },
+                    provenance: Provenance {
+                        source: "function-spec.json",
+                        span: None,
+                    },
+                },
+            ],
+        ),
+        Declared(
+            ReturnValidator {
+                validator: Object {
+                    struct_name: None,
+                    properties: Some(
+                        {
+                            "bytes": Bytes,
+                            "choice": Union(
+                                [
+                                    Literal(
+                                        Some(
+                                            String(
+                                                "red",
+                                            ),
+                                        ),
+                                    ),
+                                    Literal(
+                                        Some(
+                                            String(
+                                                "blue",
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            ),
+                            "count": Int64,
+                            "nested": Object {
+                                struct_name: None,
+                                properties: Some(
+                                    {
+                                        "note": Optional(
+                                            String,
+                                        ),
+                                        "nullable": Union(
+                                            [
+                                                String,
+                                                Null,
+                                            ],
+                                        ),
+                                    },
+                                ),
+                            },
+                            "number": Number,
+                            "record": Record {
+                                key_type: String,
+                                value_type: Int64,
+                            },
+                        },
+                    ),
+                },
+                provenance: Provenance {
+                    source: "function-spec.json",
+                    span: None,
+                },
+            },
+        ),
+    ),
+    (
+        "admin/users",
+        "fail",
+        Action,
+        Public,
+        Declared(
+            [],
+        ),
+        Declared(
+            ReturnValidator {
+                validator: Null,
+                provenance: Provenance {
+                    source: "function-spec.json",
+                    span: None,
+                },
+            },
+        ),
+    ),
+    (
+        "admin/users",
+        "hiddenAction",
+        Action,
+        Internal,
+        Declared(
+            [],
+        ),
+        Declared(
+            ReturnValidator {
+                validator: Null,
+                provenance: Provenance {
+                    source: "function-spec.json",
+                    span: None,
+                },
+            },
+        ),
+    ),
+    (
+        "admin/users",
+        "hiddenMutation",
+        Mutation,
+        Internal,
+        Declared(
+            [],
+        ),
+        Declared(
+            ReturnValidator {
+                validator: Null,
+                provenance: Provenance {
+                    source: "function-spec.json",
+                    span: None,
+                },
+            },
+        ),
+    ),
+    (
+        "admin/users",
+        "hiddenQuery",
+        Query,
+        Internal,
+        Declared(
+            [],
+        ),
+        Declared(
+            ReturnValidator {
+                validator: Null,
+                provenance: Provenance {
+                    source: "function-spec.json",
+                    span: None,
+                },
+            },
+        ),
+    ),
+    (
+        "admin/users",
+        "list",
+        Query,
+        Public,
+        Declared(
+            [],
+        ),
+        Declared(
+            ReturnValidator {
+                validator: Array(
+                    String,
+                ),
+                provenance: Provenance {
+                    source: "function-spec.json",
+                    span: None,
+                },
+            },
+        ),
+    ),
+    (
+        "admin/users",
+        "ping",
+        Action,
+        Public,
+        Declared(
+            [],
+        ),
+        Declared(
+            ReturnValidator {
+                validator: Literal(
+                    Some(
+                        String(
+                            "pong",
+                        ),
+                    ),
+                ),
+                provenance: Provenance {
+                    source: "function-spec.json",
+                    span: None,
+                },
+            },
+        ),
+    ),
+    (
+        "users",
+        "list",
+        Query,
+        Public,
+        Unknown,
+        Unknown,
+    ),
+    (
+        "users",
+        "number",
+        Query,
+        Public,
+        Declared(
+            [
+                Field {
+                    name: "value",
+                    validator: Number,
+                    provenance: Provenance {
+                        source: "function-spec.json",
+                        span: None,
+                    },
+                },
+            ],
+        ),
+        Declared(
+            ReturnValidator {
+                validator: Number,
+                provenance: Provenance {
+                    source: "function-spec.json",
+                    span: None,
+                },
+            },
+        ),
+    ),
+    (
+        "users",
+        "optional",
+        Query,
+        Public,
+        Declared(
+            [
+                Field {
+                    name: "nested",
+                    validator: Object {
+                        struct_name: None,
+                        properties: Some(
+                            {
+                                "note": Optional(
+                                    String,
+                                ),
+                            },
+                        ),
+                    },
+                    provenance: Provenance {
+                        source: "function-spec.json",
+                        span: None,
+                    },
+                },
+                Field {
+                    name: "root",
+                    validator: Optional(
+                        String,
+                    ),
+                    provenance: Provenance {
+                        source: "function-spec.json",
+                        span: None,
+                    },
+                },
+            ],
+        ),
+        Declared(
+            ReturnValidator {
+                validator: Boolean,
+                provenance: Provenance {
+                    source: "function-spec.json",
+                    span: None,
+                },
+            },
+        ),
+    ),
+]

@@ -1,6 +1,7 @@
 //! Discover Convex function modules on disk for `build.rs`.
 //!
-//! With an empty [`crate::config::Configuration::function_paths`], walks `convex_dir` for `*.ts`,
+//! With [`crate::config::Configuration::function_spec_path`] set, returns only that spec path.
+//! Otherwise, with an empty [`crate::config::Configuration::function_paths`], walks `convex_dir` for `*.ts`,
 //! skips `_generated/`, `node_modules/`, `*.d.ts`, and the canonical [`Configuration::schema_path`]
 //! so the schema file is never treated as a function source. A missing `convex_dir` returns an
 //! empty `Vec` (no error) so callers can still point [`Configuration::function_paths`] at explicit files.
@@ -13,11 +14,14 @@ use crate::error::ConvexTypeGeneratorError;
 
 const SKIP_DIR_NAMES: &[&str] = &["_generated", "node_modules"];
 
-/// **R**esolved **C**onvex **f**unction **p**aths — identical set to what [`crate::generate`] parses.
+/// **R**esolved **C**onvex **f**unction **p**aths — identical input set to what [`crate::generate`] parses.
 ///
-/// Use from `build.rs` with `cargo:rerun-if-changed` on each path so TS edits invalidate the build.
+/// Use from `build.rs` with `cargo:rerun-if-changed` on each path so TS or spec edits invalidate the build.
 pub fn rcfp(config: &Configuration) -> Result<Vec<PathBuf>, ConvexTypeGeneratorError>
 {
+    if let Some(spec) = &config.function_spec_path {
+        return Ok(vec![spec.clone()]);
+    }
     if !config.function_paths.is_empty() {
         return Ok(config.function_paths.clone());
     }

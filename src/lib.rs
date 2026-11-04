@@ -3,10 +3,10 @@
 //!
 //! ## Crate layout
 //!
-//! - [`config::Configuration`] — input paths and optional explicit function file list.
+//! - [`config::Configuration`] — input paths, optional explicit function files, and an optional authoritative spec.
 //! - [`generate`] — end-to-end pipeline used from `build.rs`.
 //! - [`prelude`] — re-exports for `build.rs`.
-//! - [`fs::rcfp`] — resolves the same function source paths as [`generate`] (for `cargo:rerun-if-changed`).
+//! - [`fs::rcfp`] — resolves the same function input paths as [`generate`] (for `cargo:rerun-if-changed`).
 //!
 //! Parsing and codegen live in the private `convex` module; the public API stays small on purpose.
 
@@ -14,6 +14,7 @@ use crate::config::Configuration;
 use crate::convex::codegen::run_codegen;
 use crate::convex::ir::GenerationIr;
 use crate::convex::parser::{parse_function_ast, parse_schema_ast};
+use crate::convex::spec::parse_function_spec;
 use crate::convex::{create_function_asts, create_schema_ast};
 use crate::error::ConvexTypeGeneratorError;
 use crate::fs::rcfp;
@@ -24,16 +25,17 @@ mod error;
 mod fs;
 pub mod prelude;
 
-/// Runs the full generator: resolve TypeScript inputs, parse with Oxc to ESTree JSON, walk that
-/// JSON into a typed intermediate model, then emit Rust to [`Configuration::out_file`].
+/// Runs the full generator: parse the TypeScript schema, resolve function inputs from either Oxc
+/// TypeScript sources or the configured committed function spec, lower them to the shared typed
+/// model, then emit Rust to [`Configuration::out_file`].
 ///
-/// Pipeline: validate schema path → canonicalize schema → parse schema TS to ESTree JSON →
-/// [`fs::rcfp`] → parse each function file → structured schema + function model → write generated Rust.
+/// Pipeline: validate schema path → parse schema TS → either read the configured spec or parse
+/// [`fs::rcfp`] TypeScript inputs → structured schema + function model → write generated Rust.
 ///
 /// # Errors
 ///
 /// Surfaced as [`error::ConvexTypeGeneratorError`]: missing paths, Oxc parse/semantic errors, schema
-/// shapes we do not recognize, IO, or JSON deserialization of the ESTree payload.
+/// shapes or spec records we do not recognize, IO, or malformed JSON.
 pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError>
 {
     if !config.schema_path.exists() {
@@ -49,13 +51,17 @@ pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError>
         })?;
 
     let schema_ast = create_schema_ast(&schema_path)?;
-    let function_paths = rcfp(&config)?;
-    let function_asts = create_function_asts(function_paths)?;
-
     let convex_root = config.convex_dir.canonicalize().ok();
+    let functions = if let Some(spec_path) = &config.function_spec_path {
+        parse_function_spec(spec_path)?
+    } else {
+        let function_paths = rcfp(&config)?;
+        let function_asts = create_function_asts(function_paths)?;
+        parse_function_ast(function_asts, convex_root.as_deref())?
+    };
     let ir = GenerationIr {
         schema: parse_schema_ast(schema_ast, &schema_path)?,
-        functions: parse_function_ast(function_asts, convex_root.as_deref())?,
+        functions,
     };
     run_codegen(&config.out_file, &ir)?;
 
@@ -111,6 +117,7 @@ export default defineSchema({
             out_file: out.clone(),
             convex_dir: convex,
             function_paths: Vec::new(),
+            function_spec_path: None,
         };
 
         generate(cfg).unwrap();
@@ -167,6 +174,7 @@ export const list = query({
             out_file: out.clone(),
             convex_dir: convex,
             function_paths: Vec::new(),
+            function_spec_path: None,
         };
 
         generate(cfg).unwrap();

@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Read a committed Convex function-spec JSON as the authoritative function inventory when
+  `Configuration::function_spec_path` is set. `rcfp` tracks that file for Cargo rebuilds; schema
+  parsing remains TypeScript-based. The new optional public configuration field defaults to `None`.
+  Existing `Configuration { ... }` literals must add `function_spec_path: None` or use
+  `..Configuration::default()`.
+
 - Parse Convex 1.49.0 validator factories, including numeric aliases, nullable values, commit
   timestamps and opaque function handles. Accept indexed object and union tables and earlier
   same-file validator consts. The IR preserves quoted wire keys and exact literal kinds.

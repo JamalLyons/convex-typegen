@@ -108,15 +108,19 @@ The parser does **not** use a typed ESTree crate. It uses **ad hoc `serde_json::
 - Find a **`CallExpression`** whose callee is the identifier **`defineSchema`**:
   - Either under `ExportDefaultDeclaration.declaration`, or as a top-level call (see `find_define_schema`).
 - First argument: **`ObjectExpression`** whose `properties` are **tables**.
-- Each table property’s `value`: a **`CallExpression`** chain whose base is **`defineTable`**, optionally followed by Convex builder calls (`.index`, `.searchIndex`, `.vectorIndex`). The parser peels that chain to the inner `defineTable` and reads the first argument as the object of **columns**.
-- Each column property’s `value`: a **`CallExpression`** representing **`v.<validator>(...)`**:
-  - The code reads **`value.callee.property.name`** as the Convex validator name (e.g. `string`, `optional`, `union`).
-  - That name must be in **`VALID_CONVEX_TYPES`** or you get `InvalidType`.
+- Each table property’s `value`: a **`CallExpression`** chain whose base is **`defineTable`**, optionally followed by Convex builder calls (`.index`, `.searchIndex`, `.vectorIndex`). The parser peels that chain to the inner `defineTable` and lowers its first argument to an object or a union of document objects.
+- A document object can be written as a property map or as `v.object(...)`. Table union members
+  must be required document objects or nested unions of document objects. Earlier top-level
+  `const` bindings in the same file can supply validators and property maps.
 
-The adapter builds a `ConvexValidator` tree directly from the validator call. The same parser
-handles schema fields, argument fields, and inline returns. It records literal values and ID table
-targets when it can read them from the expression. Nested object names carry hints for the current
-emitter.
+The adapter lowers the Convex 1.49.0 validator factories into `ConvexValidator`. The numeric aliases
+share their respective float64 and int64 nodes. Commit timestamps use the int64 value kind and
+`v.nullable(x)` uses a required union of `x` and null. Function handles carry optional kind,
+argument and return metadata. Record keys accept string validators, IDs, and unions of those
+validators. Static string keys and literal values retain their wire spelling and kind. Malformed
+or unsupported validator expressions report a file and byte span. Cross-file bindings, spreads
+and dynamically computed validator expressions require the planned offline resolver or function
+spec adapter.
 
 ### Functions (`parse_function_ast`)
 
@@ -126,8 +130,8 @@ emitter.
   or action kind and public or internal visibility from the callee. Other callees retain unknown
   kind and visibility under the existing discovery rules.
 - The first call argument is the config. A supported inline `args` object becomes ordered fields.
-  An inline `returns` validator is parsed as metadata for future consumers. Absent and unresolved
-  returns are unknown.
+  An inline `returns` validator is parsed as metadata for future consumers. Absent returns and returns named by an unresolved identifier are unknown. Unsupported
+  inline validator calls report an error.
 
 **ESTree detail — `args` fields**
 
@@ -144,7 +148,7 @@ Most failures are **`InvalidSchema { context, details }`**. When extending the p
 | Type | Role |
 |------|------|
 | `GenerationIr` | Schema and ordered functions supplied to codegen |
-| `Schema`, `TableDocument` | Ordered tables and document fields |
+| `Schema`, `TableDocument`, `TableShape` | Ordered tables with object fields or union branches |
 | `Field` | Name, validator, and provenance, with presence derived from the optional wrapper |
 | `Function` | Module and export identity, kind, visibility, argument and return metadata |
 | `ConvexValidator` | Recursive validator tree with typed literals and ID targets |
@@ -153,7 +157,9 @@ Most failures are **`InvalidSchema { context, details }`**. When extending the p
 
 Explicit function paths outside the configured Convex root have an unknown canonical module path.
 The emitter uses the legacy basename for generated args names and `FUNCTION_PATH`. Oxc provides
-byte spans for schemas, tables, fields, functions, parameters, and resolved returns.
+byte spans for schemas, tables, fields, functions, parameters, and resolved returns. The current
+emitter uses `ConvexJsonValue` for union table documents and `String` for opaque function handles.
+Typed union documents, literal models, and Rust field names for quoted wire keys are tracked in #40.
 
 ---
 
@@ -228,6 +234,11 @@ args to the official **`convex`** crate at runtime.
   - Lexer edge cases (empty file, invalid TS).
   - Codegen output (`prepare_args`-ready serde models, `convex_type_to_rust_type` cases).
 - **Integration tests** in `tests/golden_generate.rs` and `tests/build_script_smoke.rs` run the full pipeline in `tempfile` directories with inline TypeScript fixtures.
+- **SDK parity** compares the v1 review fixture's inline validators against
+  `tests/fixtures/v1-review/inline-function-spec.json`. Refresh it from an explicit local
+  self-hosted capture using the steps in [the v1 review](v1-review.md#docker-and-cli). Project
+  the capture to `identifier`, `args` and `returns`, keeping entries with an identifier
+  except `admin/users.js:echo`, and sort by identifier.
 - **Golden snapshots** (`insta`) guard stable codegen output for minimal schema/function and cross-module duplicate exports.
 
 When changing parser assumptions, **add or adjust a minimal JSON fixture** in tests before touching production code when possible.
@@ -238,7 +249,7 @@ When changing parser assumptions, **add or adjust a minimal JSON fixture** in te
 
 | Goal | Likely touch points |
 |------|---------------------|
-| New Convex `v.*` validator | `VALID_CONVEX_TYPES`, `extract_column_type`, `convex_type_to_rust_type`, tests |
+| New Convex `v.*` validator | `parse_validator`, shared validator IR, emitter mapping when needed, tests |
 | New AST shape from Oxc | `lexer` (if serialization changes), `parser` field access, tests |
 | Different Rust mapping for objects / unions | `codegen::convex_type_to_rust_type`, enum emission |
 | Named nested object structs | `parser` `structName`, `validator.rs`, `codegen::collect_named_structs` |

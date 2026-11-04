@@ -1,0 +1,173 @@
+[
+  {
+    "args": {
+      "type": "object",
+      "value": {
+        "text": {
+          "fieldType": {
+            "type": "string"
+          },
+          "optional": false
+        }
+      }
+    },
+    "identifier": "admin/users.js:add",
+    "returns": {
+      "tableName": "tasks",
+      "type": "id"
+    }
+  },
+  {
+    "args": {
+      "type": "object",
+      "value": {}
+    },
+    "identifier": "admin/users.js:docs",
+    "returns": {
+      "type": "array",
+      "value": {
+        "type": "object",
+        "value": {
+          "_creationTime": {
+            "fieldType": {
+              "type": "number"
+            },
+            "optional": false
+          },
+          "_id": {
+            "fieldType": {
+              "tableName": "tasks",
+              "type": "id"
+            },
+            "optional": false
+          },
+          "text": {
+            "fieldType": {
+              "type": "string"
+            },
+            "optional": false
+          }
+        }
+      }
+    }
+  },
+  {
+    "args": {
+      "type": "object",
+      "value": {}
+    },
+    "identifier": "admin/users.js:fail",
+    "returns": {
+      "type": "null"
+    }
+  },
+  {
+    "args": {
+      "type": "object",
+      "value": {}
+    },
+    "identifier": "admin/users.js:hiddenAction",
+    "returns": {
+      "type": "null"
+    }
+  },
+  {
+    "args": {
+      "type": "object",
+      "value": {}
+    },
+    "identifier": "admin/users.js:hiddenMutation",
+    "returns": {
+      "type": "null"
+    }
+  },
+  {
+    "args": {
+      "type": "object",
+      "value": {}
+    },
+    "identifier": "admin/users.js:hiddenQuery",
+    "returns": {
+      "type": "null"
+    }
+  },
+  {
+    "args": {
+      "type": "object",
+      "value": {}
+    },
+    "identifier": "admin/users.js:list",
+    "returns": {
+      "type": "array",
+      "value": {
+        "type": "string"
+      }
+    }
+  },
+  {
+    "args": {
+      "type": "object",
+      "value": {}
+    },
+    "identifier": "admin/users.js:ping",
+    "returns": {
+      "type": "literal",
+      "value": "pong"
+    }
+  },
+  {
+    "args": {
+      "type": "any"
+    },
+    "identifier": "users.js:list",
+    "returns": null
+  },
+  {
+    "args": {
+      "type": "object",
+      "value": {
+        "value": {
+          "fieldType": {
+            "type": "number"
+          },
+          "optional": false
+        }
+      }
+    },
+    "identifier": "users.js:number",
+    "returns": {
+      "type": "number"
+    }
+  },
+  {
+    "args": {
+      "type": "object",
+      "value": {
+        "nested": {
+          "fieldType": {
+            "type": "object",
+            "value": {
+              "note": {
+                "fieldType": {
+                  "type": "string"
+                },
+                "optional": true
+              }
+            }
+          },
+          "optional": false
+        },
+        "root": {
+          "fieldType": {
+            "type": "string"
+          },
+          "optional": true
+        }
+      }
+    },
+    "identifier": "users.js:optional",
+    "returns": {
+      "type": "boolean"
+    }
+  }
+]

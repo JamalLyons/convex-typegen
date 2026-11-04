@@ -54,8 +54,15 @@ impl Field
 pub(crate) struct TableDocument
 {
     pub name: String,
-    pub fields: Vec<Field>,
+    pub shape: TableShape,
     pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) enum TableShape
+{
+    Object(Vec<Field>),
+    Union(Vec<Self>),
 }
 
 #[derive(Debug, Clone, PartialEq)]

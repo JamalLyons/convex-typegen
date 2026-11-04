@@ -2,6 +2,8 @@
 
 use std::collections::BTreeMap;
 
+use crate::convex::ir::FunctionKind;
+
 /// Maximum nesting depth for generated object structs.
 pub(crate) const MAX_OBJECT_NEST_DEPTH: usize = 8;
 
@@ -12,7 +14,6 @@ pub(crate) enum Literal
     Boolean(bool),
     Float64(f64),
     Int64(i64),
-    Null,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -41,8 +42,16 @@ pub(crate) enum ConvexValidator
     Optional(Box<Self>),
     Union(Vec<Self>),
     Literal(Option<Literal>),
-    /// Missing child of an incomplete array or record validator.
-    Unknown,
+    FunctionHandle(Box<FunctionSignature>),
+}
+
+/// Type metadata only. The handle itself is an opaque Convex string.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub(crate) struct FunctionSignature
+{
+    pub kind: Option<FunctionKind>,
+    pub args: Option<ConvexValidator>,
+    pub returns: Option<ConvexValidator>,
 }
 
 impl ConvexValidator
@@ -64,7 +73,7 @@ impl ConvexValidator
             Self::Optional(_) => "optional",
             Self::Union(_) => "union",
             Self::Literal(_) => "literal",
-            Self::Unknown => "unknown",
+            Self::FunctionHandle(_) => "functionHandle",
         }
     }
 }

@@ -1,0 +1,6 @@
+{
+  "name": "convex-typegen-v1-review",
+  "private": true,
+  "dependencies": {"convex": "1.49.0"},
+  "devDependencies": {"typescript": "5.9.3"}
+}

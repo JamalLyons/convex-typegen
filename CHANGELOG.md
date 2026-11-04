@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Docs: The [0.3.0] supply-chain bullet incorrectly claimed a GitHub Actions release workflow for tagged publishes. Git history shows only `.github/workflows/rust.yml` (CI quality checks) was ever added; `release.yml` was referenced in early `CONTRIBUTING.md` text but never committed. Crates.io publishing has always been manual (`cargo publish` / `just publish`), as documented in `CONTRIBUTING.md` and [semver-policy.md](docs/semver-policy.md).
+
 ## [0.4.0] - 2026-08-15
 
 Named `v.object` structs in generated code, plus semver/API-stability docs. Library API is unchanged; **generated output is breaking** (allowed in a 0.x minor — see [semver-policy.md](docs/semver-policy.md)).

@@ -6,6 +6,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Generate seed-replayable synthetic Convex projects with `just gen-project`. See
+  [performance tooling](docs/performance.md).
+
 - Read a committed Convex function-spec JSON as the authoritative function inventory when
   `Configuration::function_spec_path` is set. `rcfp` tracks that file for Cargo rebuilds; schema
   parsing remains TypeScript-based. The new optional public configuration field defaults to `None`.

@@ -8,12 +8,12 @@ build *ARGS:
 
 # Run tests for the generator and runtime.
 test *ARGS:
-    cargo test {{ ARGS }}
+    cargo test --workspace {{ ARGS }}
     cargo test --manifest-path runtime/Cargo.toml {{ ARGS }}
 
 # Clippy on all targets and features (warnings denied).
 lint:
-    cargo clippy --all-targets --all-features -- -D warnings
+    cargo clippy --workspace --all-targets --all-features -- -D warnings
     cargo clippy --manifest-path runtime/Cargo.toml --all-targets --all-features -- -D warnings
 
 # Apply Rustfmt using nightly so options in `rustfmt.toml` apply (`rustup toolchain install nightly`).
@@ -54,3 +54,7 @@ publish:
 
 publish-test:
     cargo publish --dry-run --allow-dirty
+
+# Generate a synthetic Convex project. Pass a seed to replay a run.
+gen-project TIER SEED="":
+    cargo run --locked --release -p xtask -- {{ quote(TIER) }} {{ if SEED == "" { "" } else { "--seed " + quote(SEED) } }}

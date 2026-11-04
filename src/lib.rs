@@ -10,6 +10,9 @@
 //!
 //! Parsing and codegen live in the private `convex` module; the public API stays small on purpose.
 
+use std::collections::BTreeMap;
+use std::path::PathBuf;
+
 use crate::config::Configuration;
 use crate::convex::codegen::run_codegen;
 use crate::convex::create_function_asts;
@@ -25,6 +28,73 @@ mod error;
 mod fs;
 pub mod prelude;
 
+#[derive(Clone)]
+struct ParsedProject
+{
+    schema_path: PathBuf,
+    schema_ast: serde_json::Value,
+    schema_modules: BTreeMap<String, serde_json::Value>,
+    function_sources: FunctionSources,
+}
+
+#[derive(Clone)]
+enum FunctionSources
+{
+    TypeScript
+    {
+        asts: BTreeMap<String, serde_json::Value>,
+        convex_root: Option<PathBuf>,
+    },
+    Spec(PathBuf),
+}
+
+struct LoweredProject(GenerationIr);
+
+fn parse_project(config: &Configuration) -> Result<ParsedProject, ConvexTypeGeneratorError>
+{
+    if !config.schema_path.exists() {
+        return Err(ConvexTypeGeneratorError::MissingSchemaFile);
+    }
+
+    let schema_path = config
+        .schema_path
+        .canonicalize()
+        .map_err(|error| ConvexTypeGeneratorError::IOError {
+            file: config.schema_path.to_string_lossy().to_string(),
+            error,
+        })?;
+    let schema_modules = create_function_asts(vec![schema_path.clone()])?;
+    let schema_ast = schema_modules
+        .get(schema_path.to_string_lossy().as_ref())
+        .cloned()
+        .ok_or_else(|| ConvexTypeGeneratorError::InvalidPath(schema_path.to_string_lossy().into_owned()))?;
+    let function_sources = if let Some(spec_path) = &config.function_spec_path {
+        FunctionSources::Spec(spec_path.clone())
+    } else {
+        let convex_root = config.convex_dir.canonicalize().ok();
+        let function_paths = rcfp(config)?;
+        let asts = create_function_asts(function_paths)?;
+        FunctionSources::TypeScript { asts, convex_root }
+    };
+
+    Ok(ParsedProject {
+        schema_path,
+        schema_ast,
+        schema_modules,
+        function_sources,
+    })
+}
+
+fn lower_project(parsed: ParsedProject) -> Result<LoweredProject, ConvexTypeGeneratorError>
+{
+    let functions = match parsed.function_sources {
+        FunctionSources::TypeScript { asts, convex_root } => parse_function_ast(asts, convex_root.as_deref())?,
+        FunctionSources::Spec(spec_path) => parse_function_spec(&spec_path)?,
+    };
+    let schema = parse_schema_ast_with_modules(parsed.schema_ast, &parsed.schema_path, Some(&parsed.schema_modules))?;
+    Ok(LoweredProject(GenerationIr { schema, functions }))
+}
+
 /// Runs the full generator: parse the TypeScript schema, resolve function inputs from either Oxc
 /// TypeScript sources or the configured committed function spec, lower them to the shared typed
 /// model, then emit Rust to [`Configuration::out_file`].
@@ -38,38 +108,40 @@ pub mod prelude;
 /// shapes or spec records we do not recognize, IO, or malformed JSON.
 pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError>
 {
-    if !config.schema_path.exists() {
-        return Err(ConvexTypeGeneratorError::MissingSchemaFile);
+    let parsed = parse_project(&config)?;
+    let lowered = lower_project(parsed)?;
+    run_codegen(&config.out_file, &lowered.0)
+}
+
+/// Hidden access to production pipeline stages for the unpublished benchmark harness.
+#[cfg(feature = "bench-internals")]
+#[doc(hidden)]
+pub mod bench_support
+{
+    use std::path::Path;
+
+    use crate::config::Configuration;
+    use crate::error::ConvexTypeGeneratorError;
+
+    #[derive(Clone)]
+    pub struct ParsedProject(super::ParsedProject);
+
+    pub struct LoweredProject(super::LoweredProject);
+
+    pub fn parse(config: &Configuration) -> Result<ParsedProject, ConvexTypeGeneratorError>
+    {
+        super::parse_project(config).map(ParsedProject)
     }
 
-    let schema_path = config
-        .schema_path
-        .canonicalize()
-        .map_err(|e| ConvexTypeGeneratorError::IOError {
-            file: config.schema_path.to_string_lossy().to_string(),
-            error: e,
-        })?;
+    pub fn lower(project: ParsedProject) -> Result<LoweredProject, ConvexTypeGeneratorError>
+    {
+        super::lower_project(project.0).map(LoweredProject)
+    }
 
-    let schema_modules = create_function_asts(vec![schema_path.clone()])?;
-    let schema_ast = schema_modules
-        .get(schema_path.to_string_lossy().as_ref())
-        .cloned()
-        .ok_or_else(|| ConvexTypeGeneratorError::InvalidPath(schema_path.to_string_lossy().into_owned()))?;
-    let convex_root = config.convex_dir.canonicalize().ok();
-    let functions = if let Some(spec_path) = &config.function_spec_path {
-        parse_function_spec(spec_path)?
-    } else {
-        let function_paths = rcfp(&config)?;
-        let function_asts = create_function_asts(function_paths)?;
-        parse_function_ast(function_asts, convex_root.as_deref())?
-    };
-    let ir = GenerationIr {
-        schema: parse_schema_ast_with_modules(schema_ast, &schema_path, Some(&schema_modules))?,
-        functions,
-    };
-    run_codegen(&config.out_file, &ir)?;
-
-    Ok(())
+    pub fn codegen(path: &Path, project: &LoweredProject) -> Result<(), ConvexTypeGeneratorError>
+    {
+        super::run_codegen(path, &project.0.0)
+    }
 }
 
 #[cfg(test)]

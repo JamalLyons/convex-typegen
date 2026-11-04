@@ -45,3 +45,45 @@ the positional seed passed through by Just) takes precedence over `CONVEX_TYPEGE
 
 Run `cargo test --locked -p xtask` to check reproducibility and exercise the offline
 parser and codegen on generated projects.
+
+## Pipeline benchmarks
+
+The unpublished `convex-typegen-bench` workspace crate benchmarks four production stages using
+projects written by the `xtask` generator above:
+
+- `parse_discovery` — discovers function sources, expands relative imports, and parses the schema
+  and function sources into ESTree JSON.
+- `ir_lowering` — converts the parsed schema and function ASTs into `GenerationIr`.
+- `codegen` — emits Rust from a prepared `GenerationIr`.
+- `end_to_end` — runs `convex_typegen::generate` from the generated TypeScript project.
+
+The generator creates each tier before Criterion starts its timed iterations. The `small` tier has
+12 TypeScript files (the approximately 10-file tier); the other tiers have 100, 1,000, and 10,240
+files.
+
+```sh
+just bench
+CONVEX_TYPEGEN_SEED=42 just bench
+CONVEX_TYPEGEN_SKIP_HUGE=1 just bench
+```
+
+Each run prints `CONVEX_TYPEGEN_SEED=<u64>`, including when a fresh OS-random seed is chosen. Set
+`CONVEX_TYPEGEN_SEED` to replay identical inputs and compare commits. Criterion stores prior results
+under `target/criterion`; running the same command again reports its statistical comparison with
+the previous run. `CONVEX_TYPEGEN_SKIP_HUGE=1` omits the 10,240-file tier for faster local work.
+
+Criterion reports wall time per stage and tier. A one-shot measurement for every stage also prints
+`STAGE_METRIC` with elapsed nanoseconds, extra peak live heap bytes above the process baseline,
+allocation-call count (successful alloc, alloc_zeroed, and realloc calls), and cumulative bytes
+requested from the system allocator. The counting allocator is defined only in the benchmark crate;
+these memory and allocation measurements are separate from Criterion's repeated timing samples.
+
+### Baseline
+
+Record only completed Criterion runs. Include the host model/CPU, OS version, `rustc --version`,
+benchmark source commit, seed, and both same-seed run summaries. If a tier cannot be completed,
+mark its measurements as not run and state why rather than estimating values.
+
+| Tier | Stage | Wall time (run 1 / run 2) | Peak extra heap | Allocations | Seed |
+| --- | --- | ---: | ---: | ---: | --- |
+| Pending measured runs | | | | | |

@@ -1,0 +1,20 @@
+[package]
+name = "convex-typegen-bench"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+convex-typegen = { path = "..", features = ["bench-internals"] }
+criterion = "0.7"
+getrandom = "0.4"
+tempfile = "3"
+xtask = { path = "../xtask" }
+
+[[bench]]
+name = "pipeline"
+harness = false

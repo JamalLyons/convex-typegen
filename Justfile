@@ -55,3 +55,7 @@ publish-test:
 # Generate a synthetic Convex project. Pass a seed to replay a run.
 gen-project TIER SEED="":
     cargo run --locked --release -p xtask -- {{ quote(TIER) }} {{ if SEED == "" { "" } else { "--seed " + quote(SEED) } }}
+
+# Benchmark parse/discovery, IR lowering, codegen and end-to-end for generated projects.
+bench *ARGS:
+    cargo bench --locked -p convex-typegen-bench --bench pipeline -- {{ ARGS }}

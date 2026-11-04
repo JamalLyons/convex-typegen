@@ -6,7 +6,7 @@ authors.workspace = true
 license.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-exclude = ["examples/", ".github/", "runtime/", "xtask/"]
+exclude = ["examples/", ".github/", "runtime/", "xtask/", "benches/"]
 
 # Documentation and repository links
 documentation = "https://docs.rs/convex-typegen"
@@ -25,6 +25,8 @@ rustdoc-args = ["--cfg", "docsrs"]
 [features]
 # Print Oxc parser/semantic diagnostics to stderr (in addition to `ParsingFailed::details`).
 verbose = []
+# Expose hidden pipeline stages to the unpublished benchmark harness only.
+bench-internals = []
 
 [dependencies]
 oxc = { version = "0.157.0", features = ["semantic", "serialize"], default-features = false }
@@ -53,7 +55,7 @@ panic = "abort"    # Better optimizations and smaller binaries
 strip = true       # Remove debug symbols from the binary
 
 [workspace]
-members = ["runtime", "examples/*", "xtask"]
+members = ["runtime", "examples/*", "xtask", "benches"]
 resolver = "3"
 
 [workspace.package]

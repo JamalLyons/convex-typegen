@@ -31,13 +31,17 @@ pub mod prelude;
 
 /// Crate-root re-export for generated `#[serde(crate = "convex_typegen::serde")]`.
 pub use serde;
-/// Crate-root re-export for generated `TryFrom` impls and `ConvexJsonValue` aliases.
+/// Crate-root re-export for generated fallback JSON value types.
 pub use serde_json;
 
 /// Ergonomic helpers for the official Convex Rust client (see [`prelude`]).
 #[cfg(feature = "client")]
 #[cfg_attr(docsrs, doc(cfg(feature = "client")))]
 pub use crate::convex::ConvexClientExt;
+/// Direct Serde conversion between Rust types and `convex::Value`.
+#[cfg(feature = "client")]
+#[cfg_attr(docsrs, doc(cfg(feature = "client")))]
+pub use crate::convex::value_serde;
 
 /// Runs the full generator: resolve TypeScript inputs, parse with Oxc to ESTree JSON, walk that
 /// JSON into an internal model, then emit Rust to [`Configuration::out_file`].

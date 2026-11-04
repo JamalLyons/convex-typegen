@@ -13,7 +13,7 @@ Quick reference for what is **stable** vs **unstable** in convex-typegen. Full r
 | `ConvexTypeGeneratorError` | Stable | Additive variants in minors only |
 | `prelude::*` | Stable | See below |
 | `convex_typegen::serde` | Stable | Re-export for generated `#[serde(crate = ...)]` |
-| `convex_typegen::serde_json` | Stable | Re-export for generated `TryFrom` |
+| `convex_typegen::serde_json` | Stable | Re-export for generated fallback value types |
 | Feature `client` | Stable | Default on; disable for build-only |
 | Feature `verbose` | Stable | Default off |
 
@@ -23,9 +23,11 @@ Quick reference for what is **stable** vs **unstable** in convex-typegen. Full r
 | --- | --- |
 | `Configuration`, `generate`, `rcfp` | Build pipeline |
 | `ConvexTypeGeneratorError` | Error handling |
-| `ConvexJsonValue`, `ConvexJsonError` | Generated code aliases |
+| `ConvexJsonValue` | Generated fallback type for unsupported/dynamic shapes |
 | `Serialize`, `Deserialize` | Generated derives |
-| `ConvexClientExt`, `ConvexValueExt`, `IntoConvexValue` | Runtime Convex client helpers |
+| `ConvexClientExt` | Generated args to Convex values runtime helper |
+| `value_serde::{to_value, from_value, Bytes, Error}` | Direct Serde conversion to and from `convex::Value` |
+| `ConvexBytes`, `ConvexValueSerdeError` | Prelude aliases for byte fields and conversion errors |
 
 ## Unstable / not semver-guaranteed
 

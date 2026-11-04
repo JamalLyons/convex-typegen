@@ -135,16 +135,6 @@ fn golden_minimal_schema_and_function()
         pub const FUNCTION_PATH: &'static str = "api:getItem";
     }
 
-    impl std::convert::TryFrom<ApiGetItemArgs> for std::collections::BTreeMap<String, ConvexJsonValue> {
-        type Error = ConvexJsonError;
-
-        fn try_from(_args: ApiGetItemArgs) -> Result<Self, Self::Error> {
-            let mut map = std::collections::BTreeMap::new();
-            map.insert("id".to_string(), convex_typegen::serde_json::to_value(_args.id)?);
-            Ok(map)
-        }
-    }
-
     "#);
 }
 
@@ -168,9 +158,9 @@ fn golden_named_nested_object_structs()
 }
 
 #[test]
-fn golden_optional_root_omits_key_in_try_from()
+fn golden_optional_root_omits_key_during_serde()
 {
     let body = run_generate(MINIMAL_SCHEMA, &[("opts.ts", OPTIONAL_FN)]);
     assert!(body.contains("pub struct OptsUpdateArgs"));
-    assert!(body.contains("if let Some(__v) = _args.flag"));
+    assert!(body.contains("#[serde(skip_serializing_if = \"Option::is_none\")]\n    pub flag: Option<bool>"));
 }

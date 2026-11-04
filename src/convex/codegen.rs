@@ -6,8 +6,8 @@
 //! - Table structs (`{Table}Table`) and per-column Rust types.
 //! - Enums for `v.union` (and `v.optional(v.union(…))` via `{Table}Optional{Field}`) using literal
 //!   variants where possible.
-//! - Per-function `{Module}{Export}Args` structs with `FUNCTION_PATH`, `Serialize`/`Deserialize`, and
-//!   `TryFrom` into `BTreeMap<String, ConvexJsonValue>` for [`crate::ConvexClientExt::prepare_args`].
+//! - Per-function `{Module}{Export}Args` structs with `FUNCTION_PATH` and `Serialize`/`Deserialize`,
+//!   consumed directly by [`crate::ConvexClientExt::prepare_args`].
 //!
 //! ## Naming
 //!
@@ -208,6 +208,7 @@ fn emit_named_struct_definitions(map: &BTreeMap<String, NamedStructDef>) -> Stri
         code.push_str("#[serde(crate = \"convex_typegen::serde\")]\n");
         code.push_str(&format!("pub struct {name} {{\n"));
         for (field, rust_type) in &def.fields {
+            emit_optional_field_attribute(&mut code, rust_type);
             code.push_str(&format!("    pub {field}: {rust_type},\n"));
         }
         code.push_str("}\n\n");
@@ -331,7 +332,7 @@ fn convex_type_to_rust_type(data_type: &JsonValue, table_name: Option<&str>, fie
         "boolean" => "bool".to_string(),
         "null" => "()".to_string(),
         "int64" => "i64".to_string(),
-        "bytes" => "Vec<u8>".to_string(),
+        "bytes" => "ConvexBytes".to_string(),
         "any" => "ConvexJsonValue".to_string(),
 
         "array" => {
@@ -406,12 +407,6 @@ fn convex_type_to_rust_type(data_type: &JsonValue, table_name: Option<&str>, fie
     }
 }
 
-/// Top-level `v.optional(...)` args map to `Option<T>`; Convex expects **omitted** keys, not JSON `null`.
-fn convex_arg_root_is_optional(data_type: &JsonValue) -> bool
-{
-    data_type["type"].as_str() == Some("optional")
-}
-
 /// Generate the code for a function.
 fn generate_function_code(function: ConvexFunction) -> String
 {
@@ -424,79 +419,25 @@ fn generate_function_code(function: ConvexFunction) -> String
     code.push_str("#[serde(crate = \"convex_typegen::serde\")]\n");
     code.push_str(&format!("pub struct {} {{\n", struct_name));
 
-    // Generate fields for each parameter
     for param in &function.params {
         let rust_type = convex_type_to_rust_type(&param.data_type, None, None);
+        emit_optional_field_attribute(&mut code, &rust_type);
         code.push_str(&format!("    pub {}: {},\n", param.name, rust_type));
     }
 
     code.push_str("}\n\n");
-
-    // Add implementation block with static FUNCTION_PATH method
     code.push_str(&format!("impl {} {{\n", struct_name));
     code.push_str("    pub const FUNCTION_PATH: &'static str = ");
     code.push_str(&format!("\"{}:{}\";\n", function.file_name, function.name));
     code.push_str("}\n\n");
 
-    // Fallible conversion: serde_json::to_value can fail (e.g. non-finite f64).
-    code.push_str(&format!(
-        "impl std::convert::TryFrom<{}> for std::collections::BTreeMap<String, ConvexJsonValue> {{\n",
-        struct_name
-    ));
-    code.push_str("    type Error = ConvexJsonError;\n\n");
-    code.push_str(&format!(
-        "    fn try_from(_args: {}) -> Result<Self, Self::Error> {{\n",
-        struct_name
-    ));
-
-    if function.params.is_empty() {
-        code.push_str("        Ok(std::collections::BTreeMap::new())\n");
-    } else {
-        code.push_str("        let mut map = std::collections::BTreeMap::new();\n");
-        for param in &function.params {
-            if convex_arg_root_is_optional(&param.data_type) {
-                // Convex `v.optional` does not treat JSON `null` as absent; omit the key when `None`.
-                code.push_str(&format!(
-                    "        if let Some(__v) = _args.{} {{\n            map.insert(\"{}\".to_string(), \
-                     convex_typegen::serde_json::to_value(__v)?);\n        }}\n",
-                    param.name, param.name
-                ));
-            } else {
-                code.push_str(&format!(
-                    "        map.insert(\"{}\".to_string(), convex_typegen::serde_json::to_value(_args.{})?);\n",
-                    param.name, param.name
-                ));
-            }
-        }
-        code.push_str("        Ok(map)\n");
-    }
-
-    code.push_str("    }\n");
-    code.push_str("}\n\n");
-
     code
 }
 
-#[cfg(test)]
-mod convex_arg_root_is_optional_tests
+fn emit_optional_field_attribute(code: &mut String, rust_type: &str)
 {
-    use serde_json::json;
-
-    use super::convex_arg_root_is_optional;
-
-    #[test]
-    fn true_for_optional_root()
-    {
-        assert!(convex_arg_root_is_optional(&json!({
-            "type": "optional",
-            "inner": { "type": "boolean" }
-        })));
-    }
-
-    #[test]
-    fn false_for_non_optional()
-    {
-        assert!(!convex_arg_root_is_optional(&json!({ "type": "string" })));
+    if rust_type.starts_with("Option<") {
+        code.push_str("    #[serde(skip_serializing_if = \"Option::is_none\")]\n");
     }
 }
 
@@ -514,7 +455,10 @@ mod convex_type_to_rust_type_tests
         assert_eq!(convex_type_to_rust_type(&json!({ "type": "boolean" }), None, None), "bool");
         assert_eq!(convex_type_to_rust_type(&json!({ "type": "number" }), None, None), "f64");
         assert_eq!(convex_type_to_rust_type(&json!({ "type": "int64" }), None, None), "i64");
-        assert_eq!(convex_type_to_rust_type(&json!({ "type": "bytes" }), None, None), "Vec<u8>");
+        assert_eq!(
+            convex_type_to_rust_type(&json!({ "type": "bytes" }), None, None),
+            "ConvexBytes"
+        );
         assert_eq!(
             convex_type_to_rust_type(&json!({ "type": "any" }), None, None),
             "ConvexJsonValue"
@@ -668,7 +612,7 @@ mod generate_function_code_tests
     use crate::convex::types::{ConvexFunction, ConvexFunctionParam};
 
     #[test]
-    fn emits_function_path_and_try_from()
+    fn emits_function_path_and_serde_args()
     {
         let f = ConvexFunction {
             name: "ping".into(),
@@ -680,14 +624,14 @@ mod generate_function_code_tests
             file_name: "net".into(),
         };
         let code = generate_function_code(f);
-        assert!(code.contains("pub struct NetPingArgs"));
         assert!(code.contains("\"net:ping\""));
-        assert!(code.contains("TryFrom<NetPingArgs>"));
-        assert!(code.contains("map.insert(\"msg\""));
+        assert!(code.contains("pub struct NetPingArgs"));
+        assert!(!code.contains("TryFrom<NetPingArgs>"));
+        assert!(code.contains("pub msg: String"));
     }
 
     #[test]
-    fn optional_root_param_skips_null_insert_path()
+    fn optional_root_param_is_omitted_by_serde_field_attribute()
     {
         let f = ConvexFunction {
             name: "opt".into(),
@@ -699,11 +643,11 @@ mod generate_function_code_tests
             file_name: "m".into(),
         };
         let code = generate_function_code(f);
-        assert!(code.contains("if let Some(__v) = _args.x"));
+        assert!(code.contains("#[serde(skip_serializing_if = \"Option::is_none\")]"));
     }
 
     #[test]
-    fn empty_params_try_from_returns_empty_map()
+    fn empty_params_generate_empty_serde_struct()
     {
         let f = ConvexFunction {
             name: "noop".into(),
@@ -712,7 +656,7 @@ mod generate_function_code_tests
             file_name: "api".into(),
         };
         let code = generate_function_code(f);
-        assert!(code.contains("BTreeMap::new()"));
+        assert!(code.contains("pub struct ApiNoopArgs {\n}"));
     }
 }
 

@@ -12,6 +12,7 @@
 
 use crate::config::Configuration;
 use crate::convex::codegen::run_codegen;
+use crate::convex::ir::GenerationIr;
 use crate::convex::parser::{parse_function_ast, parse_schema_ast};
 use crate::convex::{create_function_asts, create_schema_ast};
 use crate::error::ConvexTypeGeneratorError;
@@ -24,7 +25,7 @@ mod fs;
 pub mod prelude;
 
 /// Runs the full generator: resolve TypeScript inputs, parse with Oxc to ESTree JSON, walk that
-/// JSON into an internal model, then emit Rust to [`Configuration::out_file`].
+/// JSON into a typed intermediate model, then emit Rust to [`Configuration::out_file`].
 ///
 /// Pipeline: validate schema path → canonicalize schema → parse schema TS to ESTree JSON →
 /// [`fs::rcfp`] → parse each function file → structured schema + function model → write generated Rust.
@@ -47,14 +48,16 @@ pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError>
             error: e,
         })?;
 
-    let schema_ast = create_schema_ast(schema_path)?;
+    let schema_ast = create_schema_ast(&schema_path)?;
     let function_paths = rcfp(&config)?;
     let function_asts = create_function_asts(function_paths)?;
 
-    let parsed_schema = parse_schema_ast(schema_ast)?;
-    let parsed_functions = parse_function_ast(function_asts)?;
-
-    run_codegen(&config.out_file, (parsed_schema, parsed_functions))?;
+    let convex_root = config.convex_dir.canonicalize().ok();
+    let ir = GenerationIr {
+        schema: parse_schema_ast(schema_ast, &schema_path)?,
+        functions: parse_function_ast(function_asts, convex_root.as_deref())?,
+    };
+    run_codegen(&config.out_file, &ir)?;
 
     Ok(())
 }

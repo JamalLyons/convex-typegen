@@ -2,12 +2,12 @@
 //!
 //! We run the parser **and** [`SemanticBuilder`] so obviously-invalid TS is rejected before we walk
 //! the tree. The AST is not serde-serializable; Oxc exposes `to_estree_ts_json` which we deserialize
-//! again so the rest of the crate can stay JSON-driven (same representation as [`parser`] consumes).
+//! again for the ESTree adapter in [`super::parser`].
 //!
 //! Enable the **`verbose`** Cargo feature to print Oxc diagnostics to stderr in addition to the
 //! string folded into [`crate::error::ConvexTypeGeneratorError::ParsingFailed`].
 
-use std::path::PathBuf;
+use std::path::Path;
 
 use oxc::allocator::Allocator;
 use oxc::diagnostics::OxcDiagnostic;
@@ -22,7 +22,7 @@ use crate::error::ConvexTypeGeneratorError;
 pub(crate) const MAX_SOURCE_BYTES: usize = 10 * 1024 * 1024;
 
 /// Read `path`, parse with Oxc, and return the program as ESTree JSON.
-pub(crate) fn generate_javascript_ast(path: &PathBuf) -> Result<JsonValue, ConvexTypeGeneratorError>
+pub(crate) fn generate_javascript_ast(path: &Path) -> Result<JsonValue, ConvexTypeGeneratorError>
 {
     let path_str = path.to_string_lossy().to_string();
     let allocator = Allocator::default();

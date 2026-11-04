@@ -3,9 +3,7 @@
 //! Convex table/column names become Rust identifiers via [`capitalize_first_letter`] and
 //! [`to_pascal_case`] (e.g. union variants from string literals).
 
-use crate::convex::parser::VALID_CONVEX_TYPES;
 use crate::convex::validator::MAX_OBJECT_NEST_DEPTH;
-use crate::error::ConvexTypeGeneratorError;
 
 /// `users` → `Users` for struct / enum name prefixes.
 pub(crate) fn capitalize_first_letter(s: &str) -> String
@@ -79,18 +77,6 @@ pub(crate) fn to_pascal_case(s: &str) -> String
         .collect()
 }
 
-/// Ensures a `v.*` callee matches [`VALID_CONVEX_TYPES`].
-pub(crate) fn validate_type_name(type_name: &str) -> Result<(), ConvexTypeGeneratorError>
-{
-    if !VALID_CONVEX_TYPES.contains(&type_name) {
-        return Err(ConvexTypeGeneratorError::InvalidType {
-            found: type_name.to_string(),
-            valid_types: VALID_CONVEX_TYPES.iter().map(|&s| s.to_string()).collect(),
-        });
-    }
-    Ok(())
-}
-
 #[cfg(test)]
 mod function_args_struct_name_tests
 {
@@ -158,26 +144,5 @@ mod to_pascal_case_tests
     fn literal_union_style()
     {
         assert_eq!(to_pascal_case("draft"), "Draft");
-    }
-}
-
-#[cfg(test)]
-mod validate_type_name_tests
-{
-    use super::validate_type_name;
-    use crate::error::ConvexTypeGeneratorError;
-
-    #[test]
-    fn accepts_known_convex_validator()
-    {
-        validate_type_name("string").unwrap();
-        validate_type_name("optional").unwrap();
-    }
-
-    #[test]
-    fn rejects_unknown()
-    {
-        let e = validate_type_name("not_a_real_validator").unwrap_err();
-        assert!(matches!(e, ConvexTypeGeneratorError::InvalidType { found, .. } if found == "not_a_real_validator"));
     }
 }

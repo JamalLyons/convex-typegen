@@ -19,6 +19,10 @@ All notable changes to this project will be documented in this file.
 - **Breaking:** `ConvexClientExt::prepare_args` serializes generated args directly to `convex::Value` and returns `ConvexValueSerdeError`. Generated `TryFrom<Args> for BTreeMap<String, serde_json::Value>` implementations were removed.
 - **Breaking:** Removed the lossy `IntoConvexValue` and `ConvexValueExt` APIs and the `ConvexJsonError` prelude alias. Generated `v.bytes()` fields now use `ConvexBytes` so they serialize as Convex byte strings.
 
+- Route offline generation through a single typed model for schemas, validators, and functions.
+  Preserve source locations, canonical function identity, and known return metadata for future
+  codegen while retaining the current generated names and types.
+
 ### Fixed
 
 - Docs: The [0.3.0] supply-chain bullet incorrectly claimed a GitHub Actions release workflow for tagged publishes. Git history shows only `.github/workflows/rust.yml` (CI quality checks) was ever added; `release.yml` was referenced in early `CONTRIBUTING.md` text but never committed. Crates.io publishing has always been manual (`cargo publish` / `just publish`), as documented in `CONTRIBUTING.md` and [semver-policy.md](docs/semver-policy.md).

@@ -1,28 +1,19 @@
-//! Oxc → ESTree JSON → ad-hoc JSON traversal → Rust text.
+//! Oxc → ESTree JSON → typed IR → Rust text.
 //!
 //! This module is intentionally private: the stable surface is [`crate::generate`], [`crate::config`],
 //! and [`crate::prelude`]. What lives here:
 //!
 //! - **Lexer** ([`lexer`]) — parse TS to a [`serde_json::Value`] ESTree tree.
 //! - **Parser** ([`parser`]) — interpret Convex `defineSchema` / `defineTable` / `v.*` and exported
-//!   `query`/`mutation`/`action` shapes into [`types`].
-//! - **Validator IR** ([`validator`]) — typed `v.*` tree and `structName` for named object codegen.
+//!   `query`/`mutation`/`action` shapes into [`ir`].
+//! - **Source-neutral IR** ([`ir`]) — typed validators, canonical function identity, metadata,
+//!   optional field presence, and source provenance shared by adapters and codegen.
+//! - **Validator model** ([`validator`]) — typed `v.*` tree used by the source-neutral IR.
 //! - **Codegen** ([`codegen`]) — stringify that model as `src/convex_types.rs`-style output.
 //! - **AST spike** ([`ast`]) — direct Oxc `Program` walks; not used by [`crate::generate`] yet.
-//!
-//! ## JSON at the boundaries
-//!
-//! Column and argument types stay as [`serde_json::Value`] in [`types`] instead of a dedicated Rust
-//! ADT: the parser’s output mirrors the nested `v.union`, `v.optional`, etc. tree closely, which keeps
-//! codegen’s pattern matching aligned with how Convex encodes validators in TS.
-//!
-//! ## Client helpers
-//!
-//! With the **`client`** feature, [`value_serde`] encodes directly against `convex::Value`, and
-//! [`ConvexClientExt`] prepares generated args without a JSON conversion step.
 
 use std::collections::BTreeMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use serde_json::Value as JsonValue;
 
@@ -32,29 +23,28 @@ use crate::error::ConvexTypeGeneratorError;
 #[allow(dead_code)]
 pub(crate) mod ast;
 pub(crate) mod codegen;
+pub(crate) mod ir;
 pub(crate) mod lexer;
 pub(crate) mod parser;
-pub(crate) mod types;
 pub(crate) mod utils;
-#[allow(dead_code)]
 pub(crate) mod validator;
 
 /// Parse `schema.ts` through Oxc; returns the ESTree program as JSON ([`lexer::generate_javascript_ast`]).
-pub(crate) fn create_schema_ast(path: PathBuf) -> Result<JsonValue, ConvexTypeGeneratorError>
+pub(crate) fn create_schema_ast(path: &Path) -> Result<JsonValue, ConvexTypeGeneratorError>
 {
     // Validate path exists before processing
     if !path.exists() {
         return Err(ConvexTypeGeneratorError::MissingSchemaFile);
     }
 
-    generate_javascript_ast(&path)
+    generate_javascript_ast(path)
 }
 
 /// Parse every function source path; keys are **canonical** path strings (UTF-8 lossy).
 ///
 /// [`BTreeMap`] keeps iteration order deterministic for stable codegen. Basenames alone would collide
 /// for `convex/a/foo.ts` vs `convex/b/foo.ts`; full canonical keys keep ASTs separate while
-/// [`parser::parse_function_ast`] still derives the Convex module segment from the file name.
+/// [`parser::parse_function_ast`] resolves root-relative module identity.
 pub(crate) fn create_function_asts(paths: Vec<PathBuf>) -> Result<BTreeMap<String, JsonValue>, ConvexTypeGeneratorError>
 {
     let mut function_asts = BTreeMap::new();
@@ -95,7 +85,7 @@ mod create_schema_ast_tests
     {
         let p = PathBuf::from("/nonexistent/convex-typegen/schema-xyz.ts");
         assert!(matches!(
-            create_schema_ast(p).unwrap_err(),
+            create_schema_ast(&p).unwrap_err(),
             crate::error::ConvexTypeGeneratorError::MissingSchemaFile
         ));
     }
@@ -106,7 +96,7 @@ mod create_schema_ast_tests
         let tmp = tempdir().unwrap();
         let p = tmp.path().join("f.ts");
         fs::write(&p, "export const x: number = 1;\n").unwrap();
-        let ast = create_schema_ast(p).unwrap();
+        let ast = create_schema_ast(&p).unwrap();
         assert!(ast["body"].as_array().is_some());
     }
 
@@ -117,7 +107,7 @@ mod create_schema_ast_tests
         let p = tmp.path().join("empty.ts");
         fs::write(&p, "   \n\t  ").unwrap();
         assert!(matches!(
-            create_schema_ast(p).unwrap_err(),
+            create_schema_ast(&p).unwrap_err(),
             crate::error::ConvexTypeGeneratorError::EmptySchemaFile { .. }
         ));
     }

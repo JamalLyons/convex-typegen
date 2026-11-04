@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Parse Convex 1.49.0 validator factories, including numeric aliases, nullable values, commit
+  timestamps and opaque function handles. Accept indexed object and union tables and earlier
+  same-file validator consts. The IR preserves quoted wire keys and exact literal kinds.
+
 - Direct Serde conversion to and from `convex::Value` via `value_serde::{to_value, from_value}`. It
   preserves int64/float64 wire kinds, non-finite floats, bytes, nested arrays and records, and
   reports conversion failures with a value path. `value_serde::Bytes` uses Serde's byte-string
@@ -22,6 +26,9 @@ All notable changes to this project will be documented in this file.
 - Route offline generation through a single typed model for schemas, validators, and functions.
   Preserve source locations, canonical function identity, and known return metadata for future
   codegen while retaining the current generated names and types.
+
+- **Breaking:** Malformed validator expressions that previously produced incomplete types now
+  fail with a file, byte span and validator name. This includes unsupported inline return validators.
 
 ### Fixed
 

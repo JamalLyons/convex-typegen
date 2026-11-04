@@ -17,7 +17,7 @@ use std::collections::{BTreeMap, HashSet};
 use std::io::{Seek, SeekFrom, Write};
 use std::path::Path;
 
-use crate::convex::ir::{FieldPresence, Function, GenerationIr, TableDocument};
+use crate::convex::ir::{FieldPresence, Function, GenerationIr, TableDocument, TableShape};
 use crate::convex::utils::{capitalize_first_letter, function_args_struct_name, to_pascal_case};
 use crate::convex::validator::{ConvexValidator as Validator, Literal};
 use crate::error::ConvexTypeGeneratorError;
@@ -90,8 +90,10 @@ fn collect_named_structs(ir: &GenerationIr) -> Result<BTreeMap<String, NamedStru
 {
     let mut map = BTreeMap::new();
     for table in &ir.schema.tables {
-        for field in &table.fields {
-            collect_named_structs_from_validator(&field.validator, &mut map, Some((&table.name, &field.name)))?;
+        if let TableShape::Object(fields) = &table.shape {
+            for field in fields {
+                collect_named_structs_from_validator(&field.validator, &mut map, Some((&table.name, &field.name)))?;
+            }
         }
     }
     for function in &ir.functions {
@@ -175,7 +177,10 @@ fn emit_named_struct_definitions(map: &BTreeMap<String, NamedStructDef>) -> Stri
 fn generate_table_enums(table: &TableDocument) -> String
 {
     let mut code = String::new();
-    for field in &table.fields {
+    let TableShape::Object(fields) = &table.shape else {
+        return code;
+    };
+    for field in fields {
         let (variants, qualifier) = match &field.validator {
             Validator::Union(variants) => (variants, ""),
             Validator::Optional(inner) if let Validator::Union(variants) = inner.as_ref() => (variants, "Optional"),
@@ -219,10 +224,14 @@ fn generate_table_code(table: &TableDocument) -> String
 
     let table_struct_name = format!("{}Table", capitalize_first_letter(&table.name));
 
+    let TableShape::Object(fields) = &table.shape else {
+        return format!("pub type {table_struct_name} = ConvexJsonValue;\n\n");
+    };
+
     code.push_str("#[derive(Debug, Clone)]\n");
     code.push_str(&format!("pub struct {} {{\n", table_struct_name));
 
-    for field in &table.fields {
+    for field in fields {
         let rust_type = match &field.validator {
             Validator::Union(_) => table_enum_name(&table.name, &field.name, ""),
             validator => convex_type_to_rust_type(validator, Some((&table.name, &field.name))),
@@ -238,13 +247,13 @@ fn generate_table_code(table: &TableDocument) -> String
 fn convex_type_to_rust_type(validator: &Validator, table_field: Option<(&str, &str)>) -> String
 {
     match validator {
-        Validator::String | Validator::Id(_) => "String".to_string(),
+        Validator::String | Validator::Id(_) | Validator::FunctionHandle(_) => "String".to_string(),
         Validator::Number => "f64".to_string(),
         Validator::Boolean => "bool".to_string(),
         Validator::Null => "()".to_string(),
         Validator::Int64 => "i64".to_string(),
         Validator::Bytes => "ConvexBytes".to_string(),
-        Validator::Any | Validator::Union(_) | Validator::Unknown => "ConvexJsonValue".to_string(),
+        Validator::Any | Validator::Union(_) => "ConvexJsonValue".to_string(),
         Validator::Array(elements) => format!("Vec<{}>", convex_type_to_rust_type(elements, None)),
         Validator::Object {
             struct_name: Some(name), ..
@@ -348,7 +357,7 @@ mod tests
     {
         TableDocument {
             name: name.into(),
-            fields,
+            shape: TableShape::Object(fields),
             provenance: provenance(),
         }
     }
@@ -403,7 +412,6 @@ mod tests
             (Validator::Int64, "i64"),
             (Validator::Bytes, "ConvexBytes"),
             (Validator::Any, "ConvexJsonValue"),
-            (Validator::Unknown, "ConvexJsonValue"),
             (Validator::Array(Box::new(Validator::String)), "Vec<String>"),
             (
                 object(None, &[("a", Validator::String), ("b", Validator::String)]),
@@ -425,6 +433,18 @@ mod tests
         assert_eq!(
             convex_type_to_rust_type(&optional_union, Some(("items", "status"))),
             "Option<ItemsOptionalStatus>"
+        );
+    }
+
+    #[test]
+    fn emits_union_table_and_opaque_handle_fallbacks()
+    {
+        let mut union = table("events", vec![]);
+        union.shape = TableShape::Union(vec![TableShape::Object(vec![field("kind", Validator::String)])]);
+        assert_eq!(generate_table_code(&union), "pub type EventsTable = ConvexJsonValue;\n\n");
+        assert_eq!(
+            convex_type_to_rust_type(&Validator::FunctionHandle(Box::default()), None),
+            "String"
         );
     }
 

@@ -1,0 +1,349 @@
+use std::fs;
+
+use serde_json::json;
+use tempfile::tempdir;
+
+use super::*;
+use crate::convex::{create_function_asts, create_schema_ast};
+
+fn schema_from_source(source: &str) -> Result<Schema, ConvexTypeGeneratorError>
+{
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("schema.ts");
+    fs::write(&path, source).unwrap();
+    parse_schema_ast(create_schema_ast(&path).unwrap(), &path)
+}
+
+fn validator_from_source(source: &str) -> Result<Validator, ConvexTypeGeneratorError>
+{
+    let schema = schema_from_source(&format!(
+        "export default defineSchema({{ t: defineTable({{ field: {source} }}) }});"
+    ))?;
+    let TableShape::Object(fields) = &schema.tables[0].shape else {
+        panic!("expected object table");
+    };
+    Ok(fields[0].validator.clone())
+}
+
+#[test]
+fn lowers_every_factory_in_convex_1_49()
+{
+    let cases = [
+        ("v.string()", Validator::String),
+        ("v.number()", Validator::Number),
+        ("v.float64()", Validator::Number),
+        ("v.int64()", Validator::Int64),
+        ("v.bigint()", Validator::Int64),
+        ("v.commitTs()", Validator::Int64),
+        ("v.boolean()", Validator::Boolean),
+        ("v.null()", Validator::Null),
+        ("v.bytes()", Validator::Bytes),
+        ("v.any()", Validator::Any),
+        ("v.id('t')", Validator::Id(Some("t".into()))),
+        ("v.array(v.string())", Validator::Array(Box::new(Validator::String))),
+        (
+            "v.object({})",
+            Validator::Object {
+                struct_name: None,
+                properties: Some(BTreeMap::new()),
+            },
+        ),
+        (
+            "v.record(v.string(), v.int64())",
+            Validator::Record {
+                key_type: Box::new(Validator::String),
+                value_type: Box::new(Validator::Int64),
+            },
+        ),
+        (
+            "v.nullable(v.float64())",
+            Validator::Union(vec![Validator::Number, Validator::Null]),
+        ),
+        (
+            "v.union(v.number(), v.null())",
+            Validator::Union(vec![Validator::Number, Validator::Null]),
+        ),
+        ("v.optional(v.string())", Validator::Optional(Box::new(Validator::String))),
+        ("v.string().optional()", Validator::Optional(Box::new(Validator::String))),
+        (
+            "v.optional(v.string().optional())",
+            Validator::Optional(Box::new(Validator::String)),
+        ),
+        ("v.function()", Validator::FunctionHandle(Box::default())),
+        ("v.function(undefined)", Validator::FunctionHandle(Box::default())),
+        ("v.function({ args: undefined })", Validator::FunctionHandle(Box::default())),
+    ];
+
+    for (source, expected) in cases {
+        assert_eq!(validator_from_source(source).unwrap(), expected, "{source}");
+    }
+}
+
+#[test]
+fn keeps_literal_wire_kinds_and_values()
+{
+    for (source, expected) in [
+        ("'123'", Literal::String("123".into())),
+        (r#""a\nb""#, Literal::String("a\nb".into())),
+        ("123", Literal::Float64(123.0)),
+        ("123n", Literal::Int64(123)),
+        ("false", Literal::Boolean(false)),
+        ("true", Literal::Boolean(true)),
+        ("0x7bn", Literal::Int64(123)),
+        ("0b111_1011n", Literal::Int64(123)),
+        ("-0x8000000000000000n", Literal::Int64(i64::MIN)),
+        ("9_223_372_036_854_775_807n", Literal::Int64(i64::MAX)),
+        ("-1.25e-10", Literal::Float64(-1.25e-10)),
+        ("1.0000000000000002", Literal::Float64(1.0000000000000002)),
+    ] {
+        assert_eq!(
+            validator_from_source(&format!("v.literal({source})")).unwrap(),
+            Validator::Literal(Some(expected)),
+            "{source}"
+        );
+    }
+    let Validator::Literal(Some(Literal::Float64(zero))) = validator_from_source("v.literal(-0)").unwrap() else {
+        panic!("expected float literal");
+    };
+    assert_eq!(zero.to_bits(), (-0.0_f64).to_bits());
+}
+
+#[test]
+fn parses_opaque_handles_with_partial_or_complete_signature_metadata()
+{
+    let Validator::FunctionHandle(signature) = validator_from_source(
+        r#"v.function({ fnType: "mutation", args: { "$weird": v.int64() }, returns: v.nullable(v.string()) })"#,
+    )
+    .unwrap() else {
+        panic!("expected a function handle");
+    };
+    assert_eq!(signature.kind, Some(FunctionKind::Mutation));
+    assert_eq!(
+        signature.args,
+        Some(Validator::Object {
+            struct_name: None,
+            properties: Some(BTreeMap::from([("$weird".into(), Validator::Int64)])),
+        })
+    );
+    assert_eq!(
+        signature.returns,
+        Some(Validator::Union(vec![Validator::String, Validator::Null]))
+    );
+    assert_eq!(
+        validator_from_source(r#"v.function({ fnType: "query" })"#).unwrap(),
+        Validator::FunctionHandle(Box::new(FunctionSignature {
+            kind: Some(FunctionKind::Query),
+            ..Default::default()
+        })),
+    );
+}
+
+#[test]
+fn accepts_string_and_id_record_keys_including_unions()
+{
+    assert_eq!(
+        validator_from_source("v.record(v.union(v.string(), v.id('t')), v.null())").unwrap(),
+        Validator::Record {
+            key_type: Box::new(Validator::Union(vec![Validator::String, Validator::Id(Some("t".into()))])),
+            value_type: Box::new(Validator::Null),
+        },
+    );
+}
+
+#[test]
+fn accepts_indexed_union_tables_and_reuses_local_shapes()
+{
+    let schema = schema_from_source(
+        r#"
+        const kind = v.literal("user");
+        const columns = { "my-field": kind, "$weird": v.object({ "inner-key": v.boolean() }) };
+        const user = v.object(columns);
+        const other = v.object({ "my-field": v.number() });
+        const either = v.union(user, other);
+        export default defineSchema({
+            "object-table": defineTable(user),
+            raw: defineTable(columns),
+            mixed: defineTable(either)
+                .index("field", ["my-field"])
+                .searchIndex("search", { searchField: "text" })
+                .vectorIndex("vec", { vectorField: "embedding", dimensions: 2 }),
+            inline: defineTable(v.union(user, other)),
+        });
+    "#,
+    )
+    .unwrap();
+    assert_eq!(schema.tables[0].name, "object-table");
+    let TableShape::Object(fields) = &schema.tables[0].shape else {
+        panic!("expected object table");
+    };
+    assert_eq!(fields[0].name, "my-field");
+    assert_eq!(fields[0].validator, Validator::Literal(Some(Literal::String("user".into()))));
+    assert_eq!(fields[1].name, "$weird");
+    assert!(
+        matches!(&fields[1].validator, Validator::Object { properties: Some(props), .. }
+        if props["inner-key"] == Validator::Boolean)
+    );
+    assert!(matches!(&schema.tables[1].shape, TableShape::Object(fields) if fields.len() == 2));
+    let TableShape::Union(variants) = &schema.tables[2].shape else {
+        panic!("expected union table");
+    };
+    let [TableShape::Object(user), TableShape::Object(other)] = variants.as_slice() else {
+        panic!("expected two object variants");
+    };
+    assert_eq!(user[0].validator, fields[0].validator);
+    assert_eq!(other[0].validator, Validator::Number);
+    assert!(matches!(&schema.tables[3].shape, TableShape::Union(variants) if variants.len() == 2));
+}
+
+#[test]
+fn rejects_malformed_shapes_with_source_span_and_validator_name()
+{
+    for (expression, validator, details) in [
+        ("v.future()", "v.future", "unsupported validator"),
+        ("v.array()", "v.array", "expected 1 argument"),
+        ("v.id(123)", "v.id", "string literal table name"),
+        ("v.object(false)", "v.object", "expected an object literal"),
+        ("v.object({ ...other })", "v.object", "expand spreads"),
+        ("v.literal(null)", "v.literal", "use v.null() for null"),
+        ("v.literal(9223372036854775808n)", "v.literal", "signed 64-bit bigint"),
+        ("v.union()", "v.union", "expected at least 1 argument"),
+        ("v.nullable(v.optional(v.string()))", "v.nullable", "required validator"),
+        ("v.record(v.number(), v.string())", "v.record", "keys must use"),
+        (
+            "v.record(v.union(v.id('t'), v.int64()), v.string())",
+            "v.record",
+            "keys must use",
+        ),
+        (
+            "v.record(v.optional(v.string()), v.string())",
+            "v.record",
+            "required validator",
+        ),
+        (
+            "v.record(v.string(), v.optional(v.int64()))",
+            "v.record",
+            "required validator",
+        ),
+        ("v.record(v.string())", "v.record", "expected 2 argument"),
+        ("v.function({ fnType: 'invalid' })", "v.function", "fnType must be"),
+    ] {
+        let diagnostic = validator_from_source(expression).unwrap_err().to_string();
+        for expected in ["schema.ts bytes ", validator, details] {
+            assert!(diagnostic.contains(expected), "{expression}: {diagnostic}");
+        }
+    }
+    for (declaration, expression, details) in [
+        ("", "defineTable(v.union(v.object({}), v.string()))", "required v.object()"),
+        ("", "defineTable(missing)", "same-file const binding"),
+        (
+            "const cycle = v.object({ x: cycle });",
+            "defineTable(cycle)",
+            "initialized before use",
+        ),
+    ] {
+        let diagnostic = schema_from_source(&format!("{declaration} export default defineSchema({{ t: {expression} }});"))
+            .unwrap_err()
+            .to_string();
+        assert!(
+            diagnostic.contains("schema.ts bytes ") && diagnostic.contains(details),
+            "{diagnostic}"
+        );
+    }
+}
+
+#[test]
+fn preserves_quoted_function_args_and_reports_unsupported_returns()
+{
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("functions.ts");
+    fs::write(
+        &path,
+        r#"export const q = query({ "args": { "my-field": v.number(), "$weird": v.int64() } });"#,
+    )
+    .unwrap();
+    let read = || parse_function_ast(create_function_asts(vec![path.clone()]).unwrap(), Some(dir.path()));
+    let functions = read().unwrap();
+    let fields = functions[0].params();
+    assert_eq!(
+        fields.iter().map(|f| f.name.as_str()).collect::<Vec<_>>(),
+        ["my-field", "$weird"]
+    );
+    fs::write(&path, "export const q = query({ returns: v.future() });").unwrap();
+    let diagnostic = read().unwrap_err().to_string();
+    assert!(diagnostic.contains("functions.ts bytes 34..44: v.future"), "{diagnostic}");
+}
+
+/// Project only the shared validator metadata used by the fixture comparison into SDK JSON.
+fn spec_validator(validator: &Validator) -> JsonValue
+{
+    match validator {
+        Validator::Id(Some(table)) => json!({ "type": "id", "tableName": table }),
+        Validator::Array(element) => json!({ "type": "array", "value": spec_validator(element) }),
+        Validator::Object {
+            properties: Some(fields),
+            ..
+        } => spec_object(fields.iter().map(|(key, value)| (key.as_str(), value))),
+        Validator::Literal(Some(Literal::String(value))) => json!({ "type": "literal", "value": value }),
+        Validator::Boolean | Validator::String | Validator::Null | Validator::Number => {
+            json!({ "type": validator.type_name() })
+        }
+        _ => panic!("unexpected fixture validator {validator:?}"),
+    }
+}
+
+fn spec_object<'a>(fields: impl Iterator<Item = (&'a str, &'a Validator)>) -> JsonValue
+{
+    let fields: serde_json::Map<_, _> = fields
+        .map(|(name, validator)| {
+            let (inner, optional) = match validator {
+                Validator::Optional(inner) => (inner.as_ref(), true),
+                _ => (validator, false),
+            };
+            (
+                name.to_string(),
+                json!({ "fieldType": spec_validator(inner), "optional": optional }),
+            )
+        })
+        .collect();
+    json!({ "type": "object", "value": fields })
+}
+
+#[test]
+fn review_fixture_matches_function_spec_for_inline_validators()
+{
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/v1-review/convex");
+    let schema = parse_schema_ast(create_schema_ast(&root.join("schema.ts")).unwrap(), &root.join("schema.ts")).unwrap();
+    assert!(
+        matches!(&schema.tables.iter().find(|table| table.name == "events").unwrap().shape,
+        TableShape::Union(variants) if variants.len() == 2)
+    );
+
+    let mut asts = create_function_asts(vec![root.join("users.ts"), root.join("admin/users.ts")]).unwrap();
+    // The echo endpoint uses an imported validator with a spread, which the offline parser
+    // cannot resolve. HTTP routes and helper modules are outside this validator comparison.
+    let admin = asts.get_mut(root.join("admin/users.ts").to_str().unwrap()).unwrap();
+    admin["body"]
+        .as_array_mut()
+        .unwrap()
+        .retain(|node| node["declaration"]["declarations"][0]["id"]["name"] != "echo");
+    let functions = parse_function_ast(asts, Some(&root)).unwrap();
+    let spec: JsonValue =
+        serde_json::from_str(include_str!("../../../tests/fixtures/v1-review/inline-function-spec.json")).unwrap();
+    let spec = spec.as_array().unwrap();
+    assert_eq!(functions.len(), spec.len());
+    for function in functions {
+        let module = function.identity.module.unwrap().join("/");
+        let identifier = format!("{module}.js:{}", function.identity.export);
+        let expected = spec.iter().find(|entry| entry["identifier"] == identifier).unwrap();
+        let args = match &function.args {
+            Declared::Declared(fields) => spec_object(fields.iter().map(|field| (field.name.as_str(), &field.validator))),
+            Declared::Unknown => json!({ "type": "any" }),
+        };
+        let returns = match &function.returns {
+            Declared::Declared(returns) => spec_validator(&returns.validator),
+            Declared::Unknown => JsonValue::Null,
+        };
+        assert_eq!(args, expected["args"], "{identifier} args");
+        assert_eq!(returns, expected["returns"], "{identifier} returns");
+    }
+}

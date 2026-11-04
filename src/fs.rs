@@ -1,27 +1,77 @@
 //! Discover Convex function modules on disk for `build.rs`.
 //!
 //! With an empty [`crate::config::Configuration::function_paths`], walks `convex_dir` for `*.ts`,
-//! skips `_generated/`, `node_modules/`, `*.d.ts`, and the canonical [`Configuration::schema_path`]
-//! so the schema file is never treated as a function source. A missing `convex_dir` returns an
-//! empty `Vec` (no error) so callers can still point [`Configuration::function_paths`] at explicit files.
+//! skips `_generated/`, `node_modules/`, `*.d.ts`, reserved modules, and the canonical
+//! [`Configuration::schema_path`]. Relative imports are included for Cargo invalidation. A missing
+//! `convex_dir` returns an empty `Vec` (no error) so callers can use explicit inputs.
 
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::config::Configuration;
+use crate::convex::lexer::generate_javascript_ast;
 use crate::error::ConvexTypeGeneratorError;
 
 const SKIP_DIR_NAMES: &[&str] = &["_generated", "node_modules"];
+const RESERVED_MODULES: &[&str] = &["http.ts", "crons.ts", "convex.config.ts"];
 
 /// **R**esolved **C**onvex **f**unction **p**aths — identical set to what [`crate::generate`] parses.
 ///
-/// Use from `build.rs` with `cargo:rerun-if-changed` on each path so TS edits invalidate the build.
+/// Use from `build.rs` with `cargo:rerun-if-changed` on each path so source and imported helper edits
+/// invalidate the build.
 pub fn rcfp(config: &Configuration) -> Result<Vec<PathBuf>, ConvexTypeGeneratorError>
 {
-    if !config.function_paths.is_empty() {
-        return Ok(config.function_paths.clone());
+    let paths = if !config.function_paths.is_empty() {
+        config.function_paths.clone()
+    } else {
+        find_convex_function_source_paths(&config.convex_dir, &config.schema_path)?
+    };
+    expand_relative_import_paths(paths)
+}
+
+fn expand_relative_import_paths(paths: Vec<PathBuf>) -> Result<Vec<PathBuf>, ConvexTypeGeneratorError>
+{
+    let mut pending = paths;
+    let mut sources = std::collections::BTreeMap::new();
+    while let Some(path) = pending.pop() {
+        let canonical = path.canonicalize().map_err(|error| ConvexTypeGeneratorError::IOError {
+            file: path.to_string_lossy().into_owned(),
+            error,
+        })?;
+        let key = canonical.to_string_lossy().into_owned();
+        if sources.contains_key(&key) {
+            continue;
+        }
+        let ast = generate_javascript_ast(&canonical)?;
+        for import in ast["body"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter(|node| node["type"] == "ImportDeclaration")
+        {
+            let Some(specifier) = import["source"]["value"].as_str().filter(|value| value.starts_with('.')) else {
+                continue;
+            };
+            let base = canonical.parent().unwrap_or(Path::new(".")).join(specifier);
+            let mut candidates = vec![base.clone()];
+            if base.extension().is_none() {
+                candidates.extend([
+                    base.with_extension("ts"),
+                    base.with_extension("tsx"),
+                    base.with_extension("js"),
+                    base.with_extension("jsx"),
+                    base.join("index.ts"),
+                ]);
+            }
+            if let Some(dependency) = candidates.into_iter().find(|candidate| candidate.is_file()) {
+                pending.push(dependency);
+            }
+        }
+        sources.insert(key, path);
     }
-    find_convex_function_source_paths(&config.convex_dir, &config.schema_path)
+    let mut result = sources.into_values().collect::<Vec<_>>();
+    result.sort();
+    Ok(result)
 }
 
 /// Collect `*.ts` files under `convex_dir`, excluding declaration files and the schema file.
@@ -47,6 +97,12 @@ fn find_convex_function_source_paths(convex_dir: &Path, schema_path: &Path)
     walk_ts_files(convex_dir, &mut paths)?;
 
     paths.retain(|p| {
+        if p.file_name()
+            .and_then(|name| name.to_str())
+            .is_some_and(|name| RESERVED_MODULES.contains(&name))
+        {
+            return false;
+        }
         if p.to_string_lossy().ends_with(".d.ts") {
             return false;
         }
@@ -99,7 +155,7 @@ mod find_convex_function_source_paths_tests
 
     use tempfile::tempdir;
 
-    use super::find_convex_function_source_paths;
+    use super::{RESERVED_MODULES, find_convex_function_source_paths};
 
     #[test]
     fn skips_generated_schema_and_d_ts_and_sorts()
@@ -115,6 +171,10 @@ mod find_convex_function_source_paths_tests
 
         let mut f = fs::File::create(convex.join("api.ts")).unwrap();
         writeln!(f, "export const q = query({{}});").unwrap();
+
+        for name in RESERVED_MODULES {
+            fs::write(convex.join(name), "export default {};").unwrap();
+        }
 
         let mut f = fs::File::create(convex.join("_generated/server.d.ts")).unwrap();
         writeln!(f, "export type X = 1;").unwrap();
@@ -164,8 +224,8 @@ mod rcfp_tests
         let tmp = tempdir().unwrap();
         let a = tmp.path().join("a.ts");
         let b = tmp.path().join("b.ts");
-        fs::write(&a, "//").unwrap();
-        fs::write(&b, "//").unwrap();
+        fs::write(&a, "export const a = 1;").unwrap();
+        fs::write(&b, "export const b = 1;").unwrap();
         let cfg = Configuration {
             function_paths: vec![a.clone(), b.clone()],
             ..Default::default()
@@ -198,6 +258,23 @@ mod rcfp_tests
             .map(|p| p.file_name().unwrap().to_string_lossy().into_owned())
             .collect();
         assert_eq!(names, vec!["z.ts"]);
+    }
+
+    #[test]
+    fn explicit_inputs_include_relative_imports_for_cargo_invalidation()
+    {
+        let tmp = tempdir().unwrap();
+        let source = tmp.path().join("entry.ts");
+        let helper = tmp.path().join("validators.ts");
+        fs::write(&source, "import { shape } from './validators'; export const q = shape;").unwrap();
+        fs::write(&helper, "export const shape = {};").unwrap();
+        let config = Configuration {
+            function_paths: vec![source.clone()],
+            ..Default::default()
+        };
+        let paths = rcfp(&config).unwrap();
+        assert!(paths.contains(&source));
+        assert!(paths.contains(&helper.canonicalize().unwrap()));
     }
 }
 

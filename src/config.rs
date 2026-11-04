@@ -18,11 +18,13 @@ pub struct Configuration
     /// Convex backend directory (default: `"convex"`, i.e. next to `Cargo.toml` when the build
     /// runs from the package root). When [`function_paths`](Self::function_paths) is empty, all
     /// `*.ts` files under this directory are used as function sources except `schema.ts` (same
-    /// file as [`schema_path`](Self::schema_path)), `_generated/`, `node_modules/`, and `*.d.ts`.
+    /// file as [`schema_path`](Self::schema_path)), `_generated/`, `node_modules/`, `http.ts`,
+    /// `crons.ts`, `convex.config.ts`, and `*.d.ts`.
     pub convex_dir: PathBuf,
 
     /// When non-empty, only these files are parsed as Convex functions (directory discovery is
-    /// skipped). Use this in tests or for unusual layouts.
+    /// skipped). Use this in tests or for unusual layouts. Files outside [`convex_dir`](Self::convex_dir)
+    /// have no root-relative module identity.
     pub function_paths: Vec<PathBuf>,
 }
 

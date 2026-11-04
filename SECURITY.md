@@ -12,4 +12,4 @@ Include steps to reproduce, impact, and any suggested fix if you have one.
 
 ## Scope
 
-This crate runs at **build time** and reads TypeScript from your project tree. Untrusted Convex source files could cause high memory use; the lexer enforces a 10 MiB per-file limit. Runtime network access is only via the optional `convex` client feature in consuming applications, not during codegen.
+This crate runs at **build time** and reads TypeScript from your project tree. Untrusted Convex source files could cause high memory use; the lexer enforces a 10 MiB per-file limit. The generator works offline. Consuming applications can connect to Convex through the official client used by `convex-typegen-runtime`.

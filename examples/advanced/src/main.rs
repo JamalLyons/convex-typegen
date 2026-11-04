@@ -6,7 +6,7 @@ mod convex_types;
 use std::path::Path;
 
 use convex::{ConvexClient, FunctionResult, Value as ConvexValue};
-use convex_typegen::prelude::*;
+use convex_typegen_runtime::prelude::*;
 use convex_types::{
     IntegrationsMirrorArgs, IntegrationsMirrorFlags, ProjectsListByTeamArgs, ProjectsUpdateTagsArgs, TasksCreateArgs,
     TasksSearchArgs, TasksSearchFilter, TeamsListByOwnerArgs, UsersCreateArgs, UsersGetByEmailArgs, UsersGetProfileArgs,
@@ -67,7 +67,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
             ProjectsListByTeamArgs::FUNCTION_PATH,
             ConvexClient::prepare_args(ProjectsListByTeamArgs {
                 teamId: team_id.clone(),
-                statusFilter: Some(convex_typegen::serde_json::json!("active")),
+                statusFilter: Some(convex_typegen_runtime::serde_json::json!("active")),
             })?,
         )
         .await?;
@@ -79,7 +79,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
             ConvexClient::prepare_args(TasksSearchArgs {
                 filter: TasksSearchFilter {
                     projectId: project_id.clone(),
-                    minPriority: Some(convex_typegen::serde_json::json!("p1")),
+                    minPriority: Some(convex_typegen_runtime::serde_json::json!("p1")),
                 },
                 limit: Some(10.0),
             })?,
@@ -97,7 +97,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
                     verbose: true,
                     trace: false,
                 },
-                mode: convex_typegen::serde_json::json!("json"),
+                mode: convex_typegen_runtime::serde_json::json!("json"),
                 extra: Some(std::collections::HashMap::from([("k".to_string(), "v".to_string())])),
             })?,
         )
@@ -143,9 +143,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
             ConvexClient::prepare_args(TasksCreateArgs {
                 projectId: project_id.clone(),
                 title: "From Rust client".to_string(),
-                priority: convex_typegen::serde_json::json!("p2"),
+                priority: convex_typegen_runtime::serde_json::json!("p2"),
                 assigneeUserId: Some(user_id),
-                payload: Some(convex_typegen::serde_json::json!({ "source": "advanced example" })),
+                payload: Some(convex_typegen_runtime::serde_json::json!({ "source": "advanced example" })),
                 dueAt: None,
             })?,
         )
@@ -159,7 +159,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
             ConvexClient::prepare_args(UsersCreateArgs {
                 email: format!("rust-{ts}@example.com"),
                 displayName: "Rust-created".to_string(),
-                role: convex_typegen::serde_json::json!("member"),
+                role: convex_typegen_runtime::serde_json::json!("member"),
                 metadata: Some(std::collections::HashMap::from([(
                     "channel".to_string(),
                     "advanced-example".to_string(),

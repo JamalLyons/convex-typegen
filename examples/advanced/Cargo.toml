@@ -7,7 +7,7 @@ edition = "2021"
 convex = "0.10.4"
 dotenvy = "0.15.7"
 tokio = { version = "1.52.3", features = ["full"] }
-convex-typegen = { path = "../../" }
+convex-typegen-runtime = { path = "../../runtime" }
 
 [build-dependencies]
 convex-typegen = { path = "../../" }

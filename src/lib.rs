@@ -5,16 +5,10 @@
 //!
 //! - [`config::Configuration`] — input paths and optional explicit function file list.
 //! - [`generate`] — end-to-end pipeline used from `build.rs`.
-//! - [`prelude`] — re-exports for `build.rs` and for crates that consume generated code.
+//! - [`prelude`] — re-exports for `build.rs`.
 //! - [`fs::rcfp`] — resolves the same function source paths as [`generate`] (for `cargo:rerun-if-changed`).
 //!
 //! Parsing and codegen live in the private `convex` module; the public API stays small on purpose.
-//!
-//! ## Serde
-//!
-//! Generated files use `#[serde(crate = "convex_typegen::serde")]` and
-//! `convex_typegen::serde_json::…` so application crates do not need direct `serde` / `serde_json`
-//! dependencies unless they use those crates themselves.
 
 use crate::config::Configuration;
 use crate::convex::codegen::run_codegen;
@@ -29,20 +23,6 @@ mod convex;
 mod error;
 mod fs;
 pub mod prelude;
-
-/// Crate-root re-export for generated `#[serde(crate = "convex_typegen::serde")]`.
-pub use serde;
-/// Crate-root re-export for generated fallback JSON value types.
-pub use serde_json;
-
-/// Ergonomic helpers for the official Convex Rust client (see [`prelude`]).
-#[cfg(feature = "client")]
-#[cfg_attr(docsrs, doc(cfg(feature = "client")))]
-pub use crate::convex::ConvexClientExt;
-/// Direct Serde conversion between Rust types and `convex::Value`.
-#[cfg(feature = "client")]
-#[cfg_attr(docsrs, doc(cfg(feature = "client")))]
-pub use crate::convex::value_serde;
 
 /// Runs the full generator: resolve TypeScript inputs, parse with Oxc to ESTree JSON, walk that
 /// JSON into an internal model, then emit Rust to [`Configuration::out_file`].

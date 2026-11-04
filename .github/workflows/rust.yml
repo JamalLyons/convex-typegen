@@ -30,6 +30,9 @@ jobs:
       - name: rustfmt (crate root)
         run: cargo +nightly fmt --all --check
 
+      - name: rustfmt (runtime)
+        run: cargo +nightly fmt --manifest-path runtime/Cargo.toml --check
+
       - name: rustfmt (examples/basic)
         run: cargo +nightly fmt --manifest-path examples/basic/Cargo.toml --check
 
@@ -51,6 +54,9 @@ jobs:
       - name: Clippy (crate root)
         run: cargo clippy --locked --all-targets --all-features -- -D warnings
 
+      - name: Clippy (runtime)
+        run: cargo clippy --locked --manifest-path runtime/Cargo.toml --all-targets -- -D warnings
+
       - name: Clippy (examples/basic)
         run: cargo clippy --locked --manifest-path examples/basic/Cargo.toml --all-targets --all-features -- -D warnings
 
@@ -66,7 +72,7 @@ jobs:
           cargo build --locked --manifest-path examples/advanced/Cargo.toml --all-features
 
   no-default-features:
-    name: Build without client feature
+    name: Generator without default features
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -99,8 +105,55 @@ jobs:
       - name: Test
         run: cargo test --locked --all-features
 
-      - name: Build without client feature
+      - name: Generator without default features
         run: cargo build --locked --no-default-features
+
+      - name: Verify the build-dependency boundary
+        run: |
+          fixture=$(mktemp -d)
+          trap 'rm -rf "$fixture"' EXIT
+          mkdir -p "$fixture/src" "$fixture/convex"
+          cat > "$fixture/Cargo.toml" <<EOF
+          [package]
+          name = "generator-smoke"
+          version = "0.0.0"
+          edition = "2024"
+          rust-version = "1.95"
+
+          [build-dependencies]
+          convex-typegen = { path = "$PWD" }
+          EOF
+          echo 'fn main() {}' > "$fixture/src/main.rs"
+          echo 'fn main() { convex_typegen::generate(Default::default()).unwrap(); }' > "$fixture/build.rs"
+          echo 'export default defineSchema({});' > "$fixture/convex/schema.ts"
+
+          # Reuse the tested generator resolution and keep the fixture separate.
+          cp Cargo.lock "$fixture/Cargo.lock"
+          for features in "" "--features convex-typegen/verbose"; do
+            graph=$(cargo tree --manifest-path "$fixture/Cargo.toml" --edges normal,build --prefix none $features)
+            if grep -E '^(convex(-typegen-runtime|_sync_types)?|native-tls|tokio-native-tls|openssl[^ ]*|rustls[^ ]*|tokio-rustls) v' <<< "$graph"; then
+              exit 1
+            fi
+          done
+          cargo build --locked --manifest-path "$fixture/Cargo.toml"
+          test -s "$fixture/src/convex_types.rs"
+
+  runtime-msrv:
+    name: Runtime MSRV (1.85)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@1.85.0
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: runtime
+
+      - name: Build and test the runtime
+        run: |
+          cargo build --locked --manifest-path runtime/Cargo.toml
+          cargo test --locked --manifest-path runtime/Cargo.toml
 
   audit:
     name: cargo audit
@@ -117,7 +170,8 @@ jobs:
 
       - name: Audit
         run: |
-          cargo audit \
+          cargo audit --file Cargo.lock
+          cargo audit --file runtime/Cargo.lock \
             --ignore RUSTSEC-2026-0007 \
             --ignore RUSTSEC-2025-0004 \
             --ignore RUSTSEC-2025-0022
@@ -136,4 +190,6 @@ jobs:
         run: cargo install cargo-deny --locked
 
       - name: Deny check
-        run: cargo deny check
+        run: |
+          cargo deny check
+          cargo deny --manifest-path runtime/Cargo.toml check --config deny.toml

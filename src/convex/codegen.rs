@@ -71,7 +71,7 @@ pub(crate) fn run_codegen(path: &PathBuf, input: impl IntoGenerationIr) -> Resul
 #![allow(non_snake_case)]
 #![allow(dead_code)]
 
-use convex_typegen::prelude::*;
+use convex_typegen_runtime::prelude::*;
 
 "#;
 
@@ -229,7 +229,7 @@ fn emit_named_struct_definitions(map: &BTreeMap<String, NamedStructDef>) -> Stri
     let mut code = String::new();
     for (name, def) in map {
         code.push_str("#[derive(Debug, Clone, Serialize, Deserialize)]\n");
-        code.push_str("#[serde(crate = \"convex_typegen::serde\")]\n");
+        code.push_str("#[serde(crate = \"convex_typegen_runtime::serde\")]\n");
         code.push_str(&format!("pub struct {name} {{\n"));
         for (field, rust_type) in &def.fields {
             emit_optional_field_attribute(&mut code, rust_type);
@@ -438,9 +438,9 @@ fn generate_function_code(function: ConvexFunction) -> String
 
     let struct_name = function_args_struct_name(&function.file_name, &function.name);
 
-    // Point serde derives at this crate so downstream does not need a direct `serde` dependency.
+    // Point serde derives at the runtime crate so downstream does not need a direct `serde` dependency.
     code.push_str("#[derive(Debug, Clone, Serialize, Deserialize)]\n");
-    code.push_str("#[serde(crate = \"convex_typegen::serde\")]\n");
+    code.push_str("#[serde(crate = \"convex_typegen_runtime::serde\")]\n");
     code.push_str(&format!("pub struct {} {{\n", struct_name));
 
     for param in &function.params {

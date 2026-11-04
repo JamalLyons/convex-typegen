@@ -118,7 +118,7 @@ fn golden_minimal_schema_and_function()
     #![allow(non_snake_case)]
     #![allow(dead_code)]
 
-    use convex_typegen::prelude::*;
+    use convex_typegen_runtime::prelude::*;
 
     #[derive(Debug, Clone)]
     pub struct ItemsTable {
@@ -126,7 +126,7 @@ fn golden_minimal_schema_and_function()
     }
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
-    #[serde(crate = "convex_typegen::serde")]
+    #[serde(crate = "convex_typegen_runtime::serde")]
     pub struct ApiGetItemArgs {
         pub id: String,
     }

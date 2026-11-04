@@ -52,7 +52,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Clippy (crate root)
-        run: cargo clippy --locked --all-targets --all-features -- -D warnings
+        run: cargo clippy --workspace --locked --all-targets --all-features -- -D warnings
 
       - name: Clippy (runtime)
         run: cargo clippy --locked --manifest-path runtime/Cargo.toml --all-targets -- -D warnings
@@ -64,7 +64,7 @@ jobs:
         run: cargo clippy --locked --manifest-path examples/advanced/Cargo.toml --all-targets --all-features -- -D warnings
 
       - name: Test (crate root)
-        run: cargo test --locked --all-features
+        run: cargo test --workspace --locked --all-features
 
       - name: Build examples
         run: |

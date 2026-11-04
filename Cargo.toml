@@ -6,7 +6,7 @@ authors = ["Jamal Lyons"]
 license = "MIT"
 edition = "2024"
 rust-version = "1.95"
-exclude = ["examples/", ".github/", "runtime/"]
+exclude = ["examples/", ".github/", "runtime/", "xtask/"]
 
 # Documentation and repository links
 documentation = "https://docs.rs/convex-typegen"
@@ -51,3 +51,7 @@ lto = "thin"       # Enable link-time optimization
 codegen-units = 1  # Maximize performance
 panic = "abort"    # Better optimizations and smaller binaries
 strip = true       # Remove debug symbols from the binary
+
+[workspace]
+members = ["xtask"]
+exclude = ["runtime", "examples/basic", "examples/advanced"]

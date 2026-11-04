@@ -3,7 +3,7 @@ use std::error::Error;
 use std::path::PathBuf;
 use std::time::Instant;
 
-mod project;
+use xtask::project;
 
 const USAGE: &str = "Usage: xtask <small|medium|large|huge> [--seed <u64>] [--out <new-directory>]";
 

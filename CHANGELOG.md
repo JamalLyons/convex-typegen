@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Add a Criterion harness in the unpublished `convex-typegen-bench` workspace crate. `just bench`
+  measures generated-project discovery/parsing, IR lowering, codegen and end-to-end generation;
+  the benchmark-only `bench-internals` feature exposes those production stages to the harness.
+
 - Generate Serde args, returns, typed table IDs, and full documents, including union tables.
   Validated literals and unions preserve the Convex wire kinds. See
   [generated models](docs/generated-models.md).

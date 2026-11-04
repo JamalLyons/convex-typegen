@@ -126,7 +126,7 @@ export default defineSchema({
 
         generate(cfg).unwrap();
         let body = fs::read_to_string(&out).unwrap();
-        assert!(body.contains("UsersTable"), "expected table struct: {body}");
+        assert!(body.contains("UsersDoc"), "expected table struct: {body}");
         assert!(body.contains("pub email: String,"), "expected email column: {body}");
     }
 

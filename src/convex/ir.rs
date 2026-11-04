@@ -23,31 +23,12 @@ pub(crate) enum Declared<T>
     Unknown,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum FieldPresence
-{
-    Required,
-    Optional,
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Field
 {
     pub name: String,
     pub validator: ConvexValidator,
     pub provenance: Provenance,
-}
-
-impl Field
-{
-    pub fn presence(&self) -> FieldPresence
-    {
-        if matches!(self.validator, ConvexValidator::Optional(_)) {
-            FieldPresence::Optional
-        } else {
-            FieldPresence::Required
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -110,8 +91,6 @@ pub(crate) struct ReturnValidator
 pub(crate) struct Function
 {
     pub identity: FunctionIdentity,
-    /// Compatibility name for the current emitter, which uses the basename and strips only `.ts`.
-    pub legacy_module_name: String,
     pub kind: FunctionKind,
     pub visibility: Visibility,
     /// Unknown differs from a declared empty argument object.
@@ -121,6 +100,7 @@ pub(crate) struct Function
     pub provenance: Provenance,
 }
 
+#[cfg(test)]
 impl Function
 {
     pub fn params(&self) -> &[Field]

@@ -22,9 +22,6 @@ use crate::convex::ir::{
     Declared, Field, Function, FunctionIdentity, FunctionKind, Provenance, ReturnValidator, Schema, SourceSpan,
     TableDocument, TableShape, Visibility,
 };
-use crate::convex::utils::{
-    function_args_struct_stem, nested_object_struct_name, object_depth_allows_struct, schema_column_object_struct_name,
-};
 use crate::convex::validator::{ConvexValidator as Validator, FunctionSignature, Literal};
 use crate::error::ConvexTypeGeneratorError;
 
@@ -121,7 +118,7 @@ pub(crate) fn parse_schema_ast_with_modules(
             .ok_or_else(|| input.error(table_prop, "defineSchema", "expected a static table name"))?;
         let table_expr = peel_to_define_table_call(&table_prop["value"], &input)?;
         let args = input.call(table_expr, "defineTable", 1, 1)?;
-        let shape = parse_table_shape(&args[0], table_name, &input, true)?;
+        let shape = parse_table_shape(&args[0], &input, true)?;
         tables.push(TableDocument {
             name: table_name.to_string(),
             shape,
@@ -496,7 +493,6 @@ fn validator_name(node: &JsonValue) -> Option<&str>
 
 fn parse_table_shape(
     node: &JsonValue,
-    table: &str,
     source: &ValidatorSource<'_>,
     allow_raw_object: bool,
 ) -> Result<TableShape, ConvexTypeGeneratorError>
@@ -508,7 +504,7 @@ fn parse_table_shape(
             return Ok(TableShape::Union(
                 variants
                     .iter()
-                    .map(|variant| parse_table_shape(variant, table, source, false))
+                    .map(|variant| parse_table_shape(variant, source, false))
                     .collect::<Result<_, _>>()?,
             ));
         }
@@ -526,10 +522,9 @@ fn parse_table_shape(
     let mut fields = Vec::new();
     for property in source.properties(object, label)? {
         let (name, prop) = property?;
-        let mut context = TypeContext::for_schema_column(table, name);
         fields.push(Field {
             name: name.to_string(),
-            validator: parse_validator(&prop["value"], &mut context, source)?,
+            validator: parse_validator(&prop["value"], source)?,
             provenance: provenance(source.file, prop),
         });
     }
@@ -537,11 +532,7 @@ fn parse_table_shape(
 }
 
 /// Interpret an ESTree validator expression directly as a typed validator.
-fn parse_validator(
-    node: &JsonValue,
-    context: &mut TypeContext,
-    source: &ValidatorSource<'_>,
-) -> Result<Validator, ConvexTypeGeneratorError>
+fn parse_validator(node: &JsonValue, source: &ValidatorSource<'_>) -> Result<Validator, ConvexTypeGeneratorError>
 {
     let node = source.resolve(node)?;
     if node["type"] == "CallExpression"
@@ -549,9 +540,7 @@ fn parse_validator(
         && node["callee"]["object"]["name"] != "v"
     {
         source.call(node, ".optional()", 0, 0)?;
-        context.type_path.push("inner".into());
-        let inner = parse_validator(&node["callee"]["object"], context, source)?;
-        context.type_path.pop();
+        let inner = parse_validator(&node["callee"]["object"], source)?;
         return Ok(make_optional(inner));
     }
 
@@ -566,8 +555,8 @@ fn parse_validator(
         _ => return Err(source.error(node, &label, "unsupported validator; use a Convex 1.49.0 validator")),
     };
     let args = source.call(node, &label, min, max)?;
-    let required = |arg: &JsonValue, context: &mut TypeContext| {
-        let validator = parse_validator(arg, context, source)?;
+    let required = |arg: &JsonValue| {
+        let validator = parse_validator(arg, source)?;
         if matches!(validator, Validator::Optional(_)) {
             return Err(source.error(
                 arg,
@@ -602,46 +591,33 @@ fn parse_validator(
             )
         })?)),
         "optional" => {
-            context.type_path.push("inner".into());
-            let inner = parse_validator(&args[0], context, source)?;
-            context.type_path.pop();
+            let inner = parse_validator(&args[0], source)?;
             make_optional(inner)
         }
-        "nullable" => Validator::Union(vec![required(&args[0], context)?, Validator::Null]),
+        "nullable" => Validator::Union(vec![required(&args[0])?, Validator::Null]),
         "array" => {
-            context.type_path.push("elements".into());
-            let elements = required(&args[0], context)?;
-            context.type_path.pop();
+            let elements = required(&args[0])?;
             Validator::Array(Box::new(elements))
         }
-        "object" => parse_object_validator(source.resolve(&args[0])?, context, source, &label)?,
+        "object" => parse_object_validator(source.resolve(&args[0])?, source, &label)?,
         "record" => {
-            let key_type = required(&args[0], context)?;
-            if !is_record_key(&key_type) {
+            let key_type = required(&args[0])?;
+            if !key_type.is_record_key() {
                 return Err(source.error(
                     &args[0],
                     &label,
-                    "keys must use v.string(), v.id(), or a union of those validators",
+                    "keys must use strings, IDs, string literals, or unions of those validators",
                 ));
             }
             Validator::Record {
                 key_type: Box::new(key_type),
-                value_type: Box::new(required(&args[1], context)?),
+                value_type: Box::new(required(&args[1])?),
             }
         }
-        "union" => Validator::Union(args.iter().map(|arg| required(arg, context)).collect::<Result<_, _>>()?),
+        "union" => Validator::Union(args.iter().map(required).collect::<Result<_, _>>()?),
         "function" => Validator::FunctionHandle(Box::new(parse_signature(args.first(), source)?)),
         _ => unreachable!("validator name was checked above"),
     })
-}
-
-fn is_record_key(validator: &Validator) -> bool
-{
-    match validator {
-        Validator::String | Validator::Id(_) => true,
-        Validator::Union(members) => members.iter().all(is_record_key),
-        _ => false,
-    }
 }
 
 fn make_optional(validator: Validator) -> Validator
@@ -654,32 +630,18 @@ fn make_optional(validator: Validator) -> Validator
 
 fn parse_object_validator(
     node: &JsonValue,
-    context: &mut TypeContext,
     source: &ValidatorSource<'_>,
     label: &str,
 ) -> Result<Validator, ConvexTypeGeneratorError>
 {
-    context.object_depth += 1;
-    let struct_name = context.current_object_struct_name();
-    if let Some(name) = &struct_name {
-        context.struct_name_stack.push(name.clone());
-    }
-
     let mut properties = BTreeMap::new();
     for property in source.properties(node, label)? {
         let (name, prop) = property?;
-        context.type_path.push(name.to_string());
-        let validator = parse_validator(&prop["value"], context, source)?;
-        context.type_path.pop();
+        let validator = parse_validator(&prop["value"], source)?;
         properties.insert(name.to_string(), validator);
     }
 
-    if struct_name.is_some() {
-        context.struct_name_stack.pop();
-    }
-    context.object_depth -= 1;
     Ok(Validator::Object {
-        struct_name: struct_name.filter(|_| !properties.is_empty()),
         properties: Some(properties),
     })
 }
@@ -718,11 +680,10 @@ fn parse_signature(
             }
             "args" | "returns" => {
                 let value = source.resolve(value)?;
-                let mut context = TypeContext::default();
                 let validator = if value["type"] == "ObjectExpression" {
-                    parse_object_validator(value, &mut context, source, label)?
+                    parse_object_validator(value, source, label)?
                 } else {
-                    parse_validator(value, &mut context, source)?
+                    parse_validator(value, source)?
                 };
                 if name == "args" {
                     result.args = Some(validator);
@@ -757,93 +718,6 @@ fn parse_literal(node: &JsonValue) -> Option<Literal>
     }
 }
 
-/// How to name generated structs for `v.object` at the root of a walk.
-#[derive(Debug, Clone)]
-enum ObjectNaming
-{
-    SchemaColumn
-    {
-        table: String, column: String
-    },
-    FunctionParam
-    {
-        module: String, export: String, param: String
-    },
-}
-
-/// Parser-local state for validator context and generated object names.
-#[derive(Debug, Default)]
-struct TypeContext
-{
-    /// Dot-separated path inside the validator tree (`inner`, `elements`, field names, …).
-    type_path: Vec<String>,
-    naming: Option<ObjectNaming>,
-    object_depth: usize,
-    /// Struct names of enclosing `v.object` nodes (for nested object naming).
-    struct_name_stack: Vec<String>,
-}
-
-impl TypeContext
-{
-    fn for_schema_column(table: &str, column: &str) -> Self
-    {
-        Self {
-            type_path: Vec::new(),
-            naming: Some(ObjectNaming::SchemaColumn {
-                table: table.to_string(),
-                column: column.to_string(),
-            }),
-            object_depth: 0,
-            struct_name_stack: Vec::new(),
-        }
-    }
-
-    fn for_function_param(module: &str, export: &str, param: &str) -> Self
-    {
-        Self {
-            type_path: Vec::new(),
-            naming: Some(ObjectNaming::FunctionParam {
-                module: module.to_string(),
-                export: export.to_string(),
-                param: param.to_string(),
-            }),
-            object_depth: 0,
-            struct_name_stack: Vec::new(),
-        }
-    }
-
-    fn current_object_struct_name(&self) -> Option<String>
-    {
-        if !object_depth_allows_struct(self.object_depth) {
-            return None;
-        }
-        if self.type_path.last().is_some_and(|s| s == "elements") && self.struct_name_stack.is_empty() {
-            if let Some(ObjectNaming::SchemaColumn { table, column }) = &self.naming {
-                return Some(format!("{}Element", schema_column_object_struct_name(table, column)));
-            }
-            if let Some(ObjectNaming::FunctionParam { module, export, param }) = &self.naming {
-                let stem = function_args_struct_stem(module, export);
-                return Some(format!(
-                    "{stem}{}Element",
-                    crate::convex::utils::capitalize_first_letter(param)
-                ));
-            }
-        }
-        if let Some(parent) = self.struct_name_stack.last() {
-            let field = self.type_path.last()?;
-            return Some(nested_object_struct_name(parent, field));
-        }
-        match &self.naming {
-            Some(ObjectNaming::SchemaColumn { table, column }) => Some(schema_column_object_struct_name(table, column)),
-            Some(ObjectNaming::FunctionParam { module, export, param }) => {
-                let stem = function_args_struct_stem(module, export);
-                Some(format!("{stem}{}", crate::convex::utils::capitalize_first_letter(param)))
-            }
-            None => None,
-        }
-    }
-}
-
 /// Walk every module’s ESTree JSON and collect exported Convex endpoints.
 pub(crate) fn parse_function_ast(
     ast_map: BTreeMap<String, JsonValue>,
@@ -864,14 +738,6 @@ pub(crate) fn parse_function_ast(
         {
             continue;
         }
-        let file_name = path
-            .file_name()
-            .ok_or_else(|| ConvexTypeGeneratorError::InvalidPath(source_path.clone()))?
-            .to_str()
-            .ok_or_else(|| ConvexTypeGeneratorError::InvalidUnicode(source_path.clone()))?;
-        // Strip the .ts extension from the file name (Convex module path segment).
-        let file_name = file_name.strip_suffix(".ts").unwrap_or(file_name).to_string();
-
         let module = convex_root.and_then(|root| path.strip_prefix(root).ok()).map(|relative| {
             relative
                 .with_extension("")
@@ -884,7 +750,7 @@ pub(crate) fn parse_function_ast(
         let body = ast["body"]
             .as_array()
             .ok_or_else(|| ConvexTypeGeneratorError::InvalidSchema {
-                context: format!("file_{}", file_name),
+                context: source_path.clone(),
                 details: "Missing body array".to_string(),
             })?;
 
@@ -905,7 +771,7 @@ pub(crate) fn parse_function_ast(
                             declarator["id"]["name"]
                                 .as_str()
                                 .ok_or_else(|| ConvexTypeGeneratorError::InvalidSchema {
-                                    context: format!("file_{}", file_name),
+                                    context: source_path.clone(),
                                     details: "Missing function name".to_string(),
                                 })?;
 
@@ -928,10 +794,9 @@ pub(crate) fn parse_function_ast(
                                         module: module.clone(),
                                         export: name.to_string(),
                                     },
-                                    legacy_module_name: file_name.clone(),
                                     kind,
                                     visibility,
-                                    args: extract_function_params(config, &file_name, name, &input)?,
+                                    args: extract_function_params(config, &input)?,
                                     returns: extract_return_validator(config, &input)?,
                                     provenance: provenance(source_path, init),
                                 });
@@ -994,44 +859,37 @@ fn is_estree_object_property_like(node: &JsonValue) -> bool
 /// Helper function to extract function parameters from the function configuration
 fn extract_function_params(
     config: &JsonValue,
-    file_name: &str,
-    export_name: &str,
     source: &ValidatorSource<'_>,
 ) -> Result<Declared<Vec<Field>>, ConvexTypeGeneratorError>
 {
-    let mut params = Vec::new();
-
-    // Get the args object from the function config
-    if let Some(properties) = config["properties"].as_array() {
-        for prop in properties {
-            if static_property_key(prop) == Some("args") {
-                // Ensure args is an object
-                if prop["value"]["type"].as_str() != Some("ObjectExpression") {
-                    return Err(ConvexTypeGeneratorError::InvalidSchema {
-                        context: format!("file_{}", file_name),
-                        details: "Function args must be an object".to_string(),
-                    });
-                }
-
-                for property in source.properties(&prop["value"], "args")? {
-                    let (param_name, arg_prop) = property?;
-                    let mut context = TypeContext::for_function_param(file_name, export_name, param_name);
-                    let validator = parse_validator(&arg_prop["value"], &mut context, source)?;
-                    params.push(Field {
-                        name: param_name.to_string(),
-                        validator,
-                        provenance: provenance(source.file, arg_prop),
-                    });
-                }
-                return Ok(Declared::Declared(params));
-            }
+    let Some(property) = config["properties"]
+        .as_array()
+        .and_then(|props| props.iter().find(|prop| static_property_key(prop) == Some("args")))
+    else {
+        return Ok(Declared::Unknown);
+    };
+    let value = source.resolve(&property["value"])?;
+    let object = match validator_name(value) {
+        Some("any") => {
+            source.call(value, "v.any", 0, 0)?;
+            return Ok(Declared::Unknown);
         }
+        Some("object") => source.resolve(&source.call(value, "v.object", 1, 1)?[0])?,
+        _ => value,
+    };
+    let mut params = Vec::new();
+    for property in source.properties(object, "args")? {
+        let (name, node) = property?;
+        params.push(Field {
+            name: name.to_string(),
+            validator: parse_validator(&node["value"], source)?,
+            provenance: provenance(source.file, node),
+        });
     }
-
-    Ok(Declared::Unknown)
+    Ok(Declared::Declared(params))
 }
 
-/// Returns are optional metadata for the current emitter. Unbound identifiers are unknown.
+/// Unbound return validators remain unknown in the IR.
 fn extract_return_validator(
     config: &JsonValue,
     source: &ValidatorSource<'_>,
@@ -1047,7 +905,7 @@ fn extract_return_validator(
     if value["type"] == "Identifier" && !source.bindings.contains_key(value["name"].as_str().unwrap_or_default()) {
         return Ok(Declared::Unknown);
     }
-    let validator = parse_validator(value, &mut TypeContext::default(), source)?;
+    let validator = parse_validator(value, source)?;
     Ok(Declared::Declared(ReturnValidator {
         validator,
         provenance: provenance(source.file, value),
@@ -1413,7 +1271,7 @@ mod extract_function_params_tests
             }]
         });
         assert_eq!(
-            extract_function_params(&config, "f", "fn", &super::ValidatorSource::new("f.ts", &[], None)).unwrap(),
+            extract_function_params(&config, &super::ValidatorSource::new("f.ts", &[], None)).unwrap(),
             Declared::Unknown
         );
     }
@@ -1429,10 +1287,8 @@ mod extract_function_params_tests
                 "value": { "type": "Identifier", "name": "sharedArgs" }
             }]
         });
-        let err = extract_function_params(&config, "f", "fn", &super::ValidatorSource::new("f.ts", &[], None)).unwrap_err();
-        assert!(
-            matches!(err, ConvexTypeGeneratorError::InvalidSchema { ref details, .. } if details == "Function args must be an object")
-        );
+        let err = extract_function_params(&config, &super::ValidatorSource::new("f.ts", &[], None)).unwrap_err();
+        assert!(matches!(err, ConvexTypeGeneratorError::InvalidSchema { .. }));
     }
 }
 
@@ -1444,7 +1300,7 @@ mod oxc_ir_tests
     use tempfile::tempdir;
 
     use super::{parse_function_ast, parse_schema_ast};
-    use crate::convex::ir::{Declared, FieldPresence, FunctionKind, Provenance, Visibility};
+    use crate::convex::ir::{Declared, FunctionKind, Provenance, Visibility};
     use crate::convex::validator::{ConvexValidator as Validator, Literal};
     use crate::convex::{create_function_asts, create_schema_ast};
 
@@ -1479,7 +1335,7 @@ mod oxc_ir_tests
         let schema = parse_schema_ast(create_schema_ast(&schema_path).unwrap(), &schema_path).unwrap();
         let table = &schema.tables[0];
         let field = &super::parse_schema_ast_tests::object_fields(table)[0];
-        assert_eq!(field.presence(), FieldPresence::Optional);
+        assert!(matches!(field.validator, Validator::Optional(_)));
         assert_eq!(
             field.validator,
             Validator::Optional(Box::new(Validator::Id(Some("teams".into()))))

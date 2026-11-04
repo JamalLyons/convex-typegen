@@ -1,148 +1,58 @@
-//! Small string helpers shared by [`crate::convex::codegen`].
-//!
-//! Convex table/column names become Rust identifiers via [`capitalize_first_letter`] and
-//! [`to_pascal_case`] (e.g. union variants from string literals).
+//! Normalize wire names into Rust identifiers. Codegen checks collisions in each scope.
 
-use crate::convex::validator::MAX_OBJECT_NEST_DEPTH;
-
-/// `users` → `Users` for struct / enum name prefixes.
-pub(crate) fn capitalize_first_letter(s: &str) -> String
+fn words(name: &str) -> Vec<String>
 {
-    if s.is_empty() {
-        return String::new();
+    let chars: Vec<_> = name.chars().collect();
+    let mut words = Vec::new();
+    let mut word = String::new();
+    for (index, &ch) in chars.iter().enumerate() {
+        let previous = index.checked_sub(1).and_then(|i| chars.get(i));
+        let next = chars.get(index + 1);
+        let boundary = ch.is_ascii_uppercase()
+            && (previous.is_some_and(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
+                || (previous.is_some_and(char::is_ascii_uppercase) && next.is_some_and(char::is_ascii_lowercase)));
+        if (boundary || !ch.is_ascii_alphanumeric()) && !word.is_empty() {
+            words.push(std::mem::take(&mut word));
+        }
+        if ch.is_ascii_alphanumeric() {
+            word.push(ch.to_ascii_lowercase());
+        }
     }
-
-    let mut chars = s.chars();
-    let first_char = chars.next().expect("Expected a character but got none");
-    let rest = chars.collect::<String>();
-
-    first_char.to_uppercase().to_string() + &rest
+    if !word.is_empty() {
+        words.push(word);
+    }
+    words
 }
 
-/// `{Module}{Export}Args` when the export name does not already start with the module segment.
-///
-/// Examples: `games` + `getGame` → `GamesGetGameArgs`; `mod_a` + `list` → `ModAListArgs`;
-/// `tasks` + `tasksSearch` → `TasksSearchArgs` (export already prefixed).
-pub(crate) fn function_args_struct_name(module: &str, export: &str) -> String
+pub(super) fn type_ident(name: &str) -> String
 {
-    let module_pascal = to_pascal_case(module);
-    let export_pascal = capitalize_first_letter(export);
-
-    let base = if export_pascal.starts_with(&module_pascal) {
-        export_pascal
-    } else {
-        format!("{module_pascal}{export_pascal}")
-    };
-
-    format!("{base}Args")
-}
-
-/// Stem used for nested object struct names (`GamesGetGameArgs` → `GamesGetGame`).
-pub(crate) fn function_args_struct_stem(module: &str, export: &str) -> String
-{
-    let full = function_args_struct_name(module, export);
-    full.strip_suffix("Args").map(str::to_string).unwrap_or(full)
-}
-
-/// `projects` + `settings` → `ProjectsSettings`.
-pub(crate) fn schema_column_object_struct_name(table: &str, column: &str) -> String
-{
-    format!("{}{}", capitalize_first_letter(table), capitalize_first_letter(column))
-}
-
-/// `ProjectsSettings` + `theme` → `ProjectsSettingsTheme`.
-pub(crate) fn nested_object_struct_name(parent_struct: &str, field: &str) -> String
-{
-    format!("{parent_struct}{}", capitalize_first_letter(field))
-}
-
-/// Whether object nesting depth allows a generated struct (vs `ConvexJsonValue` fallback).
-pub(crate) fn object_depth_allows_struct(depth: usize) -> bool
-{
-    depth < MAX_OBJECT_NEST_DEPTH
-}
-
-/// Split on non-alphanumeric runs and uppercase each word (`foo_bar` → `FooBar`).
-pub(crate) fn to_pascal_case(s: &str) -> String
-{
-    s.split(|c: char| !c.is_alphanumeric())
-        .filter(|s| !s.is_empty())
-        .map(|word| {
-            let mut chars = word.chars();
-            match chars.next() {
-                None => String::new(),
-                Some(first) => first.to_uppercase().collect::<String>() + &chars.collect::<String>().to_lowercase(),
-            }
+    let mut ident: String = words(name)
+        .into_iter()
+        .map(|mut word| {
+            word[..1].make_ascii_uppercase();
+            word
         })
-        .collect()
+        .collect();
+    if ident.is_empty() || ident.starts_with(|c: char| c.is_ascii_digit()) || ident == "Self" {
+        ident.insert_str(0, "Type");
+    }
+    ident
 }
 
-#[cfg(test)]
-mod function_args_struct_name_tests
+pub(super) fn field_ident(name: &str) -> String
 {
-    use super::function_args_struct_name;
-
-    #[test]
-    fn combines_module_and_export()
-    {
-        assert_eq!(function_args_struct_name("games", "getGame"), "GamesGetGameArgs");
-        assert_eq!(function_args_struct_name("mod_a", "list"), "ModAListArgs");
-        assert_eq!(function_args_struct_name("mod_b", "list"), "ModBListArgs");
-        assert_eq!(function_args_struct_name("tasks", "tasksSearch"), "TasksSearchArgs");
-        assert_eq!(function_args_struct_name("api", "getItem"), "ApiGetItemArgs");
+    let mut ident = words(name).join("_");
+    if name.starts_with('_') || ident.starts_with(|c: char| c.is_ascii_digit()) {
+        ident.insert(0, '_');
     }
-}
-
-#[cfg(test)]
-mod capitalize_first_letter_tests
-{
-    use super::capitalize_first_letter;
-
-    #[test]
-    fn empty_string()
-    {
-        assert_eq!(capitalize_first_letter(""), "");
-    }
-
-    #[test]
-    fn single_ascii_char()
-    {
-        assert_eq!(capitalize_first_letter("a"), "A");
-    }
-
-    #[test]
-    fn preserves_rest_case()
-    {
-        assert_eq!(capitalize_first_letter("games"), "Games");
-    }
-
-    #[test]
-    fn unicode_first_char()
-    {
-        assert_eq!(capitalize_first_letter("über"), "Über");
-    }
-}
-
-#[cfg(test)]
-mod to_pascal_case_tests
-{
-    use super::to_pascal_case;
-
-    #[test]
-    fn empty()
-    {
-        assert_eq!(to_pascal_case(""), "");
-    }
-
-    #[test]
-    fn snake_and_separators()
-    {
-        assert_eq!(to_pascal_case("foo_bar-baz"), "FooBarBaz");
-    }
-
-    #[test]
-    fn literal_union_style()
-    {
-        assert_eq!(to_pascal_case("draft"), "Draft");
+    match ident.as_str() {
+        "" | "_" => "_field".into(),
+        "self" | "super" | "crate" => format!("_{ident}"),
+        "as" | "async" | "await" | "break" | "const" | "continue" | "dyn" | "else" | "enum" | "extern" | "false" | "fn"
+        | "for" | "if" | "impl" | "in" | "let" | "loop" | "match" | "mod" | "move" | "mut" | "pub" | "ref" | "return"
+        | "static" | "struct" | "trait" | "true" | "type" | "unsafe" | "use" | "where" | "while" | "abstract" | "become"
+        | "box" | "do" | "final" | "gen" | "macro" | "override" | "priv" | "try" | "typeof" | "unsized" | "virtual"
+        | "yield" => format!("r#{ident}"),
+        _ => ident,
     }
 }

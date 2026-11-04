@@ -3,7 +3,7 @@ import { action } from "./_generated/server";
 
 /**
  * Public action: exercises `action`, heterogeneous object args (maps to
- * `ConvexJsonValue` in Rust), arrays, literals, and optional omission.
+ * a typed enum in Rust), arrays, literals, and optional omission.
  */
 export const integrationsMirror = action({
     args: {

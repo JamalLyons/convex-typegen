@@ -6,6 +6,7 @@ use std::io::{self, Write};
 use std::path::Path;
 
 use convex::{ConvexClient, Value as ConvexValue};
+use convex_typegen_runtime::model::RawValue;
 use convex_typegen_runtime::prelude::*;
 use convex_types::{GamesGetGameArgs, GamesLossGameArgs, GamesWinGameArgs};
 use rand::Rng;
@@ -21,7 +22,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     let game_stats = client
         .query(
             GamesGetGameArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(GamesGetGameArgs { logData: None })?,
+            ConvexClient::prepare_args(GamesGetGameArgs { log_data: None })?,
         )
         .await?;
 
@@ -70,7 +71,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
                 match client
                     .mutation(
                         GamesWinGameArgs::FUNCTION_PATH,
-                        ConvexClient::prepare_args(GamesWinGameArgs {})?,
+                        ConvexClient::prepare_args(GamesWinGameArgs(RawValue(ConvexValue::Object(Default::default()))))?,
                     )
                     .await
                 {
@@ -87,7 +88,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
             match client
                 .mutation(
                     GamesLossGameArgs::FUNCTION_PATH,
-                    ConvexClient::prepare_args(GamesLossGameArgs {})?,
+                    ConvexClient::prepare_args(GamesLossGameArgs(RawValue(ConvexValue::Object(Default::default()))))?,
                 )
                 .await
             {
@@ -107,7 +108,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     match client
         .query(
             GamesGetGameArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(GamesGetGameArgs { logData: None })?,
+            ConvexClient::prepare_args(GamesGetGameArgs { log_data: None })?,
         )
         .await
     {

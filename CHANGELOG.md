@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Generate Serde args, returns, typed table IDs, and full documents, including union tables.
+  Validated literals and unions preserve the Convex wire kinds. See
+  [generated models](docs/generated-models.md).
+
 - Generate seed-replayable synthetic Convex projects with `just gen-project`. See
   [performance tooling](docs/performance.md).
 
@@ -26,10 +30,13 @@ All notable changes to this project will be documented in this file.
 - Direct Serde conversion to and from `convex::Value` via `value_serde::{to_value, from_value}`. It
   preserves int64/float64 wire kinds, non-finite floats, bytes, nested arrays and records, and
   reports conversion failures with a value path. `value_serde::Bytes` uses Serde's byte-string
-  contract. Generated optional fields omit outer `None`; use `Option<Option<T>>` to encode an
-  explicit `Null` as `Some(None)`.
+  contract.
 
 ### Changed
+
+- **Breaking generated output:** Regenerate bindings for canonical path-scoped names, snake_case
+  fields, typed IDs and union values. Optional nullable fields use an outer `Option` for presence
+  and a union member for null. Unknown shapes and `v.any()` use `model::RawValue`.
 
 - Build the generator, runtime, examples, and tooling in a single Cargo workspace.
 
@@ -39,8 +46,7 @@ All notable changes to this project will be documented in this file.
 - **Breaking:** Removed the lossy `IntoConvexValue` and `ConvexValueExt` APIs and the `ConvexJsonError` prelude alias. Generated `v.bytes()` fields now use `ConvexBytes` so they serialize as Convex byte strings.
 
 - Route offline generation through a single typed model for schemas, validators, and functions.
-  Preserve source locations, canonical function identity, and known return metadata for future
-  codegen while retaining the current generated names and types.
+  Preserve source locations, canonical function identity, and known return metadata.
 
 - **Breaking:** Malformed validator expressions that previously produced incomplete types now
   fail with a file, byte span and validator name. This includes unsupported inline return validators.

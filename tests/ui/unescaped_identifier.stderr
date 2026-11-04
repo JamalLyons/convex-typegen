@@ -1,0 +1,11 @@
+error[E0609]: no field `camelCase` on type `ModelsRoundTripArgs`
+ --> tests/ui/unescaped_identifier.rs:6:18
+  |
+6 |     let _ = args.camelCase;
+  |                  ^^^^^^^^^ unknown field
+  |
+help: a field with a similar name exists
+  |
+6 -     let _ = args.camelCase;
+6 +     let _ = args.camel_case;
+  |

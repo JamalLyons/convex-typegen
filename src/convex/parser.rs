@@ -69,7 +69,17 @@ fn peel_to_define_table_call<'a>(
 }
 
 /// Extract tables and columns from a schema program JSON value.
+#[cfg(test)]
 pub(crate) fn parse_schema_ast(ast: JsonValue, source: &Path) -> Result<Schema, ConvexTypeGeneratorError>
+{
+    parse_schema_ast_with_modules(ast, source, None)
+}
+
+pub(crate) fn parse_schema_ast_with_modules(
+    ast: JsonValue,
+    source: &Path,
+    modules: Option<&BTreeMap<String, JsonValue>>,
+) -> Result<Schema, ConvexTypeGeneratorError>
 {
     let source = source.to_string_lossy();
     let context = "root";
@@ -104,7 +114,7 @@ pub(crate) fn parse_schema_ast(ast: JsonValue, source: &Path) -> Result<Schema, 
             details: "Missing table definitions".to_string(),
         })?;
 
-    let input = ValidatorSource::new(&source, body);
+    let input = ValidatorSource::new(&source, body, modules);
     let mut tables = Vec::new();
     for table_prop in tables_obj {
         let table_name = static_property_key(table_prop)
@@ -172,14 +182,21 @@ fn provenance(source: &str, node: &JsonValue) -> Provenance
 struct ValidatorSource<'a>
 {
     file: &'a str,
-    bindings: BTreeMap<&'a str, &'a JsonValue>,
+    bindings: BTreeMap<&'a str, (&'a JsonValue, bool)>,
+    node_files: BTreeMap<usize, &'a str>,
 }
+
+type StaticProperty<'a> = Result<(&'a str, &'a JsonValue), ConvexTypeGeneratorError>;
 
 impl<'a> ValidatorSource<'a>
 {
-    fn new(file: &'a str, body: &'a [JsonValue]) -> Self
+    fn new(file: &'a str, body: &'a [JsonValue], modules: Option<&'a BTreeMap<String, JsonValue>>) -> Self
     {
-        let bindings = body
+        let mut node_files = BTreeMap::new();
+        for node in body {
+            index_node_files(node, file, &mut node_files);
+        }
+        let mut bindings: BTreeMap<&'a str, (&'a JsonValue, bool)> = body
             .iter()
             .map(|node| {
                 if node["type"] == "ExportNamedDeclaration" {
@@ -191,16 +208,85 @@ impl<'a> ValidatorSource<'a>
             .filter(|node| node["type"] == "VariableDeclaration" && node["kind"] == "const")
             .filter_map(|node| node["declarations"].as_array())
             .flatten()
-            .filter_map(|decl| Some((decl["id"]["name"].as_str()?, decl.get("init").filter(|init| !init.is_null())?)))
+            .filter_map(|decl| {
+                Some((
+                    decl["id"]["name"].as_str()?,
+                    (decl.get("init").filter(|init| !init.is_null())?, false),
+                ))
+            })
             .collect();
-        Self { file, bindings }
+        if let Some(modules) = modules {
+            for (module_path, ast) in modules {
+                index_node_files(ast, module_path, &mut node_files);
+            }
+            for node in body.iter().filter(|node| node["type"] == "ImportDeclaration") {
+                let Some(specifier) = node["source"]["value"].as_str() else {
+                    continue;
+                };
+                if !specifier.starts_with('.') {
+                    continue;
+                }
+                let Some(imported_module) = resolve_import_path(file, specifier, modules) else {
+                    continue;
+                };
+                let Some(module_body) = modules[imported_module]["body"].as_array() else {
+                    continue;
+                };
+                // Imported validator constants may themselves refer to sibling constants in the
+                // same module (for example `payload = v.object({ ...common })`).
+                for declaration in module_body
+                    .iter()
+                    .filter_map(|node| {
+                        if node["type"] == "ExportNamedDeclaration" {
+                            node.get("declaration")
+                        } else {
+                            Some(node)
+                        }
+                    })
+                    .filter(|node| node["type"] == "VariableDeclaration" && node["kind"] == "const")
+                {
+                    for decl in declaration["declarations"].as_array().into_iter().flatten() {
+                        if let (Some(name), Some(init)) = (decl["id"]["name"].as_str(), decl.get("init")) {
+                            bindings.entry(name).or_insert((init, true));
+                        }
+                    }
+                }
+                for binding in node["specifiers"].as_array().into_iter().flatten() {
+                    if binding["type"] != "ImportSpecifier" {
+                        continue;
+                    }
+                    let Some(imported) = binding["imported"]["name"]
+                        .as_str()
+                        .or_else(|| binding["imported"]["value"].as_str())
+                    else {
+                        continue;
+                    };
+                    let Some(local) = binding["local"]["name"].as_str() else {
+                        continue;
+                    };
+                    if let Some(init) = exported_const(module_body, imported) {
+                        bindings.insert(local, (init, true));
+                    }
+                }
+            }
+        }
+        Self {
+            file,
+            bindings,
+            node_files,
+        }
     }
 
     fn error(&self, node: &JsonValue, validator: &str, details: impl std::fmt::Display) -> ConvexTypeGeneratorError
     {
-        let location = provenance(self.file, node).span.map_or_else(
-            || self.file.to_string(),
-            |span| format!("{} bytes {}..{}", self.file, span.start, span.end),
+        let source_file = self
+            .node_files
+            .get(&(node as *const JsonValue as usize))
+            .copied()
+            .unwrap_or(self.file);
+        let location = provenance(source_file, node).span.map_or_else(
+            || source_file.to_string(),
+            |span| format!("{} bytes {}..{}", source_file, span.start, span.end),
         );
         ConvexTypeGeneratorError::InvalidSchema {
             context: location,
@@ -210,18 +296,37 @@ impl<'a> ValidatorSource<'a>
 
     fn resolve<'node>(&'node self, mut node: &'node JsonValue) -> Result<&'node JsonValue, ConvexTypeGeneratorError>
     {
+        let mut chain = Vec::new();
         loop {
             match node["type"].as_str() {
                 Some("TSAsExpression" | "TSSatisfiesExpression" | "TSTypeAssertion" | "TSNonNullExpression") => {
                     node = &node["expression"];
                 }
                 Some("Identifier") if let Some(name) = node["name"].as_str() => {
-                    let init = self.bindings.get(name).ok_or_else(|| {
+                    if chain.len() >= 64 {
+                        return Err(self.error(node, name, "validator reference depth exceeds the limit of 64"));
+                    }
+                    if chain.iter().any(|entry| entry == name) {
+                        chain.push(name.to_string());
+                        return Err(self.error(node, name, format!("cyclic validator reference: {}", chain.join(" -> "))));
+                    }
+                    let (init, imported) = self.bindings.get(name).ok_or_else(|| {
                         self.error(node, name, "expected an inline validator or a same-file const binding")
                     })?;
-                    if !matches!((init["end"].as_u64(), node["start"].as_u64()), (Some(end), Some(start)) if end <= start) {
+                    if !imported
+                        && matches!(
+                            (init["start"].as_u64(), init["end"].as_u64(), node["start"].as_u64()),
+                            (Some(init_start), Some(init_end), Some(start)) if init_start <= start && start < init_end
+                        )
+                    {
+                        return Err(self.error(node, name, format!("cyclic validator reference: {name} -> {name}")));
+                    }
+                    if !imported
+                        && !matches!((init["end"].as_u64(), node["start"].as_u64()), (Some(end), Some(start)) if end <= start)
+                    {
                         return Err(self.error(node, name, "validator const must be initialized before use"));
                     }
+                    chain.push(name.to_string());
                     node = init;
                 }
                 _ => return Ok(node),
@@ -234,29 +339,60 @@ impl<'a> ValidatorSource<'a>
         node["type"] == "Identifier" && node["name"] == "undefined" && !self.bindings.contains_key("undefined")
     }
 
-    fn properties<'node>(
-        &self,
-        node: &'node JsonValue,
+    fn properties(
+        &'a self,
+        node: &'a JsonValue,
         validator: &str,
-    ) -> Result<
-        impl Iterator<Item = Result<(&'node str, &'node JsonValue), ConvexTypeGeneratorError>>,
-        ConvexTypeGeneratorError,
-    >
+    ) -> Result<Vec<StaticProperty<'a>>, ConvexTypeGeneratorError>
     {
         let props = node["properties"]
             .as_array()
             .filter(|_| node["type"] == "ObjectExpression")
             .ok_or_else(|| self.error(node, validator, "expected an object literal or a const bound to one"))?;
-        Ok(props.iter().map(move |prop| {
-            let name = static_property_key(prop).ok_or_else(|| {
-                self.error(
-                    prop,
-                    validator,
-                    "expected a static property key and a value; expand spreads and use literal keys",
-                )
-            })?;
-            Ok((name, prop))
-        }))
+        let mut result = Vec::new();
+        self.expand_properties(props, validator, &mut result, 0)?;
+        Ok(result)
+    }
+
+    fn expand_properties(
+        &'a self,
+        props: &'a [JsonValue],
+        validator: &str,
+        result: &mut Vec<StaticProperty<'a>>,
+        depth: usize,
+    ) -> Result<(), ConvexTypeGeneratorError>
+    {
+        if depth >= 64 {
+            return Err(self.error(&props[0], validator, "object spread depth exceeds the limit of 64"));
+        }
+        for prop in props {
+            if prop["type"] == "SpreadElement" {
+                let spread = self.resolve(&prop["argument"]).map_err(|_| {
+                    self.error(
+                        prop,
+                        validator,
+                        "unsupported dynamic object spread; use a const object literal or imported const",
+                    )
+                })?;
+                let Some(spread_props) = spread["properties"]
+                    .as_array()
+                    .filter(|_| spread["type"] == "ObjectExpression")
+                else {
+                    result.push(Err(self.error(
+                        prop,
+                        validator,
+                        "unsupported dynamic object spread; use a const object literal or imported const",
+                    )));
+                    continue;
+                };
+                self.expand_properties(spread_props, validator, result, depth + 1)?;
+                continue;
+            }
+            let name = static_property_key(prop)
+                .ok_or_else(|| self.error(prop, validator, "unsupported dynamic property; use a static key and value"))?;
+            result.push(Ok((name, prop)));
+        }
+        Ok(())
     }
 
     fn call<'node>(
@@ -282,6 +418,51 @@ impl<'a> ValidatorSource<'a>
         }
         Ok(args)
     }
+}
+
+fn index_node_files<'a>(node: &'a JsonValue, file: &'a str, output: &mut BTreeMap<usize, &'a str>)
+{
+    output.insert(node as *const JsonValue as usize, file);
+    match node {
+        JsonValue::Array(values) => {
+            for value in values {
+                index_node_files(value, file, output);
+            }
+        }
+        JsonValue::Object(values) => {
+            for value in values.values() {
+                index_node_files(value, file, output);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn resolve_import_path<'a>(importer: &str, specifier: &str, modules: &'a BTreeMap<String, JsonValue>) -> Option<&'a String>
+{
+    let base = Path::new(importer).parent()?.join(specifier);
+    let mut candidates = vec![base.clone()];
+    if base.extension().is_none() {
+        candidates.extend([base.with_extension("ts"), base.with_extension("tsx"), base.join("index.ts")]);
+    }
+    for candidate in candidates {
+        let Ok(canonical) = candidate.canonicalize() else { continue };
+        let key = canonical.to_string_lossy();
+        if let Some((path, _)) = modules.get_key_value(key.as_ref()) {
+            return Some(path);
+        }
+    }
+    None
+}
+
+fn exported_const<'a>(body: &'a [JsonValue], name: &str) -> Option<&'a JsonValue>
+{
+    body.iter()
+        .filter(|node| node["type"] == "ExportNamedDeclaration")
+        .filter_map(|node| node["declaration"].get("declarations").and_then(JsonValue::as_array))
+        .flatten()
+        .find(|decl| decl["id"]["name"].as_str() == Some(name))
+        .and_then(|decl| decl.get("init"))
 }
 
 fn static_property_key(node: &JsonValue) -> Option<&str>
@@ -671,8 +852,18 @@ pub(crate) fn parse_function_ast(
 {
     let mut convex_functions = Vec::new();
 
-    for (source_path, ast) in ast_map {
+    for (source_path, ast) in &ast_map {
         let path = Path::new(&source_path);
+        if matches!(
+            path.file_name().and_then(|name| name.to_str()),
+            Some("http.ts" | "crons.ts" | "convex.config.ts")
+        ) || path
+            .components()
+            .any(|component| matches!(component.as_os_str().to_str(), Some("_generated" | "node_modules")))
+            || path.to_string_lossy().ends_with(".d.ts")
+        {
+            continue;
+        }
         let file_name = path
             .file_name()
             .ok_or_else(|| ConvexTypeGeneratorError::InvalidPath(source_path.clone()))?
@@ -697,7 +888,8 @@ pub(crate) fn parse_function_ast(
                 details: "Missing body array".to_string(),
             })?;
 
-        let input = ValidatorSource::new(&source_path, body);
+        let input = ValidatorSource::new(source_path, body, Some(&ast_map));
+        let builders = function_builder_bindings(body);
         for node in body {
             // Look for export declarations
             if node["type"].as_str() == Some("ExportNamedDeclaration")
@@ -717,31 +909,19 @@ pub(crate) fn parse_function_ast(
                                     details: "Missing function name".to_string(),
                                 })?;
 
-                        // Get the function call (query/mutation/action)
+                        // Only imported Convex server builders define endpoints. Arbitrary calls
+                        // and member calls are ordinary exported values.
                         let init = &declarator["init"];
                         if init["type"].as_str() == Some("CallExpression") {
-                            // Get the callee to determine function type
-                            let fn_type =
-                                init["callee"]["name"]
-                                    .as_str()
-                                    .ok_or_else(|| ConvexTypeGeneratorError::InvalidSchema {
-                                        context: format!("function_{}", name),
-                                        details: "Missing function type".to_string(),
-                                    })?;
+                            let Some(fn_type) = init["callee"]["name"].as_str().and_then(|name| builders.get(name)) else {
+                                continue;
+                            };
 
                             // Get the first argument which contains the function config
                             if let Some(args) = init["arguments"].as_array()
                                 && let Some(config) = args.first()
                             {
-                                let (kind, visibility) = match fn_type {
-                                    "query" => (FunctionKind::Query, Visibility::Public),
-                                    "mutation" => (FunctionKind::Mutation, Visibility::Public),
-                                    "action" => (FunctionKind::Action, Visibility::Public),
-                                    "internalQuery" => (FunctionKind::Query, Visibility::Internal),
-                                    "internalMutation" => (FunctionKind::Mutation, Visibility::Internal),
-                                    "internalAction" => (FunctionKind::Action, Visibility::Internal),
-                                    _ => (FunctionKind::Unknown, Visibility::Unknown),
-                                };
+                                let (kind, visibility) = *fn_type;
 
                                 convex_functions.push(Function {
                                     identity: FunctionIdentity {
@@ -753,7 +933,7 @@ pub(crate) fn parse_function_ast(
                                     visibility,
                                     args: extract_function_params(config, &file_name, name, &input)?,
                                     returns: extract_return_validator(config, &input)?,
-                                    provenance: provenance(&source_path, init),
+                                    provenance: provenance(source_path, init),
                                 });
                             }
                         }
@@ -764,6 +944,45 @@ pub(crate) fn parse_function_ast(
     }
 
     Ok(convex_functions)
+}
+
+/// Local binding names for the recognized Convex function builders imported by this module.
+fn function_builder_bindings(body: &[JsonValue]) -> BTreeMap<String, (FunctionKind, Visibility)>
+{
+    let mut bindings = BTreeMap::new();
+    for node in body.iter().filter(|node| node["type"] == "ImportDeclaration") {
+        let Some(module) = node["source"]["value"].as_str() else {
+            continue;
+        };
+        if module != "convex/server" && !module.ends_with("/_generated/server") && module != "./_generated/server" {
+            continue;
+        }
+        for specifier in node["specifiers"].as_array().into_iter().flatten() {
+            if specifier["type"] != "ImportSpecifier" {
+                continue;
+            }
+            let Some(imported) = specifier["imported"]["name"]
+                .as_str()
+                .or_else(|| specifier["imported"]["value"].as_str())
+            else {
+                continue;
+            };
+            let Some(local) = specifier["local"]["name"].as_str() else {
+                continue;
+            };
+            let pair = match imported {
+                "query" => (FunctionKind::Query, Visibility::Public),
+                "mutation" => (FunctionKind::Mutation, Visibility::Public),
+                "action" => (FunctionKind::Action, Visibility::Public),
+                "internalQuery" => (FunctionKind::Query, Visibility::Internal),
+                "internalMutation" => (FunctionKind::Mutation, Visibility::Internal),
+                "internalAction" => (FunctionKind::Action, Visibility::Internal),
+                _ => continue,
+            };
+            bindings.insert(local.to_string(), pair);
+        }
+    }
+    bindings
 }
 
 /// ESTree / Oxc object literal member: either Babel-style `ObjectProperty` or spec `Property`.
@@ -1023,6 +1242,14 @@ mod parse_function_ast_tests
     {
         json!({
             "body": [{
+                "type": "ImportDeclaration",
+                "source": { "type": "Literal", "value": "convex/server" },
+                "specifiers": [{
+                    "type": "ImportSpecifier",
+                    "imported": { "type": "Identifier", "name": "query" },
+                    "local": { "type": "Identifier", "name": "query" }
+                }]
+            }, {
                 "type": "ExportNamedDeclaration",
                 "declaration": {
                     "type": "VariableDeclaration",
@@ -1186,7 +1413,7 @@ mod extract_function_params_tests
             }]
         });
         assert_eq!(
-            extract_function_params(&config, "f", "fn", &super::ValidatorSource::new("f.ts", &[])).unwrap(),
+            extract_function_params(&config, "f", "fn", &super::ValidatorSource::new("f.ts", &[], None)).unwrap(),
             Declared::Unknown
         );
     }
@@ -1202,7 +1429,7 @@ mod extract_function_params_tests
                 "value": { "type": "Identifier", "name": "sharedArgs" }
             }]
         });
-        let err = extract_function_params(&config, "f", "fn", &super::ValidatorSource::new("f.ts", &[])).unwrap_err();
+        let err = extract_function_params(&config, "f", "fn", &super::ValidatorSource::new("f.ts", &[], None)).unwrap_err();
         assert!(
             matches!(err, ConvexTypeGeneratorError::InvalidSchema { ref details, .. } if details == "Function args must be an object")
         );
@@ -1237,6 +1464,7 @@ mod oxc_ir_tests
         fs::create_dir(root.join("admin")).unwrap();
         let schema_source = "export default defineSchema({ users: defineTable({ team: v.optional(v.id(\"teams\")) }) });";
         let function_source = r#"
+            import { internalQuery, query, action } from "convex/server";
             export const list = internalQuery({
                 args: { limit: v.optional(v.number()) },
                 returns: v.union(v.any(), v.literal(-9223372036854775808n), v.literal("none")),

@@ -40,10 +40,9 @@ flowchart LR
 ```
 
 1. **`config::Configuration`** — Paths for schema, output file, Convex directory, and optional explicit `function_paths` (skips directory discovery).
-2. **`fs::rcfp`** — Resolves which `.ts` files are treated as function sources (same set as `generate`, intended for `cargo:rerun-if-changed`).
-3. **`convex::create_schema_ast`** — One file: canonical `schema_path` → ESTree JSON (`serde_json::Value`).
-4. **`convex::create_function_asts`** — Many files: each path is canonicalized; ASTs are stored in a **`BTreeMap<String, JsonValue>`** keyed by **canonical path string** (stable iteration order, no basename collisions between `convex/a/foo.ts` and `convex/b/foo.ts`).
-5. **`parser::parse_schema_ast`** / **`parser::parse_function_ast`** — Oxc/ESTree adapter that interprets Convex syntax.
+2. **`fs::rcfp`** — Resolves endpoint inputs and their relative imports so build scripts can emit Cargo invalidation lines for every parsed source.
+3. **`convex::create_function_asts`** — Canonicalizes each input and follows named relative imports; schema and function inputs share this loader. ASTs are stored in a **`BTreeMap<String, JsonValue>`** keyed by canonical path string (stable iteration order, no basename collisions between `convex/a/foo.ts` and `convex/b/foo.ts`).
+5. **`parser::parse_schema_ast`** / **`parser::parse_function_ast`** — Oxc/ESTree adapters that share the bounded static binding and spread resolver.
 6. **`ir::GenerationIr`** — Source-neutral typed model: validator trees, canonical module path + export identity, function kind/visibility, explicit declared/unknown metadata, field presence, and source provenance with optional offsets.
 7. **`codegen::run_codegen`** — Matches on `GenerationIr` directly and writes generated Rust.
 
@@ -118,20 +117,25 @@ share their respective float64 and int64 nodes. Commit timestamps use the int64 
 `v.nullable(x)` uses a required union of `x` and null. Function handles carry optional kind,
 argument and return metadata. Record keys accept string validators, IDs, and unions of those
 validators. Static string keys and literal values retain their wire spelling and kind. Malformed
-or unsupported validator expressions report a file and byte span. Cross-file bindings, spreads
-and dynamically computed validator expressions require the planned offline resolver or function
-spec adapter.
+or unsupported validator expressions report a file and byte span. The bounded offline resolver
+supports same-file constants, named relative imports, and object spreads; it never evaluates
+TypeScript.
 
 ### Functions (`parse_function_ast`)
 
-- The canonical source paths in the input `BTreeMap` give deterministic order. The adapter derives
-  each module path from its source path relative to the configured Convex root.
-- The parser walks exported variable declarations initialized by a call. It records query, mutation,
-  or action kind and public or internal visibility from the callee. Other callees retain unknown
-  kind and visibility under the existing discovery rules.
-- The first call argument is the config. A supported inline `args` object becomes ordered fields.
-  An inline `returns` validator is parsed as metadata for future consumers. Absent returns and returns named by an unresolved identifier are unknown. Unsupported
-  inline validator calls report an error.
+- Canonical source paths are ordered deterministically. Module identity is the path relative to
+  `convex_dir`, without the extension, so `users:list` and `admin/users:list` stay distinct. An
+  explicitly listed file outside `convex_dir` has `module: None`; place it under the configured root
+  to give it a Convex module identity.
+- Only named imports of the six query, mutation, action, and internal builders from `convex/server`
+  or a generated server module are recognized. Aliases are honored. Exported calls from other
+  bindings, including member calls, are ignored.
+- HTTP, cron, app-config, generated, and declaration files are not endpoint sources. Helper modules
+  contribute endpoints only when they export a recognized builder.
+- The first call argument is the config. `args` and `returns` retain `Declared` versus `Unknown` in
+  the IR. Static local consts, named relative imports, and object spreads are resolved without
+  evaluating TypeScript. Resolution stops at 64 references or spread levels and reports cycles and
+  unsupported dynamic expressions with the source file and byte span.
 
 **ESTree detail — `args` fields**
 

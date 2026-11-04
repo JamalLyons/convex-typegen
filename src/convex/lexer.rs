@@ -56,9 +56,9 @@ pub(crate) fn generate_javascript_ast(path: &Path) -> Result<JsonValue, ConvexTy
     let mut errors: Vec<OxcDiagnostic> = Vec::new();
 
     let ret = Parser::new(&allocator, &source_text, source_type).parse();
-    errors.extend(ret.errors);
+    errors.extend(ret.diagnostics);
 
-    if ret.panicked {
+    if ret.program.is_empty() {
         #[cfg(feature = "verbose")]
         for error in &errors {
             eprintln!("{error:?}");
@@ -74,7 +74,7 @@ pub(crate) fn generate_javascript_ast(path: &Path) -> Result<JsonValue, ConvexTy
     }
 
     let semantics = SemanticBuilder::new().with_check_syntax_error(true).build(&ret.program);
-    errors.extend(semantics.errors);
+    errors.extend(semantics.diagnostics);
 
     if !errors.is_empty() {
         #[cfg(feature = "verbose")]
@@ -89,7 +89,7 @@ pub(crate) fn generate_javascript_ast(path: &Path) -> Result<JsonValue, ConvexTy
 
     // Oxc's `Program` is not `serde::Serialize`; ESTree JSON is produced via `to_estree_*_json`.
     // todo: We might be able to use the `to_estree_js_json` method instead of `to_estree_ts_json` here. We don't really need the typescript fields. Look into this after the refactor to avoid breaking things.
-    let estree_json = ret.program.to_estree_ts_json(false);
+    let estree_json = ret.program.to_estree_json(false, false);
     serde_json::from_str(&estree_json).map_err(ConvexTypeGeneratorError::SerializationFailed)
 }
 

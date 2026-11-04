@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Resolve function builders through recognized Convex server imports and aliases. Resolve static
+  local/imported validator constants and object spreads with bounded cycle diagnostics, preserve
+  root-relative module identities, and skip reserved endpoint modules.
+
 - Parse Convex 1.49.0 validator factories, including numeric aliases, nullable values, commit
   timestamps and opaque function handles. Accept indexed object and union tables and earlier
   same-file validator consts. The IR preserves quoted wire keys and exact literal kinds.

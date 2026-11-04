@@ -26,6 +26,49 @@ fn validator_from_source(source: &str) -> Result<Validator, ConvexTypeGeneratorE
 }
 
 #[test]
+fn schema_adapter_resolves_imported_validator_objects_and_spreads()
+{
+    let dir = tempdir().unwrap();
+    let schema = dir.path().join("schema.ts");
+    fs::write(
+        dir.path().join("fields.ts"),
+        "import { v } from 'convex/values'; export const fields = { name: v.string() };",
+    )
+    .unwrap();
+    fs::write(
+        &schema,
+        "import { defineSchema, defineTable } from 'convex/server'; import { v } from 'convex/values'; import { fields } \
+         from './fields'; export default defineSchema({ users: defineTable({ ...fields, active: v.boolean() }) });",
+    )
+    .unwrap();
+    let modules = create_function_asts(vec![schema.clone()]).unwrap();
+    let schema_key = schema.canonicalize().unwrap().to_string_lossy().into_owned();
+    let parsed = parse_schema_ast_with_modules(modules[&schema_key].clone(), &schema, Some(&modules)).unwrap();
+    let TableShape::Object(fields) = &parsed.tables[0].shape else {
+        panic!("expected object table")
+    };
+    assert_eq!(
+        fields.iter().map(|field| field.name.as_str()).collect::<Vec<_>>(),
+        ["name", "active"]
+    );
+
+    fs::write(
+        dir.path().join("fields.ts"),
+        "import { v } from 'convex/values'; export const fields = { name: v.unsupported() };",
+    )
+    .unwrap();
+    let modules = create_function_asts(vec![schema.clone()]).unwrap();
+    let schema_key = schema.canonicalize().unwrap().to_string_lossy().into_owned();
+    let error = parse_schema_ast_with_modules(modules[&schema_key].clone(), &schema, Some(&modules))
+        .unwrap_err()
+        .to_string();
+    assert!(
+        error.contains("fields.ts bytes ") && error.contains("v.unsupported"),
+        "{error}"
+    );
+}
+
+#[test]
 fn lowers_every_factory_in_convex_1_49()
 {
     let cases = [
@@ -203,7 +246,7 @@ fn rejects_malformed_shapes_with_source_span_and_validator_name()
         ("v.array()", "v.array", "expected 1 argument"),
         ("v.id(123)", "v.id", "string literal table name"),
         ("v.object(false)", "v.object", "expected an object literal"),
-        ("v.object({ ...other })", "v.object", "expand spreads"),
+        ("v.object({ ...other })", "v.object", "unsupported dynamic object spread"),
         ("v.literal(null)", "v.literal", "use v.null() for null"),
         ("v.literal(9223372036854775808n)", "v.literal", "signed 64-bit bigint"),
         ("v.union()", "v.union", "expected at least 1 argument"),
@@ -238,7 +281,7 @@ fn rejects_malformed_shapes_with_source_span_and_validator_name()
         (
             "const cycle = v.object({ x: cycle });",
             "defineTable(cycle)",
-            "initialized before use",
+            "cyclic validator reference",
         ),
     ] {
         let diagnostic = schema_from_source(&format!("{declaration} export default defineSchema({{ t: {expression} }});"))
@@ -258,7 +301,7 @@ fn preserves_quoted_function_args_and_reports_unsupported_returns()
     let path = dir.path().join("functions.ts");
     fs::write(
         &path,
-        r#"export const q = query({ "args": { "my-field": v.number(), "$weird": v.int64() } });"#,
+        r#"import { query } from "convex/server"; export const q = query({ "args": { "my-field": v.number(), "$weird": v.int64() } });"#,
     )
     .unwrap();
     let read = || parse_function_ast(create_function_asts(vec![path.clone()]).unwrap(), Some(dir.path()));
@@ -268,9 +311,58 @@ fn preserves_quoted_function_args_and_reports_unsupported_returns()
         fields.iter().map(|f| f.name.as_str()).collect::<Vec<_>>(),
         ["my-field", "$weird"]
     );
-    fs::write(&path, "export const q = query({ returns: v.future() });").unwrap();
+    fs::write(
+        &path,
+        "import { query } from 'convex/server'; export const q = query({ returns: v.future() });",
+    )
+    .unwrap();
     let diagnostic = read().unwrap_err().to_string();
-    assert!(diagnostic.contains("functions.ts bytes 34..44: v.future"), "{diagnostic}");
+    assert!(
+        diagnostic.contains("functions.ts bytes ") && diagnostic.contains("v.future"),
+        "{diagnostic}"
+    );
+}
+
+#[test]
+fn recognizes_only_imported_convex_builders_and_preserves_root_relative_identity()
+{
+    let dir = tempdir().unwrap();
+    let root = dir.path().join("convex");
+    fs::create_dir_all(root.join("admin")).unwrap();
+    let root = root.canonicalize().unwrap();
+    let root_module = root.join("users.ts");
+    let nested_module = root.join("admin/users.ts");
+    let outside_module = dir.path().join("outside.ts");
+    fs::write(
+        &root_module,
+        r#"import { query as q } from "convex/server";
+export const fake = helper({ args: { ignored: v.string() } });
+export const member = api.query({ args: { ignored: v.string() } });
+export const list = q({ args: {} });"#,
+    )
+    .unwrap();
+    fs::write(
+        &nested_module,
+        r#"import { query as q } from "./_generated/server";
+export const list = q({ args: { name: v.string() } });"#,
+    )
+    .unwrap();
+    fs::write(
+        &outside_module,
+        "import { action } from 'convex/server'; export const run = action({ args: {} });",
+    )
+    .unwrap();
+    let functions = parse_function_ast(
+        create_function_asts(vec![root_module, nested_module, outside_module]).unwrap(),
+        Some(&root),
+    )
+    .unwrap();
+    assert_eq!(functions.len(), 3);
+    assert_eq!(functions[0].identity.module, Some(vec!["admin".into(), "users".into()]));
+    assert_eq!(functions[1].identity.module, Some(vec!["users".into()]));
+    assert_eq!(functions[0].identity.export, "list");
+    assert_eq!(functions[1].args, Declared::Declared(vec![]));
+    assert_eq!(functions[2].identity.module, None);
 }
 
 /// Project only the shared validator metadata used by the fixture comparison into SDK JSON.
@@ -318,21 +410,60 @@ fn review_fixture_matches_function_spec_for_inline_validators()
         TableShape::Union(variants) if variants.len() == 2)
     );
 
-    let mut asts = create_function_asts(vec![root.join("users.ts"), root.join("admin/users.ts")]).unwrap();
-    // The echo endpoint uses an imported validator with a spread, which the offline parser
-    // cannot resolve. HTTP routes and helper modules are outside this validator comparison.
-    let admin = asts.get_mut(root.join("admin/users.ts").to_str().unwrap()).unwrap();
-    admin["body"]
-        .as_array_mut()
-        .unwrap()
-        .retain(|node| node["declaration"]["declarations"][0]["id"]["name"] != "echo");
+    let asts = create_function_asts(vec![
+        root.join("users.ts"),
+        root.join("admin/users.ts"),
+        root.join("validators.ts"),
+    ])
+    .unwrap();
     let functions = parse_function_ast(asts, Some(&root)).unwrap();
+    let snapshot = functions
+        .iter()
+        .map(|function| {
+            let module = function.identity.module.as_ref().unwrap().join("/");
+            let args = match &function.args {
+                Declared::Declared(fields) => format!(
+                    "declared[{}]",
+                    fields.iter().map(|field| field.name.as_str()).collect::<Vec<_>>().join(",")
+                ),
+                Declared::Unknown => "unknown".to_string(),
+            };
+            let returns = match &function.returns {
+                Declared::Declared(_) => "declared",
+                Declared::Unknown => "unknown",
+            };
+            format!(
+                "{module}:{} {:?} {:?} args={args} returns={returns}",
+                function.identity.export, function.kind, function.visibility
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    insta::assert_snapshot!(snapshot);
+    let echo = functions.iter().find(|function| function.identity.export == "echo").unwrap();
+    let Declared::Declared(echo_args) = &echo.args else {
+        panic!("expected declared echo args")
+    };
+    let Validator::Object {
+        properties: Some(echo_fields),
+        ..
+    } = &echo_args[0].validator
+    else {
+        panic!("expected imported payload object")
+    };
+    assert!(echo_fields.contains_key("count"));
+    assert!(echo_fields.contains_key("number"));
+    assert!(echo_fields.contains_key("bytes"));
+    let compared = functions
+        .iter()
+        .filter(|function| function.identity.export != "echo")
+        .collect::<Vec<_>>();
     let spec: JsonValue =
         serde_json::from_str(include_str!("../../../tests/fixtures/v1-review/inline-function-spec.json")).unwrap();
     let spec = spec.as_array().unwrap();
-    assert_eq!(functions.len(), spec.len());
-    for function in functions {
-        let module = function.identity.module.unwrap().join("/");
+    assert_eq!(compared.len(), spec.len());
+    for function in compared {
+        let module = function.identity.module.as_ref().unwrap().join("/");
         let identifier = format!("{module}.js:{}", function.identity.export);
         let expected = spec.iter().find(|entry| entry["identifier"] == identifier).unwrap();
         let args = match &function.args {

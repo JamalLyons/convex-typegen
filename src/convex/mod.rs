@@ -30,6 +30,7 @@ pub(crate) mod utils;
 pub(crate) mod validator;
 
 /// Parse `schema.ts` through Oxc; returns the ESTree program as JSON ([`lexer::generate_javascript_ast`]).
+#[cfg(test)]
 pub(crate) fn create_schema_ast(path: &Path) -> Result<JsonValue, ConvexTypeGeneratorError>
 {
     // Validate path exists before processing
@@ -48,8 +49,8 @@ pub(crate) fn create_schema_ast(path: &Path) -> Result<JsonValue, ConvexTypeGene
 pub(crate) fn create_function_asts(paths: Vec<PathBuf>) -> Result<BTreeMap<String, JsonValue>, ConvexTypeGeneratorError>
 {
     let mut function_asts = BTreeMap::new();
-
-    for path in paths {
+    let mut pending = paths;
+    while let Some(path) = pending.pop() {
         let path_str = path.to_string_lossy().to_string();
         let canonical = path.canonicalize().map_err(|error| ConvexTypeGeneratorError::IOError {
             file: path_str.clone(),
@@ -63,7 +64,37 @@ pub(crate) fn create_function_asts(paths: Vec<PathBuf>) -> Result<BTreeMap<Strin
             .to_str()
             .ok_or_else(|| ConvexTypeGeneratorError::InvalidUnicode(key.clone()))?;
 
+        if function_asts.contains_key(&key) {
+            continue;
+        }
         let function_ast = generate_javascript_ast(&canonical)?;
+        for declaration in function_ast["body"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter(|node| node["type"] == "ImportDeclaration")
+        {
+            let Some(specifier) = declaration["source"]["value"].as_str().filter(|value| value.starts_with('.')) else {
+                continue;
+            };
+            let base = canonical.parent().unwrap_or(Path::new(".")).join(specifier);
+            let mut candidates = vec![base.clone()];
+            if base.extension().is_none() {
+                candidates.extend([
+                    base.with_extension("ts"),
+                    base.with_extension("tsx"),
+                    base.with_extension("js"),
+                    base.with_extension("jsx"),
+                    base.join("index.ts"),
+                ]);
+            }
+            for candidate in candidates {
+                if candidate.is_file() {
+                    pending.push(candidate);
+                    break;
+                }
+            }
+        }
         function_asts.insert(key, function_ast);
     }
 

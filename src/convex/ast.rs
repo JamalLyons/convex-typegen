@@ -37,7 +37,7 @@ pub(crate) fn extract_program_facts(path: &Path) -> Result<ProgramFacts, ConvexT
 
     let allocator = Allocator::default();
     let ret = Parser::new(&allocator, &source_text, source_type).parse();
-    if ret.panicked || ret.program.is_empty() {
+    if ret.program.is_empty() || !ret.diagnostics.is_empty() {
         return Err(ConvexTypeGeneratorError::ParsingFailed {
             file: path_str,
             details: "Parser failed or empty program".to_string(),
@@ -45,7 +45,7 @@ pub(crate) fn extract_program_facts(path: &Path) -> Result<ProgramFacts, ConvexT
     }
 
     let semantics = SemanticBuilder::new().with_check_syntax_error(true).build(&ret.program);
-    if !semantics.errors.is_empty() {
+    if !semantics.diagnostics.is_empty() {
         return Err(ConvexTypeGeneratorError::ParsingFailed {
             file: path_str,
             details: "Semantic analysis failed".to_string(),
@@ -76,14 +76,10 @@ fn walk_program_facts(program: &Program<'_>) -> ProgramFacts
 fn count_call_expressions_stmt(stmt: &Statement<'_>, facts: &mut ProgramFacts)
 {
     match stmt {
-        Statement::ExportNamedDeclaration(decl) => {
-            if let Some(declaration) = &decl.declaration
-                && let oxc::ast::ast::Declaration::VariableDeclaration(var_decl) = declaration
-            {
-                for declarator in &var_decl.declarations {
-                    if let Some(init) = &declarator.init {
-                        count_call_expressions_expr(init, facts);
-                    }
+        Statement::VariableDeclaration(var_decl) => {
+            for declarator in &var_decl.declarations {
+                if let Some(init) = &declarator.init {
+                    count_call_expressions_expr(init, facts);
                 }
             }
         }

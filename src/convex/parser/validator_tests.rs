@@ -88,7 +88,6 @@ fn lowers_every_factory_in_convex_1_49()
         (
             "v.object({})",
             Validator::Object {
-                struct_name: None,
                 properties: Some(BTreeMap::new()),
             },
         ),
@@ -165,7 +164,6 @@ fn parses_opaque_handles_with_partial_or_complete_signature_metadata()
     assert_eq!(
         signature.args,
         Some(Validator::Object {
-            struct_name: None,
             properties: Some(BTreeMap::from([("$weird".into(), Validator::Int64)])),
         })
     );
@@ -401,39 +399,6 @@ fn spec_object<'a>(fields: impl Iterator<Item = (&'a str, &'a Validator)>) -> Js
     json!({ "type": "object", "value": fields })
 }
 
-fn clear_struct_name_hints(validator: &mut Validator)
-{
-    match validator {
-        Validator::Object { struct_name, properties } => {
-            *struct_name = None;
-            if let Some(properties) = properties {
-                for child in properties.values_mut() {
-                    clear_struct_name_hints(child);
-                }
-            }
-        }
-        Validator::Array(inner) | Validator::Optional(inner) => clear_struct_name_hints(inner),
-        Validator::Record { key_type, value_type } => {
-            clear_struct_name_hints(key_type);
-            clear_struct_name_hints(value_type);
-        }
-        Validator::Union(variants) => {
-            for variant in variants {
-                clear_struct_name_hints(variant);
-            }
-        }
-        Validator::FunctionHandle(signature) => {
-            if let Some(args) = &mut signature.args {
-                clear_struct_name_hints(args);
-            }
-            if let Some(returns) = &mut signature.returns {
-                clear_struct_name_hints(returns);
-            }
-        }
-        _ => {}
-    }
-}
-
 #[test]
 fn review_fixture_matches_function_spec_for_inline_validators()
 {
@@ -542,13 +507,9 @@ fn review_fixture_matches_function_spec_for_inline_validators()
                                 source_field.name
                             )
                         });
-                    let mut source_validator = source_field.validator.clone();
-                    let mut spec_validator = spec_field.validator.clone();
-                    clear_struct_name_hints(&mut source_validator);
-                    clear_struct_name_hints(&mut spec_validator);
                     assert_eq!(
-                        source_validator,
-                        spec_validator,
+                        source_field.validator,
+                        spec_field.validator,
                         "{}:{} args",
                         module.join("/"),
                         source.identity.export
@@ -560,13 +521,9 @@ fn review_fixture_matches_function_spec_for_inline_validators()
         match (&source.returns, &spec.returns) {
             (Declared::Unknown, Declared::Unknown) => {}
             (Declared::Declared(source_return), Declared::Declared(spec_return)) => {
-                let mut source_validator = source_return.validator.clone();
-                let mut spec_validator = spec_return.validator.clone();
-                clear_struct_name_hints(&mut source_validator);
-                clear_struct_name_hints(&mut spec_validator);
                 assert_eq!(
-                    source_validator,
-                    spec_validator,
+                    source_return.validator,
+                    spec_return.validator,
                     "{}:{} returns",
                     module.join("/"),
                     source.identity.export

@@ -37,28 +37,19 @@ fn main() {
 
 A full minimal setup lives in [examples/basic](https://github.com/JamalLyons/convex-typegen/tree/master/examples/basic) in this repo.
 
-## Generated names
+## Generated models
 
-Function argument structs are named **`{Module}{Export}Args`** when the export does not already start with the module file name (without `.ts`). Examples:
+Each function uses the full Convex module path and export to name its `Args` and `Return` models.
+For example, `users:list` emits `UsersListArgs` and `UsersListReturn`, and `admin/users:list` emits
+`AdminUsersListArgs` and `AdminUsersListReturn`. The args model exposes the canonical
+`FUNCTION_PATH`. Nested models extend the enclosing type name. Struct fields use snake_case
+and Serde preserves their exact wire spelling.
 
-| Module file | Export | Generated struct |
-| --- | --- | --- |
-| `games.ts` | `getGame` | `GamesGetGameArgs` |
-| `mod_a.ts` | `list` | `ModAListArgs` |
-| `tasks.ts` | `tasksSearch` | `TasksSearchArgs` |
+Import `convex_typegen_runtime::model::{Doc, Id, RawValue}` alongside the generated `tables`
+module. A `Doc<tables::Tasks>` contains `_id: Id<tables::Tasks>` and `_creation_time: f64`.
+Use `convex_typegen_runtime::value_serde::{to_value, from_value}` to convert models and SDK values.
 
-`FUNCTION_PATH` strings are unchanged (e.g. `"games:getGame"`).
-
-Nested `v.object({ ... })` validators emit their own `pub struct` (nesting depth under 8). Empty objects and deeper nesting still fall back to `ConvexJsonValue`.
-
-| Source | Example | Generated struct |
-| --- | --- | --- |
-| Schema column | `projects.settings` | `ProjectsSettings` |
-| Function arg object | `integrations.ts` `integrationsMirror` arg `flags` | `IntegrationsMirrorFlags` |
-| Nested object field | parent `ProjectsSettings` + field `theme` | `ProjectsSettingsTheme` |
-| Array of objects | column `items` whose elements are objects | `{Table}{Column}Element` |
-
-Identical shapes under the same name are reused; conflicting shapes under the same name fail codegen with `InvalidSchema`.
+See [generated models](docs/generated-models.md) for unions, field presence, and raw values.
 
 ## Defaults
 
@@ -101,9 +92,9 @@ with `scripts/refresh-function-spec.sh` after deploying that fixture to the docu
 `convex-typegen-runtime` uses the official `convex` client. Its
 `value_serde::{to_value, from_value}` helpers convert directly against `convex::Value`.
 Use `value_serde::Bytes` for byte strings. Generated optional fields omit outer `None`.
-Use `Option<Option<T>>` to encode explicit `Null` as `Some(None)`.
+Select the nullable union's null branch to encode explicit `Null`.
 
-Generated code imports Serde and JSON through the runtime. If your own code imports the
+Generated code imports Serde through the runtime. If your own code imports the
 official client directly, declare `convex` in your dependencies too.
 
 When migrating, replace the normal `convex-typegen` dependency with `convex-typegen-runtime`,

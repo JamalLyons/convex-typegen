@@ -4,12 +4,13 @@
 //! build dependency. The runtime supports Rust 1.85.
 
 mod client;
+pub mod model;
 pub mod value_serde;
 
 pub use client::ConvexClientExt;
 /// Serde derives in generated Rust resolve through this re-export.
 pub use serde;
-/// JSON fallback types in generated Rust resolve through this re-export.
+/// JSON utilities for applications working with JSON separately from the Convex codec.
 pub use serde_json;
 
 /// Imports for generated Rust and applications that call Convex.

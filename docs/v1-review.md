@@ -41,10 +41,9 @@ The wire path becomes `admin/users:list` after removing the terminal `.js` from 
 
 Set `Configuration::function_spec_path` to use a committed spec as the complete authoritative function inventory. It replaces TypeScript function discovery, paths, visibility, and validator resolution; TypeScript remains the source for tables and the fallback when no spec is configured. Omitted args and returns remain unknown in the IR, while an empty object and declared `v.null()` remain distinct. HTTP actions are excluded from callable functions. Unsupported or malformed entries fail with the spec path and function/validator context; generation never falls back silently. Cargo consumes only the committed file.
 
-The adapter preserves canonical nested module identity in the IR. The current emitter still derives
-`FUNCTION_PATH` and argument struct names from the module basename, so `users.js:list` and
-`admin/users.js:list` collide. The full capture is tested at the adapter/IR layer; the consumer
-compile smoke uses a collision-free subset until the separate emitter naming work is done.
+The adapter preserves canonical nested module identity in the IR. The emitter uses it for
+`FUNCTION_PATH` and model names, so both `users.js:list` and `admin/users.js:list` are covered
+by the full capture snapshot. See [generated models](generated-models.md).
 
 ## Proposed v1 architecture
 

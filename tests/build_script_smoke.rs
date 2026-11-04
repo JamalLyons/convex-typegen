@@ -58,7 +58,7 @@ export const ping = query({
     generate(config).expect("generate");
     let body = fs::read_to_string(&out).unwrap();
     assert!(body.contains("ApiPingArgs"));
-    assert!(body.contains("TTable"));
+    assert!(body.contains("TDoc"));
 }
 
 #[test]

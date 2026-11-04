@@ -6,10 +6,10 @@ Rust types from your [Convex](https://www.convex.dev) `schema.ts` and function m
 
 ## Setup
 
-1. Add the crate (library + build script):
+1. Add the runtime as a normal dependency and the matching generator release as a build dependency.
 
 ```bash
-cargo add convex-typegen
+cargo add convex-typegen-runtime
 cargo add --build convex-typegen
 ```
 
@@ -33,7 +33,7 @@ fn main() {
 }
 ```
 
-3. `cargo build` writes the generated file (see defaults below). Include it in your crate (`mod convex_types;` or whatever matches `out_file`) and pull in `convex_typegen::prelude::*` where you call Convex with the generated arg types.
+3. `cargo build` writes the generated file (see defaults below). Include it in your crate (`mod convex_types;` or whatever matches `out_file`) and pull in `convex_typegen_runtime::prelude::*` where you call Convex with the generated arg types.
 
 A full minimal setup lives in [examples/basic](https://github.com/JamalLyons/convex-typegen/tree/master/examples/basic) in this repo.
 
@@ -76,31 +76,28 @@ Function sources: every `*.ts` under `convex_dir`, except the schema file, `_gen
 
 | Feature | Default | Description |
 | --- | --- | --- |
-| `client` | on | Re-exports `ConvexClientExt` and direct Convex value Serde helpers (pulls in the `convex` crate). |
 | `verbose` | off | Print Oxc diagnostics to stderr during parse failures. |
 
-With `client` enabled, `convex_typegen::value_serde::{to_value, from_value}` provides direct Serde
-conversion against `convex::Value`. Use `value_serde::Bytes` for byte strings. Optional struct
-fields generated for function args and named objects omit `None`; use `Option<Option<T>>` when you
-need to encode explicit `Null` as `Some(None)`.
+## Runtime
 
-Build-only usage (smaller dependency tree):
+`convex-typegen-runtime` uses the official `convex` client. Its
+`value_serde::{to_value, from_value}` helpers convert directly against `convex::Value`.
+Use `value_serde::Bytes` for byte strings. Generated optional fields omit outer `None`.
+Use `Option<Option<T>>` to encode explicit `Null` as `Some(None)`.
 
-```toml
-[build-dependencies]
-convex-typegen = { version = "0.4", default-features = false }
-```
+Generated code imports Serde and JSON through the runtime. If your own code imports the
+official client directly, declare `convex` in your dependencies too.
 
-## Serde
-
-Generated code pulls serde and serde_json through `convex-typegen`, so a minimal app crate does not need those as direct dependencies unless you use them yourself.
+When migrating, replace the normal `convex-typegen` dependency with `convex-typegen-runtime`,
+move runtime imports to `convex_typegen_runtime`, remove any generator `client` feature flags,
+and regenerate your bindings. Keep the generator in `[build-dependencies]` for offline codegen.
 
 ## Versioning
 
 - [Semantic versioning policy](docs/semver-policy.md) — library API vs generated output, MSRV, and release rules.
 - [API stability reference](docs/api-stability.md) — stable vs unstable public items.
 
-Pin the same crate version in `[dependencies]` and `[build-dependencies]`. On **0.x**, breaking codegen may ship in a **minor** (this crate, 0.4.0). From **1.0**, generated type renames require a **major** bump.
+Use the same release version of `convex-typegen-runtime` and `convex-typegen`. The runtime supports Rust **1.85**. Building from source with the generator requires Rust **1.95**, including when it runs from your build script. Projects that consume pregenerated bindings can depend on the runtime alone. When resolving a fresh lockfile on Rust 1.85, use Cargo resolver 3 to prefer compatible transitive dependencies. Edition 2024 uses it by default outside a workspace. On **0.x**, breaking codegen may ship in a **minor** (this crate, 0.4.0). From **1.0**, generated type renames require a **major** bump.
 
 ## Roadmap
 

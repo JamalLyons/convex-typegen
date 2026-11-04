@@ -8,6 +8,7 @@ version = "0.1.0"
 dependencies = [
  "convex",
  "convex-typegen",
+ "convex-typegen-runtime",
  "dotenvy",
  "tokio",
 ]
@@ -178,11 +179,19 @@ dependencies = [
 name = "convex-typegen"
 version = "0.4.0"
 dependencies = [
- "convex",
  "oxc",
  "serde",
  "serde_json",
  "thiserror",
+]
+
+[[package]]
+name = "convex-typegen-runtime"
+version = "0.4.0"
+dependencies = [
+ "convex",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

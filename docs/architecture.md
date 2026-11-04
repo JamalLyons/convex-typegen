@@ -6,7 +6,7 @@ This document is for **contributors** who want to understand how the crate works
 
 - **Run at build time** (`build.rs`): read Convex TypeScript (`schema.ts` + function modules), emit a single Rust file (default `src/convex_types.rs`).
 - **Stay dependency-light on the codegen path**: no `syn` / `quote` for output; Rust text is built with string formatting.
-- **Stable public API**: small surface (`generate`, `Configuration`, `prelude`, re-exported `serde` / `serde_json`, `ConvexClientExt`). Almost everything interesting lives under the private `convex` module.
+- **Stable public API**: small generator surface (`generate`, `Configuration`, `prelude`) and a separate runtime crate. Almost everything interesting lives under the private `convex` module.
 
 ---
 
@@ -54,7 +54,7 @@ Errors are unified as **`error::ConvexTypeGeneratorError`** (IO, Oxc parse/seman
 
 | Area | Module / path | Responsibility |
 |------|-----------------|------------------|
-| Entry | `src/lib.rs` | `generate`, crate docs, `serde` / `serde_json` / `ConvexClientExt` re-exports |
+| Entry | `src/lib.rs` | `generate` and crate docs |
 | Config | `src/config.rs` | `Configuration` defaults |
 | Discovery | `src/fs.rs` | `rcfp`, walk `convex/**/*.ts`, skip schema / `_generated` / `node_modules` / `*.d.ts` |
 | TS → JSON AST | `src/convex/lexer.rs` | Oxc parse + semantic check → `to_estree_ts_json` → `serde_json::Value` |
@@ -168,7 +168,7 @@ Parser output stays JSON; codegen reads `structName` off that JSON. `ConvexValid
 ### Design
 
 - **String concatenation** into a `String` buffer, then write file. No proc-macro / `syn` pipeline.
-- Emitted file starts with a **fixed header**: allows, `use convex_typegen::prelude::*`, etc.
+- Emitted file starts with a **fixed header**: allows, `use convex_typegen_runtime::prelude::*`, etc.
 
 ### Emission order (`run_codegen`)
 
@@ -190,7 +190,8 @@ Maps the **normalized JSON** from the parser to Rust type strings used in genera
 
 Convex treats **`v.optional`** as “key may be **absent**”, not “key may be **`null`**”. Serde’s `Option::None` serializes to JSON `null` by default, which **fails Convex validation**.
 
-So for root-level optional parameters, generated `TryFrom` **omits the map key** when the Rust field is `None` (`convex_arg_root_is_optional` gates this). Contributors adding new serialization paths must preserve this invariant for optional args.
+Generated optional args and named-object fields use `#[serde(skip_serializing_if = "Option::is_none")]`.
+The runtime codec preserves this omission when serializing to Convex values.
 
 ### Naming (`utils.rs`)
 
@@ -203,13 +204,13 @@ See [semver-policy.md](semver-policy.md) for when generated type renames require
 
 ---
 
-## Runtime helpers (`convex/client.rs`, feature `client`)
+## Runtime crate (`runtime/`)
 
-With the default **`client`** feature, these exist for **downstream crates** that call Convex with generated types:
+Generated Rust uses the runtime prelude and runtime Serde re-exports. The generator and runtime have independent dependency graphs and lockfiles.
 
 - **`ConvexClientExt::prepare_args`** — Serde args struct → `BTreeMap<String, convex::Value>` through `value_serde`; conversion errors carry the failing value path.
 
-### Direct Convex value Serde (`convex/value_serde.rs`)
+### Direct Convex value Serde (`runtime/src/value_serde.rs`)
 
 `value_serde::{to_value, from_value}` serializes and deserializes directly against the official
 `convex::Value`, without passing through JSON. This preserves `Int64` versus `Float64` (including

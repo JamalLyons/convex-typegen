@@ -8,7 +8,7 @@ convex = "0.10.4"
 dotenvy = "0.15.7"
 tokio = { version = "1.52.3", features = ["full"] }
 rand = "0.8"
-convex-typegen = { path = "../../" }
+convex-typegen-runtime = { path = "../../runtime" }
 
 [build-dependencies]
 convex-typegen = { path = "../../" }

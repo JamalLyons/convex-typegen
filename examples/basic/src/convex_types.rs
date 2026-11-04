@@ -6,7 +6,7 @@
 #![allow(non_snake_case)]
 #![allow(dead_code)]
 
-use convex_typegen::prelude::*;
+use convex_typegen_runtime::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct GamesTable {
@@ -15,7 +15,7 @@ pub struct GamesTable {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen::serde")]
+#[serde(crate = "convex_typegen_runtime::serde")]
 pub struct GamesGetGameArgs {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub logData: Option<bool>,
@@ -26,7 +26,7 @@ impl GamesGetGameArgs {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen::serde")]
+#[serde(crate = "convex_typegen_runtime::serde")]
 pub struct GamesWinGameArgs {
 }
 
@@ -35,7 +35,7 @@ impl GamesWinGameArgs {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "convex_typegen::serde")]
+#[serde(crate = "convex_typegen_runtime::serde")]
 pub struct GamesLossGameArgs {
 }
 

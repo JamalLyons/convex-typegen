@@ -1,5 +1,11 @@
 # Agent notes
 
+## Task isolation
+
+- For task work that changes files, use a dedicated Git worktree and branch by default. Do not make changes in a checkout another agent may be using; this keeps concurrent tasks from interrupting or overwriting each other.
+- Base the worktree on the appropriate target branch, and keep the task's changes isolated there. Read-only work can use the existing checkout.
+- Use a shared checkout only when the user explicitly asks for it or the task requires editing that checkout.
+
 Read these before changing the crate:
 
 - [docs/v1-roadmap.md](docs/v1-roadmap.md) — v1 vision, known gaps, open decisions

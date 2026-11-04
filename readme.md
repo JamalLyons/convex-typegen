@@ -97,6 +97,12 @@ Generated code pulls serde and serde_json through `convex-typegen`, so a minimal
 
 Pin the same crate version in `[dependencies]` and `[build-dependencies]`. On **0.x**, breaking codegen may ship in a **minor** (this crate, 0.4.0). From **1.0**, generated type renames require a **major** bump.
 
+## Roadmap
+
+v1 is a generated, fully typed function client: the Rust equivalent of Convex’s `api.*` (typed refs, args and return types, `Id<T>`, `Doc<T>`, subscriptions as streams). The picture, today’s gaps, and the open decisions are in [docs/v1-roadmap.md](docs/v1-roadmap.md).
+
+Contributors and coding agents: start with [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md), and [docs/architecture.md](docs/architecture.md).
+
 ## License
 
 MIT — see [LICENSE](https://github.com/JamalLyons/convex-typegen/blob/master/LICENSE).

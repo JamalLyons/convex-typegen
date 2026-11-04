@@ -6,12 +6,9 @@ mod convex_types;
 use std::path::Path;
 
 use convex::{ConvexClient, FunctionResult, Value as ConvexValue};
+use convex_typegen_runtime::model::RawValue;
 use convex_typegen_runtime::prelude::*;
-use convex_types::{
-    IntegrationsMirrorArgs, IntegrationsMirrorFlags, ProjectsListByTeamArgs, ProjectsUpdateTagsArgs, TasksCreateArgs,
-    TasksSearchArgs, TasksSearchFilter, TeamsListByOwnerArgs, UsersCreateArgs, UsersGetByEmailArgs, UsersGetProfileArgs,
-    WorkspaceSeedIfEmptyArgs, WorkspaceSummaryArgs,
-};
+use convex_types::*;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>>
@@ -21,10 +18,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     let Ok(url) = std::env::var("CONVEX_URL") else {
         eprintln!("CONVEX_URL is not set. Add it to .env.local next to this crate’s Cargo.toml.");
         eprintln!("Example paths from codegen:");
-        eprintln!("  {}", IntegrationsMirrorArgs::FUNCTION_PATH);
-        eprintln!("  {}", ProjectsListByTeamArgs::FUNCTION_PATH);
-        eprintln!("  {}", TasksSearchArgs::FUNCTION_PATH);
-        eprintln!("  {}", WorkspaceSummaryArgs::FUNCTION_PATH);
+        eprintln!("  {}", IntegrationsIntegrationsMirrorArgs::FUNCTION_PATH);
+        eprintln!("  {}", ProjectsProjectsListByTeamArgs::FUNCTION_PATH);
+        eprintln!("  {}", TasksTasksSearchArgs::FUNCTION_PATH);
+        eprintln!("  {}", WorkspaceWorkspaceSummaryArgs::FUNCTION_PATH);
         return Ok(());
     };
 
@@ -32,16 +29,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let seed = client
         .mutation(
-            WorkspaceSeedIfEmptyArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(WorkspaceSeedIfEmptyArgs {})?,
+            WorkspaceWorkspaceSeedIfEmptyArgs::FUNCTION_PATH,
+            ConvexClient::prepare_args(WorkspaceWorkspaceSeedIfEmptyArgs(RawValue(ConvexValue::Object(
+                Default::default(),
+            ))))?,
         )
         .await?;
     println!("workspaceSeedIfEmpty → {:?}", seed);
 
     let summary = client
         .query(
-            WorkspaceSummaryArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(WorkspaceSummaryArgs {})?,
+            WorkspaceWorkspaceSummaryArgs::FUNCTION_PATH,
+            ConvexClient::prepare_args(WorkspaceWorkspaceSummaryArgs(RawValue(ConvexValue::Object(
+                Default::default(),
+            ))))?,
         )
         .await?;
     println!("workspaceSummary → {:?}", summary);
@@ -54,9 +55,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let teams = client
         .query(
-            TeamsListByOwnerArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(TeamsListByOwnerArgs {
-                ownerUserId: user_id.clone(),
+            TeamsTeamsListByOwnerArgs::FUNCTION_PATH,
+            ConvexClient::prepare_args(TeamsTeamsListByOwnerArgs {
+                owner_user_id: user_id.clone().into(),
             })?,
         )
         .await?;
@@ -64,10 +65,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let projects = client
         .query(
-            ProjectsListByTeamArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(ProjectsListByTeamArgs {
-                teamId: team_id.clone(),
-                statusFilter: Some(convex_typegen_runtime::serde_json::json!("active")),
+            ProjectsProjectsListByTeamArgs::FUNCTION_PATH,
+            ConvexClient::prepare_args(ProjectsProjectsListByTeamArgs {
+                team_id: team_id.into(),
+                status_filter: Some(ProjectsProjectsListByTeamArgsStatusFilter::Branch2(
+                    ProjectsProjectsListByTeamArgsStatusFilterBranch2,
+                )),
             })?,
         )
         .await?;
@@ -75,11 +78,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let tasks = client
         .query(
-            TasksSearchArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(TasksSearchArgs {
-                filter: TasksSearchFilter {
-                    projectId: project_id.clone(),
-                    minPriority: Some(convex_typegen_runtime::serde_json::json!("p1")),
+            TasksTasksSearchArgs::FUNCTION_PATH,
+            ConvexClient::prepare_args(TasksTasksSearchArgs {
+                filter: TasksTasksSearchArgsFilter {
+                    project_id: project_id.clone().into(),
+                    min_priority: Some(TasksTasksSearchArgsFilterMinPriority::Branch2(
+                        TasksTasksSearchArgsFilterMinPriorityBranch2,
+                    )),
                 },
                 limit: Some(10.0),
             })?,
@@ -89,16 +94,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let mirror = client
         .action(
-            IntegrationsMirrorArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(IntegrationsMirrorArgs {
+            IntegrationsIntegrationsMirrorArgs::FUNCTION_PATH,
+            ConvexClient::prepare_args(IntegrationsIntegrationsMirrorArgs {
                 body: "hello from Rust".to_string(),
                 numbers: vec![1.0, 2.0, 3.0],
-                flags: IntegrationsMirrorFlags {
+                flags: IntegrationsIntegrationsMirrorArgsFlags {
                     verbose: true,
                     trace: false,
                 },
-                mode: convex_typegen_runtime::serde_json::json!("json"),
-                extra: Some(std::collections::HashMap::from([("k".to_string(), "v".to_string())])),
+                mode: IntegrationsIntegrationsMirrorArgsMode::Branch1(IntegrationsIntegrationsMirrorArgsModeBranch1),
+                extra: Some(std::collections::BTreeMap::from([("k".to_string(), "v".to_string())])),
             })?,
         )
         .await?;
@@ -106,10 +111,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let profile = client
         .query(
-            UsersGetProfileArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(UsersGetProfileArgs {
-                userId: user_id.clone(),
-                withBytes: None,
+            UsersUsersGetProfileArgs::FUNCTION_PATH,
+            ConvexClient::prepare_args(UsersUsersGetProfileArgs {
+                user_id: user_id.clone().into(),
+                with_bytes: None,
             })?,
         )
         .await?;
@@ -117,10 +122,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let by_email = client
         .query(
-            UsersGetByEmailArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(UsersGetByEmailArgs {
+            UsersUsersGetByEmailArgs::FUNCTION_PATH,
+            ConvexClient::prepare_args(UsersUsersGetByEmailArgs {
                 email: "demo@example.com".to_string(),
-                includeInactive: None,
+                include_inactive: None,
             })?,
         )
         .await?;
@@ -128,9 +133,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let _tag_update = client
         .mutation(
-            ProjectsUpdateTagsArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(ProjectsUpdateTagsArgs {
-                projectId: project_id.clone(),
+            ProjectsProjectsUpdateTagsArgs::FUNCTION_PATH,
+            ConvexClient::prepare_args(ProjectsProjectsUpdateTagsArgs {
+                project_id: project_id.clone().into(),
                 tags: vec!["rust".to_string(), "convex".to_string(), "typegen".to_string()],
             })?,
         )
@@ -139,14 +144,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let _task = client
         .mutation(
-            TasksCreateArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(TasksCreateArgs {
-                projectId: project_id.clone(),
+            TasksTasksCreateArgs::FUNCTION_PATH,
+            ConvexClient::prepare_args(TasksTasksCreateArgs {
+                project_id: project_id.clone().into(),
                 title: "From Rust client".to_string(),
-                priority: convex_typegen_runtime::serde_json::json!("p2"),
-                assigneeUserId: Some(user_id),
-                payload: Some(convex_typegen_runtime::serde_json::json!({ "source": "advanced example" })),
-                dueAt: None,
+                priority: TasksTasksCreateArgsPriority::Branch3(TasksTasksCreateArgsPriorityBranch3),
+                assignee_user_id: Some(user_id.into()),
+                payload: Some(RawValue(ConvexValue::Object(std::collections::BTreeMap::from([(
+                    "source".into(),
+                    "advanced example".into(),
+                )])))),
+                due_at: None,
             })?,
         )
         .await?;
@@ -155,17 +163,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     let ts = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_secs();
     let _alt_user = client
         .mutation(
-            UsersCreateArgs::FUNCTION_PATH,
-            ConvexClient::prepare_args(UsersCreateArgs {
+            UsersUsersCreateArgs::FUNCTION_PATH,
+            ConvexClient::prepare_args(UsersUsersCreateArgs {
                 email: format!("rust-{ts}@example.com"),
-                displayName: "Rust-created".to_string(),
-                role: convex_typegen_runtime::serde_json::json!("member"),
-                metadata: Some(std::collections::HashMap::from([(
+                display_name: "Rust-created".to_string(),
+                role: UsersUsersCreateArgsRole::Branch2(UsersUsersCreateArgsRoleBranch2),
+                metadata: Some(std::collections::BTreeMap::from([(
                     "channel".to_string(),
                     "advanced-example".to_string(),
                 )])),
                 score: Some(7),
-                avatarBytes: None,
+                avatar_bytes: None,
             })?,
         )
         .await;

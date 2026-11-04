@@ -4,6 +4,8 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD;
 use serde_json::Value;
 
 use crate::convex::ir::{
@@ -80,12 +82,18 @@ fn parse_validator(value: &Value, file: &Path, context: &str) -> Result<Validato
                 );
             }
             Validator::Object {
-                struct_name: None,
                 properties: Some(properties),
             }
         }
         "record" => {
             let key_type = child("keys")?;
+            if !key_type.is_record_key() {
+                return Err(invalid(
+                    file,
+                    context,
+                    "record keys must use strings, IDs, string literals, or unions of those validators",
+                ));
+            }
             let values = value
                 .get("values")
                 .ok_or_else(|| invalid(file, context, "record is missing `values`"))?;
@@ -97,10 +105,9 @@ fn parse_validator(value: &Value, file: &Path, context: &str) -> Result<Validato
                     .ok_or_else(|| invalid(file, context, "record value is missing boolean `optional`"))?;
                 let parsed = parse_validator(field_type, file, &format!("{context}.values"))?;
                 if optional {
-                    Validator::Optional(Box::new(parsed))
-                } else {
-                    parsed
+                    return Err(invalid(file, context, "record values must be required"));
                 }
+                parsed
             } else {
                 parse_validator(values, file, &format!("{context}.values"))?
             };
@@ -135,13 +142,30 @@ fn parse_validator(value: &Value, file: &Path, context: &str) -> Result<Validato
                 Literal::Boolean(b)
             } else if let Some(n) = literal.as_f64() {
                 Literal::Float64(n)
+            } else if let Some(encoded) = literal.get("$integer").and_then(Value::as_str) {
+                Literal::Int64(i64::from_le_bytes(literal_bytes(encoded, file, context)?))
+            } else if let Some(encoded) = literal.get("$float").and_then(Value::as_str) {
+                Literal::Float64(f64::from_le_bytes(literal_bytes(encoded, file, context)?))
             } else {
-                return Err(invalid(file, context, "literal value must be string, boolean, or number"));
+                return Err(invalid(
+                    file,
+                    context,
+                    "literal value must be a Convex string, boolean, float64, or int64",
+                ));
             };
             Validator::Literal(Some(literal))
         }
         unsupported => return Err(invalid(file, context, format!("unsupported validator type `{unsupported}`"))),
     })
+}
+
+fn literal_bytes(encoded: &str, file: &Path, context: &str) -> Result<[u8; 8], ConvexTypeGeneratorError>
+{
+    STANDARD
+        .decode(encoded)
+        .ok()
+        .and_then(|bytes| bytes.try_into().ok())
+        .ok_or_else(|| invalid(file, context, "encoded numeric literal must contain eight base64 bytes"))
 }
 
 fn parse_function(entry: &Value, file: &Path, index: usize) -> Result<Option<Function>, ConvexTypeGeneratorError>
@@ -223,7 +247,6 @@ fn parse_function(entry: &Value, file: &Path, index: usize) -> Result<Option<Fun
             module: Some(segments),
             export: export.to_owned(),
         },
-        legacy_module_name: module_part.rsplit('/').next().unwrap_or(module_part).to_owned(),
         kind,
         visibility,
         args,
@@ -284,6 +307,27 @@ mod tests
         let path = dir.path().join("function-spec.json");
         fs::write(&path, contents).unwrap();
         parse_function_spec(&path)
+    }
+
+    #[test]
+    fn lowers_encoded_literal_wire_kinds()
+    {
+        let path = std::path::Path::new("function-spec.json");
+        for (value, expected) in [
+            (serde_json::json!("1"), Literal::String("1".into())),
+            (serde_json::json!(true), Literal::Boolean(true)),
+            (serde_json::json!(1), Literal::Float64(1.0)),
+            (serde_json::json!({"$integer": "AQAAAAAAAAA="}), Literal::Int64(1)),
+            (serde_json::json!({"$float": "AAAAAAAAAIA="}), Literal::Float64(-0.0)),
+        ] {
+            let node = serde_json::json!({"type": "literal", "value": value});
+            assert_eq!(
+                super::parse_validator(&node, path, "returns").unwrap(),
+                Validator::Literal(Some(expected))
+            );
+        }
+        let malformed = serde_json::json!({"type": "literal", "value": {"$integer": "AQ=="}});
+        assert!(super::parse_validator(&malformed, path, "returns").is_err());
     }
 
     #[test]

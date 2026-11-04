@@ -693,6 +693,20 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer
             }),
         }
     }
+    fn deserialize_f64<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Error>
+    {
+        match self.value {
+            Value::Float64(value) => visitor.visit_f64(value),
+            _ => Err(Error::new(self.path, "expected a float64")),
+        }
+    }
+    fn deserialize_byte_buf<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Error>
+    {
+        match self.value {
+            Value::Bytes(value) => visitor.visit_byte_buf(value),
+            _ => Err(Error::new(self.path, "expected bytes")),
+        }
+    }
     fn deserialize_option<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Error>
     {
         if matches!(self.value, Value::Null) {
@@ -790,7 +804,7 @@ impl<'de> de::Deserializer<'de> for ValueDeserializer
     {
         visitor.visit_unit()
     }
-    serde::forward_to_deserialize_any! { bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string bytes byte_buf unit unit_struct }
+    serde::forward_to_deserialize_any! { bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 char str string bytes unit unit_struct }
     fn is_human_readable(&self) -> bool
     {
         false

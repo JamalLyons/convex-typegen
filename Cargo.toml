@@ -29,12 +29,16 @@ verbose = []
 bench-internals = []
 
 [dependencies]
+base64 = "0.22"
 oxc = { version = "0.157.0", features = ["semantic", "serialize"], default-features = false }
 serde.workspace = true
 serde_json = { workspace = true, features = ["float_roundtrip"] }
 thiserror.workspace = true
 
 [dev-dependencies]
+convex.workspace = true
+convex-typegen-runtime.workspace = true
+trybuild = "1"
 insta.workspace = true
 tempfile.workspace = true
 

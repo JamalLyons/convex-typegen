@@ -1,0 +1,155 @@
+#[path = "../../target/model-tests/models.rs"]
+mod models;
+
+use convex::Value;
+use convex_typegen_runtime::model::{Doc, RawValue};
+use convex_typegen_runtime::value_serde::{from_value, to_value};
+use models::*;
+
+fn object<const N: usize>(fields: [(&str, Value); N]) -> Value
+{
+    Value::Object(fields.into_iter().map(|(key, value)| (key.to_owned(), value)).collect())
+}
+
+fn round_trip<T>(wire: Value) -> T
+where
+    T: convex_typegen_runtime::serde::de::DeserializeOwned + convex_typegen_runtime::serde::Serialize,
+{
+    let model = from_value::<T>(wire.clone()).unwrap();
+    assert_eq!(to_value(&model).unwrap(), wire);
+    model
+}
+
+fn presence()
+{
+    let absent = object([("nested", object([]))]);
+    let args = round_trip::<UsersOptionalArgs>(absent);
+    assert!(args.root.is_none() && args.nested.note.is_none());
+    assert!(from_value::<UsersOptionalArgs>(object([("nested", object([("note", Value::Null)]))])).is_err());
+
+    let fields = [
+        ("type", Value::Boolean(true)),
+        ("9lives", Value::Int64(9)),
+        ("self", Value::String("name".into())),
+    ];
+    let mut wire = object(fields.clone());
+    let absent = round_trip::<ModelsRoundTripArgsCamelCase>(wire.clone());
+    assert!(absent.some_key.is_none());
+    assert!(absent.r#type);
+    assert_eq!(absent._9lives, 9);
+    assert_eq!(absent._self, "name");
+
+    let Value::Object(ref mut fields) = wire else { unreachable!() };
+    fields.insert("some-key".into(), Value::Null);
+    assert!(matches!(
+        round_trip::<ModelsRoundTripArgsCamelCase>(wire).some_key,
+        Some(ModelsRoundTripArgsCamelCaseSomeKey::Branch2(()))
+    ));
+    assert!(from_value::<AdminUsersEchoArgsDataNested>(object([])).is_err());
+    round_trip::<AdminUsersEchoArgsDataNested>(object([("nullable", Value::Null)]));
+}
+
+fn documents()
+{
+    let tasks = object([
+        ("_id", Value::String("task".into())),
+        ("_creationTime", Value::Float64(20.5)),
+        ("text", Value::String("task".into())),
+    ]);
+    let doc: Doc<tables::Tasks> = round_trip(tasks.clone());
+    assert_eq!(doc._id.as_str(), "task");
+    assert_eq!(doc._creation_time, 20.5);
+    let docs: Vec<Doc<tables::Tasks>> = round_trip::<AdminUsersDocsReturn>(Value::Array(vec![tasks]));
+    assert_eq!(docs.len(), 1);
+
+    let event = |kind: &str, field| {
+        object([
+            ("_id", Value::String("event".into())),
+            ("_creationTime", Value::Float64(20.5)),
+            ("kind", Value::String(kind.into())),
+            field,
+        ])
+    };
+    assert!(matches!(
+        round_trip::<Doc<tables::Events>>(event("created", ("id", Value::String("task".into())))),
+        EventsDoc::Branch1(_)
+    ));
+    assert!(matches!(
+        round_trip::<Doc<tables::Events>>(event("deleted", ("reason", Value::String("removed".into())))),
+        EventsDoc::Branch2(_)
+    ));
+    assert!(from_value::<EventsDoc>(event("deleted", ("id", Value::String("task".into())))).is_err());
+    assert!(from_value::<EventsDoc>(event("unknown", ("id", Value::String("task".into())))).is_err());
+}
+
+fn literals()
+{
+    use ModelsRoundTripArgsLiteral as L;
+    assert!(matches!(round_trip::<L>(Value::String("1".into())), L::Branch1(_)));
+    assert!(matches!(round_trip::<L>(Value::Float64(1.0)), L::Branch2(_)));
+    assert!(matches!(round_trip::<L>(Value::Int64(1)), L::Branch3(_)));
+    assert!(matches!(round_trip::<L>(Value::Boolean(true)), L::Branch4(_)));
+    assert!(from_value::<L>(Value::Boolean(false)).is_err());
+    assert!(from_value::<L>(Value::Int64(2)).is_err());
+    assert!(from_value::<ModelsRoundTripArgsLiteralBranch2>(Value::Int64(1)).is_err());
+    assert!(from_value::<ModelsRoundTripArgsLiteralBranch3>(Value::Float64(1.0)).is_err());
+    assert!(from_value::<AdminUsersPingReturn>(Value::String("ping".into())).is_err());
+    round_trip::<AdminUsersPingReturn>(Value::String("pong".into()));
+}
+
+fn kinds_and_records()
+{
+    use ModelsRoundTripArgsBuffer as B;
+    use ModelsRoundTripReturn as N;
+    assert!(matches!(round_trip::<N>(Value::Float64(1.0)), N::Branch1(1.0)));
+    assert!(matches!(round_trip::<N>(Value::Int64(1)), N::Branch2(1)));
+    assert!(matches!(round_trip::<B>(Value::Bytes(vec![0, 255])), B::Branch1(_)));
+    assert!(matches!(round_trip::<B>(Value::Array(vec![Value::Int64(0)])), B::Branch2(_)));
+
+    let mut wire = object([
+        ("userId", Value::String("user".into())),
+        (
+            "camelCase",
+            object([
+                ("type", Value::Boolean(false)),
+                ("9lives", Value::Int64(9)),
+                ("self", Value::String("x".into())),
+            ]),
+        ),
+        ("literal", Value::Boolean(true)),
+        ("buffer", Value::Bytes(vec![42])),
+        ("byKey", object([("two", Value::Bytes(vec![0, 255]))])),
+        ("byId", object([("task", Value::Int64(i64::MAX))])),
+        (
+            "raw",
+            object([
+                ("bytes", Value::Bytes(vec![1])),
+                ("n", Value::Int64(1)),
+                ("f", Value::Float64(1.0)),
+                ("null", Value::Null),
+            ]),
+        ),
+    ]);
+    let model = round_trip::<ModelsRoundTripArgs>(wire.clone());
+    assert!(matches!(
+        model.by_key.first_key_value().unwrap().0,
+        ModelsRoundTripArgsByKeyKey::Branch2(_)
+    ));
+    assert_eq!(model.by_id.first_key_value().unwrap().0.as_str(), "task");
+    assert!(matches!(model.raw, Some(RawValue(Value::Object(_)))));
+    let Value::Object(ref mut fields) = wire else { unreachable!() };
+    fields.insert("byKey".into(), object([("three", Value::Bytes(vec![]))]));
+    assert!(from_value::<ModelsRoundTripArgs>(wire).is_err());
+
+    assert_eq!(UsersListArgs::FUNCTION_PATH, "users:list");
+    assert_eq!(AdminUsersListArgs::FUNCTION_PATH, "admin/users:list");
+    round_trip::<UsersListReturn>(Value::Bytes(vec![255]));
+}
+
+fn main()
+{
+    presence();
+    documents();
+    literals();
+    kinds_and_records();
+}

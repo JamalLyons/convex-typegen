@@ -110,7 +110,6 @@ pub fn write_project(root: &Path, ts_files: usize, seed: u64) -> io::Result<()>
             _ => (convex.clone(), "./"),
         };
         fs::create_dir_all(&directory)?;
-        // The legacy emitter derives Rust names from basenames, so keep them globally unique.
         let name = format!("{area}_{group}_{index:05}");
         let kind = if index < OPERATIONS.len() {
             (first_kind + index) % OPERATIONS.len()
@@ -276,9 +275,9 @@ mod tests
             })
             .unwrap();
             let rust = fs::read_to_string(out_file).unwrap();
-            assert!(rust.contains("pub struct AccountsTable"));
-            assert!(rust.contains("pub requestId: String"));
-            assert!(rust.contains("pub recordedAt: i64"));
+            assert!(rust.contains("pub struct AccountsDoc"));
+            assert!(rust.contains("pub request_id: String"));
+            assert!(rust.contains("pub recorded_at: i64"));
             for (_, operation) in OPERATIONS {
                 assert!(
                     rust.contains(&format!(":{operation}\"")),

@@ -61,8 +61,8 @@ Errors are unified as **`error::ConvexTypeGeneratorError`** (IO, Oxc parse/seman
 | TS → JSON AST | `src/convex/lexer.rs` | Oxc parse + semantic check → `to_estree_ts_json` → `serde_json::Value` |
 | ESTree → IR | `src/convex/parser.rs` | Schema and function extraction, including inline argument and return validators |
 | IR types | `src/convex/ir.rs` | Schema, table documents, fields, functions, and provenance |
-| Naming | `src/convex/utils.rs` | `capitalize_first_letter`, `to_pascal_case`, nested object struct names |
-| Validator IR | `src/convex/validator.rs` | `ConvexValidator`, typed literal values, and the nesting depth cap for named objects |
+| Naming | `src/convex/utils.rs` | Normalize Rust type and field identifiers |
+| Validator IR | `src/convex/validator.rs` | `ConvexValidator`, typed literal values and record key kinds |
 | Oxc AST spike | `src/convex/ast.rs` | Direct `Program` walks for future JSON-path replacement (not on the production path) |
 | Rust text | `src/convex/codegen.rs` | Named object structs, tables, union enums, and Serde-enabled `*Args` structs |
 | Source loading | `src/convex/mod.rs` | `create_schema_ast`, `create_function_asts` |
@@ -161,57 +161,23 @@ Most failures are **`InvalidSchema { context, details }`**. When extending the p
 | `Provenance` | Source identifier and optional byte offsets for diagnostics |
 
 Explicit function paths outside the configured Convex root have an unknown canonical module path.
-The emitter uses the legacy basename for generated args names and `FUNCTION_PATH`. Oxc provides
-byte spans for schemas, tables, fields, functions, parameters, and resolved returns. The current
-emitter uses `ConvexJsonValue` for union table documents and `String` for opaque function handles.
-Typed union documents, literal models, and Rust field names for quoted wire keys are tracked in #40.
-
----
+Oxc provides byte spans for schemas, tables, fields, functions, parameters, and resolved returns.
 
 ## Phase 4 — Code generation (`codegen.rs`)
 
-### Design
+The emitter walks the IR and builds Rust source in memory. It claims each emitted identifier
+within its scope and reports both origins on a collision. The output file is written after model
+generation succeeds. Naming and wire behavior are documented in [generated models](generated-models.md).
 
-- **String concatenation** into a `String` buffer, then write file. No proc-macro / `syn` pipeline.
-- Emitted file starts with a **fixed header**: allows, `use convex_typegen_runtime::prelude::*`, etc.
-
-### Emission order (`run_codegen`)
-
-1. **`collect_named_structs` / `emit_named_struct_definitions`** — Two-pass: gather `v.object` shapes with a `struct_name` hint from the parser, dedupe by name + field types, emit `pub struct` with serde derives first.
-2. **`generate_table_enums`** — For each column that is `v.union` (or `v.optional(v.union(...))`), emit a Rust `enum` **before** table structs so types are in scope.
-3. **`generate_table_code`** — `pub struct {Table}Table { ... }` with fields derived from `convex_type_to_rust_type`.
-4. **`generate_function_code`** — For each `Function`, emit `{Module}{Export}Args` (see naming below), `FUNCTION_PATH`, and Serde derives. `ConvexClientExt::prepare_args` serializes those structs directly to Convex values. Duplicate qualified struct names return **`InvalidSchema`**.
-
-### `convex_type_to_rust_type`
-
-Maps typed `ConvexValidator` nodes to Rust type strings used in generated source:
-
-- Scalars: `string` → `String`, `number` → `f64`, `boolean` → `bool`, etc.
-- **`v.object`**: When the parser attached **`struct_name`**, emit that struct type. Otherwise, if all property types are identical, emit `BTreeMap<String, T>`; if heterogeneous or empty, emit **`ConvexJsonValue`**. Conflicting shapes under the same `struct_name` fail codegen with **`InvalidSchema`**.
-- **`v.optional`**: `Option<...>`; if inner is **`union`** and table/field context is known, use generated enum name `{Table}Optional{Field}` for optional unions.
-- **`v.union`**: Enum name `{Table}{Field}` (see codegen module docs for collision avoidance).
-
-### Function args — Convex `v.optional` vs JSON `null`
-
-Convex treats **`v.optional`** as “key may be **absent**”, not “key may be **`null`**”. Serde’s `Option::None` serializes to JSON `null` by default, which **fails Convex validation**.
-
-Generated optional args and named-object fields use `#[serde(skip_serializing_if = "Option::is_none")]`.
-The runtime codec preserves this omission when serializing to Convex values.
-
-### Naming (`utils.rs`)
-
-- **`function_args_struct_name`**: `{Module}{Export}Args` unless the export already starts with the PascalCase module segment (`tasks` + `tasksSearch` → `TasksSearchArgs`; `games` + `getGame` → `GamesGetGameArgs`).
-- **Nested object structs**: `schema_column_object_struct_name`, `function_args_struct_stem` + param field, `nested_object_struct_name` for deeper nesting (depth capped by `validator::MAX_OBJECT_NEST_DEPTH`).
-- **`capitalize_first_letter`**: table/field → struct/enum name segments (`games` → `Games`).
-- **`to_pascal_case`**: module file segments and union variants (`mod_a` → `ModA`, `draft` → `Draft`).
-
-See [semver-policy.md](semver-policy.md) for when generated type renames require a crate version bump. Keep naming **stable** and **collision-free** when changing algorithms—users rely on generated type names in application code.
-
----
+Tables supply document shapes with system fields and associated table markers. Function args
+and returns use names derived from canonical paths. Matching document validators reuse the
+associated document type. Object models reject unknown fields, and union decoders dispatch by a
+required distinct literal field when available. Other unions try members in declaration order
+using the runtime codec so branch selection preserves wire kinds.
 
 ## Runtime crate (`runtime/`)
 
-Generated Rust uses the runtime prelude and runtime Serde re-exports. The generator and runtime share a workspace lockfile. The runtime owns the Convex client
+Generated Rust uses runtime model types, the direct value codec, and the runtime’s Serde re-export. The generator and runtime share a workspace lockfile. The runtime owns the Convex client
 dependency, and its Rust 1.85 check selects only the runtime package.
 
 - **`ConvexClientExt::prepare_args`** — Serde args struct → `BTreeMap<String, convex::Value>` through `value_serde`; conversion errors carry the failing value path.
@@ -222,11 +188,9 @@ dependency, and its Rust 1.85 check selects only the runtime package.
 `convex::Value`, without passing through JSON. This preserves `Int64` versus `Float64` (including
 integral floats, signed zero, infinities, and NaN), bytes via `value_serde::Bytes`, and recursive
 arrays and objects. Integer values outside Convex's signed 64-bit range and non-string map keys
-return errors that include the failing value path. Generated optional args and named-object fields
-skip outer `None`; use `Option<Option<T>>` to encode explicit `Value::Null` as `Some(None)`. The
-generated `TryFrom` conversion and the lossy `IntoConvexValue` / `ConvexValueExt` APIs have been
-removed. `ConvexBytes` fields use the byte-string Serde contract instead of serializing as integer
-arrays.
+return errors that include the failing value path. The generated field presence hook wraps every
+present value in `Some` after decoding it. Omitted optional fields default to `None` and are
+skipped during serialization. `model::RawValue` provides Serde support for the SDK value.
 
 `generate` itself does **not** use the Convex network client; `ConvexClientExt` bridges generated
 args to the official **`convex`** crate at runtime.

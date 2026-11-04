@@ -23,7 +23,11 @@ Regenerate your bindings and move imports from flat types such as
 `api::admin::users::{ListArgs, ListReturn}`. Replace
 `AdminUsersListArgs::FUNCTION_PATH` with `api::admin::users::list.path()` when using
 the official SDK directly. Nested models extend the enclosing model's name with
-their field or container role. Struct fields use snake_case and Serde preserves
+their field or container role. Model names drop a repeated prefix at a word boundary
+when it matches the final module segment and leaves a nonempty name. For example,
+`integrations:integrationsMirror` emits `api::integrations::MirrorArgs` while its
+reference is `api::integrations::integrations_mirror`. Struct fields use snake_case
+and Serde preserves
 the original wire names, including camelCase and quoted keys.
 
 `model::Id<tables::Tasks>` is a string on the wire with a distinct Rust type for each

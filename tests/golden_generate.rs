@@ -135,8 +135,11 @@ fn golden_named_nested_object_structs()
     let body = run_generate(NESTED_OBJECT_SCHEMA, &[("integrations.ts", NESTED_OBJECT_FN)]);
     assert!(body.contains("pub struct ProjectsDocSettings"));
     assert!(body.contains("pub settings: ProjectsDocSettings"));
-    assert!(body.contains("pub struct IntegrationsMirrorArgsFlags"));
-    assert!(body.contains("pub flags: IntegrationsMirrorArgsFlags"));
+    assert!(body.contains("pub struct MirrorArgsFlags"));
+    assert!(body.contains("pub flags: MirrorArgsFlags"));
+    assert!(body.contains("pub const integrations_mirror:"));
+    assert!(body.contains("\"integrations:integrationsMirror\""));
+    insta::assert_snapshot!("scoped_function_model_names", body);
 }
 
 #[test]

@@ -53,7 +53,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     let teams = client
         .query(
             teams::teams_list_by_owner.path(),
-            ConvexClient::prepare_args(teams::TeamsListByOwnerArgs {
+            ConvexClient::prepare_args(teams::ListByOwnerArgs {
                 owner_user_id: user_id.clone().into(),
             })?,
         )
@@ -63,10 +63,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     let projects = client
         .query(
             projects::projects_list_by_team.path(),
-            ConvexClient::prepare_args(projects::ProjectsListByTeamArgs {
+            ConvexClient::prepare_args(projects::ListByTeamArgs {
                 team_id: team_id.into(),
-                status_filter: Some(projects::ProjectsListByTeamArgsStatusFilter::Branch2(
-                    projects::ProjectsListByTeamArgsStatusFilterBranch2,
+                status_filter: Some(projects::ListByTeamArgsStatusFilter::Branch2(
+                    projects::ListByTeamArgsStatusFilterBranch2,
                 )),
             })?,
         )
@@ -76,11 +76,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     let tasks = client
         .query(
             tasks::tasks_search.path(),
-            ConvexClient::prepare_args(tasks::TasksSearchArgs {
-                filter: tasks::TasksSearchArgsFilter {
+            ConvexClient::prepare_args(tasks::SearchArgs {
+                filter: tasks::SearchArgsFilter {
                     project_id: project_id.clone().into(),
-                    min_priority: Some(tasks::TasksSearchArgsFilterMinPriority::Branch2(
-                        tasks::TasksSearchArgsFilterMinPriorityBranch2,
+                    min_priority: Some(tasks::SearchArgsFilterMinPriority::Branch2(
+                        tasks::SearchArgsFilterMinPriorityBranch2,
                     )),
                 },
                 limit: Some(10.0),
@@ -92,14 +92,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     let mirror = client
         .action(
             integrations::integrations_mirror.path(),
-            ConvexClient::prepare_args(integrations::IntegrationsMirrorArgs {
+            ConvexClient::prepare_args(integrations::MirrorArgs {
                 body: "hello from Rust".to_string(),
                 numbers: vec![1.0, 2.0, 3.0],
-                flags: integrations::IntegrationsMirrorArgsFlags {
+                flags: integrations::MirrorArgsFlags {
                     verbose: true,
                     trace: false,
                 },
-                mode: integrations::IntegrationsMirrorArgsMode::Branch1(integrations::IntegrationsMirrorArgsModeBranch1),
+                mode: integrations::MirrorArgsMode::Branch1(integrations::MirrorArgsModeBranch1),
                 extra: Some(std::collections::BTreeMap::from([("k".to_string(), "v".to_string())])),
             })?,
         )
@@ -109,7 +109,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     let profile = client
         .query(
             users::users_get_profile.path(),
-            ConvexClient::prepare_args(users::UsersGetProfileArgs {
+            ConvexClient::prepare_args(users::GetProfileArgs {
                 user_id: user_id.clone().into(),
                 with_bytes: None,
             })?,
@@ -120,7 +120,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     let by_email = client
         .query(
             users::users_get_by_email.path(),
-            ConvexClient::prepare_args(users::UsersGetByEmailArgs {
+            ConvexClient::prepare_args(users::GetByEmailArgs {
                 email: "demo@example.com".to_string(),
                 include_inactive: None,
             })?,
@@ -131,7 +131,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     let _tag_update = client
         .mutation(
             projects::projects_update_tags.path(),
-            ConvexClient::prepare_args(projects::ProjectsUpdateTagsArgs {
+            ConvexClient::prepare_args(projects::UpdateTagsArgs {
                 project_id: project_id.clone().into(),
                 tags: vec!["rust".to_string(), "convex".to_string(), "typegen".to_string()],
             })?,
@@ -142,10 +142,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     let _task = client
         .mutation(
             tasks::tasks_create.path(),
-            ConvexClient::prepare_args(tasks::TasksCreateArgs {
+            ConvexClient::prepare_args(tasks::CreateArgs {
                 project_id: project_id.clone().into(),
                 title: "From Rust client".to_string(),
-                priority: tasks::TasksCreateArgsPriority::Branch3(tasks::TasksCreateArgsPriorityBranch3),
+                priority: tasks::CreateArgsPriority::Branch3(tasks::CreateArgsPriorityBranch3),
                 assignee_user_id: Some(user_id.into()),
                 payload: Some(RawValue(ConvexValue::Object(std::collections::BTreeMap::from([(
                     "source".into(),
@@ -161,10 +161,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     let _alt_user = client
         .mutation(
             users::users_create.path(),
-            ConvexClient::prepare_args(users::UsersCreateArgs {
+            ConvexClient::prepare_args(users::CreateArgs {
                 email: format!("rust-{ts}@example.com"),
                 display_name: "Rust-created".to_string(),
-                role: users::UsersCreateArgsRole::Branch2(users::UsersCreateArgsRoleBranch2),
+                role: users::CreateArgsRole::Branch2(users::CreateArgsRoleBranch2),
                 metadata: Some(std::collections::BTreeMap::from([(
                     "channel".to_string(),
                     "advanced-example".to_string(),

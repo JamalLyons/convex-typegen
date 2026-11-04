@@ -26,13 +26,27 @@ fn words(name: &str) -> Vec<String>
 
 pub(super) fn type_ident(name: &str) -> String
 {
-    let mut ident: String = words(name)
-        .into_iter()
-        .map(|mut word| {
-            word[..1].make_ascii_uppercase();
-            word
-        })
-        .collect();
+    pascal_ident(&words(name))
+}
+
+pub(super) fn function_model_stem(module: &str, export: &str) -> String
+{
+    let module = words(module);
+    let export = words(export);
+    let stem = export
+        .strip_prefix(module.as_slice())
+        .filter(|suffix| !suffix.is_empty())
+        .unwrap_or(&export);
+    pascal_ident(stem)
+}
+
+fn pascal_ident(words: &[String]) -> String
+{
+    let mut ident = String::new();
+    for word in words {
+        ident.push(char::from(word.as_bytes()[0]).to_ascii_uppercase());
+        ident.push_str(&word[1..]);
+    }
     if ident.is_empty() || ident.starts_with(|c: char| c.is_ascii_digit()) || ident == "Self" {
         ident.insert_str(0, "Type");
     }
@@ -54,5 +68,20 @@ pub(super) fn field_ident(name: &str) -> String
         | "box" | "do" | "final" | "gen" | "macro" | "override" | "priv" | "try" | "typeof" | "unsized" | "virtual"
         | "yield" => format!("r#{ident}"),
         _ => ident,
+    }
+}
+
+#[cfg(test)]
+mod tests
+{
+    use super::function_model_stem;
+
+    #[test]
+    fn elides_only_a_complete_module_prefix_with_a_nonempty_suffix()
+    {
+        assert_eq!(function_model_stem("integrations", "integrationsMirror"), "Mirror");
+        assert_eq!(function_model_stem("user-tools", "userToolsFind"), "Find");
+        assert_eq!(function_model_stem("user", "usersList"), "UsersList");
+        assert_eq!(function_model_stem("users", "users"), "Users");
     }
 }

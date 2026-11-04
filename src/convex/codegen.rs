@@ -5,7 +5,7 @@ use std::fmt::Write as _;
 use std::path::Path;
 
 use super::ir::{Declared, Function, FunctionKind, GenerationIr, TableDocument, TableShape, Visibility};
-use super::utils::{field_ident, type_ident};
+use super::utils::{field_ident, function_model_stem, type_ident};
 use super::validator::{ConvexValidator as Validator, Literal};
 use crate::error::ConvexTypeGeneratorError;
 
@@ -167,7 +167,7 @@ impl Emitter
     {
         let export = &function.identity.export;
         let path = format!("{}:{export}", module.join("/"));
-        let stem = type_ident(export);
+        let stem = function_model_stem(module.last().map_or("", String::as_str), export);
         let context = format!("function {path:?} in {}", function.provenance.source);
         let reference = field_ident(export);
         claim(&mut self.names, &reference, &context)?;

@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Direct Serde conversion to and from `convex::Value` via `value_serde::{to_value, from_value}`. It
+  preserves int64/float64 wire kinds, non-finite floats, bytes, nested arrays and records, and
+  reports conversion failures with a value path. `value_serde::Bytes` uses Serde's byte-string
+  contract. Generated optional fields omit outer `None`; use `Option<Option<T>>` to encode an
+  explicit `Null` as `Some(None)`.
+
+### Changed
+
+- **Breaking:** `ConvexClientExt::prepare_args` serializes generated args directly to `convex::Value` and returns `ConvexValueSerdeError`. Generated `TryFrom<Args> for BTreeMap<String, serde_json::Value>` implementations were removed.
+- **Breaking:** Removed the lossy `IntoConvexValue` and `ConvexValueExt` APIs and the `ConvexJsonError` prelude alias. Generated `v.bytes()` fields now use `ConvexBytes` so they serialize as Convex byte strings.
+
 ### Fixed
 
 - Docs: The [0.3.0] supply-chain bullet incorrectly claimed a GitHub Actions release workflow for tagged publishes. Git history shows only `.github/workflows/rust.yml` (CI quality checks) was ever added; `release.yml` was referenced in early `CONTRIBUTING.md` text but never committed. Crates.io publishing has always been manual (`cargo publish` / `just publish`), as documented in `CONTRIBUTING.md` and [semver-policy.md](docs/semver-policy.md).

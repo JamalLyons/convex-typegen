@@ -76,8 +76,13 @@ Function sources: every `*.ts` under `convex_dir`, except the schema file, `_gen
 
 | Feature | Default | Description |
 | --- | --- | --- |
-| `client` | on | Re-exports `ConvexClientExt`, `IntoConvexValue`, `ConvexValueExt` (pulls in the `convex` crate). |
+| `client` | on | Re-exports `ConvexClientExt` and direct Convex value Serde helpers (pulls in the `convex` crate). |
 | `verbose` | off | Print Oxc diagnostics to stderr during parse failures. |
+
+With `client` enabled, `convex_typegen::value_serde::{to_value, from_value}` provides direct Serde
+conversion against `convex::Value`. Use `value_serde::Bytes` for byte strings. Optional struct
+fields generated for function args and named objects omit `None`; use `Option<Option<T>>` when you
+need to encode explicit `Null` as `Some(None)`.
 
 Build-only usage (smaller dependency tree):
 

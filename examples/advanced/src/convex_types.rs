@@ -25,6 +25,7 @@ pub struct ProjectsSettings {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(crate = "convex_typegen::serde")]
 pub struct TasksSearchFilter {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub minPriority: Option<ConvexJsonValue>,
     pub projectId: String,
 }
@@ -56,7 +57,7 @@ pub struct UsersTable {
     pub displayName: String,
     pub role: UsersRole,
     pub metadata: std::collections::HashMap<String, String>,
-    pub avatarBytes: Option<Vec<u8>>,
+    pub avatarBytes: Option<ConvexBytes>,
     pub externalId: Option<String>,
     pub score: Option<i64>,
     pub isActive: bool,
@@ -97,6 +98,7 @@ pub struct IntegrationsMirrorArgs {
     pub numbers: Vec<f64>,
     pub flags: IntegrationsMirrorFlags,
     pub mode: ConvexJsonValue,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub extra: Option<std::collections::HashMap<String, String>>,
 }
 
@@ -104,44 +106,16 @@ impl IntegrationsMirrorArgs {
     pub const FUNCTION_PATH: &'static str = "integrations:integrationsMirror";
 }
 
-impl std::convert::TryFrom<IntegrationsMirrorArgs> for std::collections::BTreeMap<String, ConvexJsonValue> {
-    type Error = ConvexJsonError;
-
-    fn try_from(_args: IntegrationsMirrorArgs) -> Result<Self, Self::Error> {
-        let mut map = std::collections::BTreeMap::new();
-        map.insert("body".to_string(), convex_typegen::serde_json::to_value(_args.body)?);
-        map.insert("numbers".to_string(), convex_typegen::serde_json::to_value(_args.numbers)?);
-        map.insert("flags".to_string(), convex_typegen::serde_json::to_value(_args.flags)?);
-        map.insert("mode".to_string(), convex_typegen::serde_json::to_value(_args.mode)?);
-        if let Some(__v) = _args.extra {
-            map.insert("extra".to_string(), convex_typegen::serde_json::to_value(__v)?);
-        }
-        Ok(map)
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(crate = "convex_typegen::serde")]
 pub struct ProjectsListByTeamArgs {
     pub teamId: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub statusFilter: Option<ConvexJsonValue>,
 }
 
 impl ProjectsListByTeamArgs {
     pub const FUNCTION_PATH: &'static str = "projects:projectsListByTeam";
-}
-
-impl std::convert::TryFrom<ProjectsListByTeamArgs> for std::collections::BTreeMap<String, ConvexJsonValue> {
-    type Error = ConvexJsonError;
-
-    fn try_from(_args: ProjectsListByTeamArgs) -> Result<Self, Self::Error> {
-        let mut map = std::collections::BTreeMap::new();
-        map.insert("teamId".to_string(), convex_typegen::serde_json::to_value(_args.teamId)?);
-        if let Some(__v) = _args.statusFilter {
-            map.insert("statusFilter".to_string(), convex_typegen::serde_json::to_value(__v)?);
-        }
-        Ok(map)
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -155,39 +129,16 @@ impl ProjectsUpdateTagsArgs {
     pub const FUNCTION_PATH: &'static str = "projects:projectsUpdateTags";
 }
 
-impl std::convert::TryFrom<ProjectsUpdateTagsArgs> for std::collections::BTreeMap<String, ConvexJsonValue> {
-    type Error = ConvexJsonError;
-
-    fn try_from(_args: ProjectsUpdateTagsArgs) -> Result<Self, Self::Error> {
-        let mut map = std::collections::BTreeMap::new();
-        map.insert("projectId".to_string(), convex_typegen::serde_json::to_value(_args.projectId)?);
-        map.insert("tags".to_string(), convex_typegen::serde_json::to_value(_args.tags)?);
-        Ok(map)
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(crate = "convex_typegen::serde")]
 pub struct TasksSearchArgs {
     pub filter: TasksSearchFilter,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<f64>,
 }
 
 impl TasksSearchArgs {
     pub const FUNCTION_PATH: &'static str = "tasks:tasksSearch";
-}
-
-impl std::convert::TryFrom<TasksSearchArgs> for std::collections::BTreeMap<String, ConvexJsonValue> {
-    type Error = ConvexJsonError;
-
-    fn try_from(_args: TasksSearchArgs) -> Result<Self, Self::Error> {
-        let mut map = std::collections::BTreeMap::new();
-        map.insert("filter".to_string(), convex_typegen::serde_json::to_value(_args.filter)?);
-        if let Some(__v) = _args.limit {
-            map.insert("limit".to_string(), convex_typegen::serde_json::to_value(__v)?);
-        }
-        Ok(map)
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -196,34 +147,16 @@ pub struct TasksCreateArgs {
     pub projectId: String,
     pub title: String,
     pub priority: ConvexJsonValue,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub assigneeUserId: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub payload: Option<ConvexJsonValue>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub dueAt: Option<f64>,
 }
 
 impl TasksCreateArgs {
     pub const FUNCTION_PATH: &'static str = "tasks:tasksCreate";
-}
-
-impl std::convert::TryFrom<TasksCreateArgs> for std::collections::BTreeMap<String, ConvexJsonValue> {
-    type Error = ConvexJsonError;
-
-    fn try_from(_args: TasksCreateArgs) -> Result<Self, Self::Error> {
-        let mut map = std::collections::BTreeMap::new();
-        map.insert("projectId".to_string(), convex_typegen::serde_json::to_value(_args.projectId)?);
-        map.insert("title".to_string(), convex_typegen::serde_json::to_value(_args.title)?);
-        map.insert("priority".to_string(), convex_typegen::serde_json::to_value(_args.priority)?);
-        if let Some(__v) = _args.assigneeUserId {
-            map.insert("assigneeUserId".to_string(), convex_typegen::serde_json::to_value(__v)?);
-        }
-        if let Some(__v) = _args.payload {
-            map.insert("payload".to_string(), convex_typegen::serde_json::to_value(__v)?);
-        }
-        if let Some(__v) = _args.dueAt {
-            map.insert("dueAt".to_string(), convex_typegen::serde_json::to_value(__v)?);
-        }
-        Ok(map)
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -236,22 +169,13 @@ impl TeamsListByOwnerArgs {
     pub const FUNCTION_PATH: &'static str = "teams:teamsListByOwner";
 }
 
-impl std::convert::TryFrom<TeamsListByOwnerArgs> for std::collections::BTreeMap<String, ConvexJsonValue> {
-    type Error = ConvexJsonError;
-
-    fn try_from(_args: TeamsListByOwnerArgs) -> Result<Self, Self::Error> {
-        let mut map = std::collections::BTreeMap::new();
-        map.insert("ownerUserId".to_string(), convex_typegen::serde_json::to_value(_args.ownerUserId)?);
-        Ok(map)
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(crate = "convex_typegen::serde")]
 pub struct TeamsCreateArgs {
     pub name: String,
     pub slug: String,
     pub ownerUserId: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub createdAt: Option<f64>,
 }
 
@@ -259,25 +183,11 @@ impl TeamsCreateArgs {
     pub const FUNCTION_PATH: &'static str = "teams:teamsCreate";
 }
 
-impl std::convert::TryFrom<TeamsCreateArgs> for std::collections::BTreeMap<String, ConvexJsonValue> {
-    type Error = ConvexJsonError;
-
-    fn try_from(_args: TeamsCreateArgs) -> Result<Self, Self::Error> {
-        let mut map = std::collections::BTreeMap::new();
-        map.insert("name".to_string(), convex_typegen::serde_json::to_value(_args.name)?);
-        map.insert("slug".to_string(), convex_typegen::serde_json::to_value(_args.slug)?);
-        map.insert("ownerUserId".to_string(), convex_typegen::serde_json::to_value(_args.ownerUserId)?);
-        if let Some(__v) = _args.createdAt {
-            map.insert("createdAt".to_string(), convex_typegen::serde_json::to_value(__v)?);
-        }
-        Ok(map)
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(crate = "convex_typegen::serde")]
 pub struct UsersGetByEmailArgs {
     pub email: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub includeInactive: Option<bool>,
 }
 
@@ -285,41 +195,16 @@ impl UsersGetByEmailArgs {
     pub const FUNCTION_PATH: &'static str = "users:usersGetByEmail";
 }
 
-impl std::convert::TryFrom<UsersGetByEmailArgs> for std::collections::BTreeMap<String, ConvexJsonValue> {
-    type Error = ConvexJsonError;
-
-    fn try_from(_args: UsersGetByEmailArgs) -> Result<Self, Self::Error> {
-        let mut map = std::collections::BTreeMap::new();
-        map.insert("email".to_string(), convex_typegen::serde_json::to_value(_args.email)?);
-        if let Some(__v) = _args.includeInactive {
-            map.insert("includeInactive".to_string(), convex_typegen::serde_json::to_value(__v)?);
-        }
-        Ok(map)
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(crate = "convex_typegen::serde")]
 pub struct UsersGetProfileArgs {
     pub userId: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub withBytes: Option<bool>,
 }
 
 impl UsersGetProfileArgs {
     pub const FUNCTION_PATH: &'static str = "users:usersGetProfile";
-}
-
-impl std::convert::TryFrom<UsersGetProfileArgs> for std::collections::BTreeMap<String, ConvexJsonValue> {
-    type Error = ConvexJsonError;
-
-    fn try_from(_args: UsersGetProfileArgs) -> Result<Self, Self::Error> {
-        let mut map = std::collections::BTreeMap::new();
-        map.insert("userId".to_string(), convex_typegen::serde_json::to_value(_args.userId)?);
-        if let Some(__v) = _args.withBytes {
-            map.insert("withBytes".to_string(), convex_typegen::serde_json::to_value(__v)?);
-        }
-        Ok(map)
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -328,34 +213,16 @@ pub struct UsersCreateArgs {
     pub email: String,
     pub displayName: String,
     pub role: ConvexJsonValue,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<std::collections::HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub score: Option<i64>,
-    pub avatarBytes: Option<Vec<u8>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avatarBytes: Option<ConvexBytes>,
 }
 
 impl UsersCreateArgs {
     pub const FUNCTION_PATH: &'static str = "users:usersCreate";
-}
-
-impl std::convert::TryFrom<UsersCreateArgs> for std::collections::BTreeMap<String, ConvexJsonValue> {
-    type Error = ConvexJsonError;
-
-    fn try_from(_args: UsersCreateArgs) -> Result<Self, Self::Error> {
-        let mut map = std::collections::BTreeMap::new();
-        map.insert("email".to_string(), convex_typegen::serde_json::to_value(_args.email)?);
-        map.insert("displayName".to_string(), convex_typegen::serde_json::to_value(_args.displayName)?);
-        map.insert("role".to_string(), convex_typegen::serde_json::to_value(_args.role)?);
-        if let Some(__v) = _args.metadata {
-            map.insert("metadata".to_string(), convex_typegen::serde_json::to_value(__v)?);
-        }
-        if let Some(__v) = _args.score {
-            map.insert("score".to_string(), convex_typegen::serde_json::to_value(__v)?);
-        }
-        if let Some(__v) = _args.avatarBytes {
-            map.insert("avatarBytes".to_string(), convex_typegen::serde_json::to_value(__v)?);
-        }
-        Ok(map)
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -367,14 +234,6 @@ impl WorkspaceSeedIfEmptyArgs {
     pub const FUNCTION_PATH: &'static str = "workspace:workspaceSeedIfEmpty";
 }
 
-impl std::convert::TryFrom<WorkspaceSeedIfEmptyArgs> for std::collections::BTreeMap<String, ConvexJsonValue> {
-    type Error = ConvexJsonError;
-
-    fn try_from(_args: WorkspaceSeedIfEmptyArgs) -> Result<Self, Self::Error> {
-        Ok(std::collections::BTreeMap::new())
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(crate = "convex_typegen::serde")]
 pub struct WorkspaceSummaryArgs {
@@ -382,13 +241,5 @@ pub struct WorkspaceSummaryArgs {
 
 impl WorkspaceSummaryArgs {
     pub const FUNCTION_PATH: &'static str = "workspace:workspaceSummary";
-}
-
-impl std::convert::TryFrom<WorkspaceSummaryArgs> for std::collections::BTreeMap<String, ConvexJsonValue> {
-    type Error = ConvexJsonError;
-
-    fn try_from(_args: WorkspaceSummaryArgs) -> Result<Self, Self::Error> {
-        Ok(std::collections::BTreeMap::new())
-    }
 }
 

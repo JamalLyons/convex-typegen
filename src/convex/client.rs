@@ -1,88 +1,70 @@
-//! Runtime helpers bridging generated args and the official [`convex`] crate.
+//! Runtime helpers for generated args and the official [`convex`] crate.
 
 use std::collections::BTreeMap;
 
 use convex::Value as ConvexValue;
-use serde_json::Value as JsonValue;
+use serde::Serialize;
 
-/// Infallible conversion from JSON-shaped args into [`ConvexValue`] (typically after serde / `TryFrom`).
-pub trait IntoConvexValue
-{
-    /// Convert the type into a Convex Value
-    fn into_convex_value(self) -> ConvexValue;
-}
-
-impl IntoConvexValue for JsonValue
-{
-    fn into_convex_value(self) -> ConvexValue
-    {
-        match self {
-            JsonValue::Null => ConvexValue::Null,
-            JsonValue::Bool(b) => ConvexValue::Boolean(b),
-            JsonValue::Number(n) => {
-                if let Some(i) = n.as_i64() {
-                    ConvexValue::Int64(i)
-                } else if let Some(f) = n.as_f64() {
-                    ConvexValue::Float64(f)
-                } else {
-                    ConvexValue::Null
-                }
-            }
-            JsonValue::String(s) => ConvexValue::String(s),
-            JsonValue::Array(arr) => ConvexValue::Array(arr.into_iter().map(|v| v.into_convex_value()).collect()),
-            JsonValue::Object(map) => {
-                let converted: BTreeMap<String, ConvexValue> =
-                    map.into_iter().map(|(k, v)| (k, v.into_convex_value())).collect();
-                ConvexValue::Object(converted)
-            }
-        }
-    }
-}
-
-/// Lossy-ish mapping from Convex wire values back to JSON ([`ConvexValue::Bytes`] becomes a JSON array of numbers).
-pub trait ConvexValueExt
-{
-    /// Map a Convex runtime value into [`serde_json::Value`].
-    fn into_serde_value(self) -> JsonValue;
-}
-
-impl ConvexValueExt for ConvexValue
-{
-    fn into_serde_value(self) -> JsonValue
-    {
-        match self {
-            ConvexValue::Null => JsonValue::Null,
-            ConvexValue::Boolean(b) => JsonValue::Bool(b),
-            ConvexValue::Int64(i) => JsonValue::Number(i.into()),
-            ConvexValue::Float64(f) => {
-                if let Some(n) = serde_json::Number::from_f64(f) {
-                    JsonValue::Number(n)
-                } else {
-                    JsonValue::Null
-                }
-            }
-            ConvexValue::String(s) => JsonValue::String(s),
-            ConvexValue::Array(arr) => JsonValue::Array(arr.into_iter().map(|v| v.into_serde_value()).collect()),
-            ConvexValue::Object(map) => JsonValue::Object(map.into_iter().map(|(k, v)| (k, v.into_serde_value())).collect()),
-            ConvexValue::Bytes(b) => JsonValue::Array(b.into_iter().map(|byte| JsonValue::Number(byte.into())).collect()),
-        }
-    }
-}
+use super::value_serde::{self, Error as ConvexValueSerdeError};
 
 /// Blanket helpers on [`convex::ConvexClient`] for generated argument structs.
 pub trait ConvexClientExt
 {
-    /// Convert function arguments into Convex-compatible format.
+    /// Serialize generated function arguments directly into Convex values.
     ///
-    /// Uses [`TryFrom`] on the generated args type; serialization errors
-    /// (for example non-finite floats) are returned as [`serde_json::Error`].
-    fn prepare_args<T>(args: T) -> Result<BTreeMap<String, ConvexValue>, serde_json::Error>
-    where
-        BTreeMap<String, JsonValue>: TryFrom<T, Error = serde_json::Error>,
+    /// Generated optional fields are omitted according to their Serde field attributes. Values
+    /// that cannot be represented by Convex, such as unsigned integers above `i64::MAX`, return a
+    /// path-aware [`ConvexValueSerdeError`].
+    fn prepare_args<T: Serialize>(args: T) -> Result<BTreeMap<String, ConvexValue>, ConvexValueSerdeError>
     {
-        let map = BTreeMap::try_from(args)?;
-        Ok(map.into_iter().map(|(k, v)| (k, v.into_convex_value())).collect())
+        match value_serde::to_value(&args)? {
+            ConvexValue::Object(map) => Ok(map),
+            _ => Err(ConvexValueSerdeError::expected_object()),
+        }
     }
 }
 
 impl ConvexClientExt for convex::ConvexClient {}
+
+#[cfg(test)]
+mod tests
+{
+    use serde::Serialize;
+
+    use super::ConvexClientExt;
+    use crate::convex::value_serde::Bytes;
+
+    #[derive(Serialize)]
+    struct Args
+    {
+        integer: i64,
+        float: f64,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        omitted: Option<bool>,
+        bytes: Bytes,
+    }
+
+    #[test]
+    fn prepare_args_preserves_wire_kinds_and_optional_omission()
+    {
+        let args = Args {
+            integer: 9,
+            float: 2.0,
+            omitted: None,
+            bytes: Bytes(vec![1, 2, 3]),
+        };
+        let map = <convex::ConvexClient as ConvexClientExt>::prepare_args(args).unwrap();
+
+        assert!(matches!(map.get("integer"), Some(convex::Value::Int64(9))));
+        assert!(matches!(map.get("float"), Some(convex::Value::Float64(2.0))));
+        assert!(matches!(map.get("bytes"), Some(convex::Value::Bytes(bytes)) if bytes == &vec![1, 2, 3]));
+        assert!(!map.contains_key("omitted"));
+    }
+
+    #[test]
+    fn prepare_args_rejects_non_object_root()
+    {
+        let error = <convex::ConvexClient as ConvexClientExt>::prepare_args("not args").unwrap_err();
+        assert_eq!(error.path(), "$");
+    }
+}

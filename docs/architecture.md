@@ -63,8 +63,8 @@ Errors are unified as **`error::ConvexTypeGeneratorError`** (IO, Oxc parse/seman
 | Naming | `src/convex/utils.rs` | `capitalize_first_letter`, `to_pascal_case`, `validate_type_name` vs `VALID_CONVEX_TYPES`, nested object struct names |
 | Validator IR | `src/convex/validator.rs` | `ConvexValidator`, `structName` / nesting depth cap for named objects |
 | Oxc AST spike | `src/convex/ast.rs` | Direct `Program` walks for future JSON-path replacement (not on the production path) |
-| Rust text | `src/convex/codegen.rs` | Named object structs, tables, union enums, `*Args` structs, `TryFrom` for Convex args |
-| Client glue | `src/convex/mod.rs` | `IntoConvexValue`, `ConvexValueExt`, `ConvexClientExt`; `create_schema_ast`, `create_function_asts` |
+| Rust text | `src/convex/codegen.rs` | Named object structs, tables, union enums, and Serde-enabled `*Args` structs |
+| Client glue | `src/convex/mod.rs` | `ConvexClientExt`; `create_schema_ast`, `create_function_asts` |
 
 ---
 
@@ -175,7 +175,7 @@ Parser output stays JSON; codegen reads `structName` off that JSON. `ConvexValid
 1. **`collect_named_structs` / `emit_named_struct_definitions`** — Two-pass: gather `v.object` shapes with `structName` from the parser, dedupe by name + field types, emit `pub struct` with serde derives first.
 2. **`generate_table_enums`** — For each column that is `v.union` (or `v.optional(v.union(...))`), emit a Rust `enum` **before** table structs so types are in scope.
 3. **`generate_table_code`** — `pub struct {Table}Table { ... }` with fields derived from `convex_type_to_rust_type`.
-4. **`generate_function_code`** — For each `ConvexFunction`, emit `{Module}{Export}Args` (see naming below), `FUNCTION_PATH`, serde derives, and **`TryFrom<...> for BTreeMap<String, ConvexJsonValue>`**. Duplicate qualified struct names return **`InvalidSchema`**.
+4. **`generate_function_code`** — For each `ConvexFunction`, emit `{Module}{Export}Args` (see naming below), `FUNCTION_PATH`, and Serde derives. `ConvexClientExt::prepare_args` serializes those structs directly to Convex values. Duplicate qualified struct names return **`InvalidSchema`**.
 
 ### `convex_type_to_rust_type`
 
@@ -207,11 +207,22 @@ See [semver-policy.md](semver-policy.md) for when generated type renames require
 
 With the default **`client`** feature, these exist for **downstream crates** that call Convex with generated types:
 
-- **`IntoConvexValue`** — `serde_json::Value` → `convex::Value` (used after args are JSON-shaped).
-- **`ConvexValueExt`** — `convex::Value` → `serde_json::Value` (lossy for some kinds, e.g. bytes → JSON array of numbers).
-- **`ConvexClientExt::prepare_args`** — `TryFrom` args struct → `BTreeMap<String, convex::Value>`; errors are `serde_json::Error` when JSON conversion fails.
+- **`ConvexClientExt::prepare_args`** — Serde args struct → `BTreeMap<String, convex::Value>` through `value_serde`; conversion errors carry the failing value path.
 
-`generate` itself does **not** use the Convex network client; these traits bridge the official **`convex`** crate at runtime.
+### Direct Convex value Serde (`convex/value_serde.rs`)
+
+`value_serde::{to_value, from_value}` serializes and deserializes directly against the official
+`convex::Value`, without passing through JSON. This preserves `Int64` versus `Float64` (including
+integral floats, signed zero, infinities, and NaN), bytes via `value_serde::Bytes`, and recursive
+arrays and objects. Integer values outside Convex's signed 64-bit range and non-string map keys
+return errors that include the failing value path. Generated optional args and named-object fields
+skip outer `None`; use `Option<Option<T>>` to encode explicit `Value::Null` as `Some(None)`. The
+generated `TryFrom` conversion and the lossy `IntoConvexValue` / `ConvexValueExt` APIs have been
+removed. `ConvexBytes` fields use the byte-string Serde contract instead of serializing as integer
+arrays.
+
+`generate` itself does **not** use the Convex network client; `ConvexClientExt` bridges generated
+args to the official **`convex`** crate at runtime.
 
 ---
 
@@ -220,7 +231,7 @@ With the default **`client`** feature, these exist for **downstream crates** tha
 - **Unit tests** live next to modules under `#[cfg(test)]` and cover:
   - Synthetic ESTree-shaped JSON for `parse_schema_ast` / `parse_function_ast`.
   - Lexer edge cases (empty file, invalid TS).
-  - Codegen string properties (`TryFrom` optional branch, `convex_type_to_rust_type` cases).
+  - Codegen output (`prepare_args`-ready serde models, `convex_type_to_rust_type` cases).
 - **Integration tests** in `tests/golden_generate.rs` and `tests/build_script_smoke.rs` run the full pipeline in `tempfile` directories with inline TypeScript fixtures.
 - **Golden snapshots** (`insta`) guard stable codegen output for minimal schema/function and cross-module duplicate exports.
 

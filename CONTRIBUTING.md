@@ -6,21 +6,24 @@ The v1 target — a generated, fully typed function client — is [docs/v1-roadm
 
 ## Development setup
 
-1. Install Rust (stable) and nightly (for `rustfmt` — see `toolchain.toml`).
-2. Clone the repo and run from the crate root:
+1. Install current stable Rust and nightly for `rustfmt`. Install Rust 1.85 for the runtime MSRV check.
+2. Clone the repo and run from the workspace root:
 
 ```bash
 just check          # clippy + tests
 just fmt-check      # requires nightly rustfmt
+just runtime-msrv   # requires Rust 1.85
 ```
 
 Or manually:
 
 ```bash
 cargo +nightly fmt --all --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test --all-features
-cargo build --no-default-features
+cargo clippy --workspace --locked --all-targets --all-features -- -D warnings
+cargo test --workspace --locked --all-features
+cargo build --workspace --locked --all-features
+cargo +1.85 check --locked -p convex-typegen-runtime
+cargo +1.85 test --locked -p convex-typegen-runtime
 ```
 
 ## Pull requests
@@ -47,7 +50,7 @@ Default branch is **`master`**. Land work on `dev`, then open a PR into `master`
 
 **Release steps** (see also [docs/semver-policy.md](docs/semver-policy.md#releases)):
 
-1. Set `version` in `Cargo.toml` (update `Cargo.lock` with `cargo check` or your usual flow) and move `[Unreleased]` notes into a dated `CHANGELOG.md` heading.
+1. Set `workspace.package.version` in `Cargo.toml` (update `Cargo.lock` with `cargo check` or your usual flow) and move `[Unreleased]` notes into a dated `CHANGELOG.md` heading.
 2. Add GitHub Release notes as `docs/release-vX.Y.Z.md` (see existing `docs/release-v0.3.0.md` and `docs/release-v0.4.0.md`).
 3. Merge to `master`, tag `vX.Y.Z` on that commit, and push the tag (tags are for GitHub Release metadata only—they do not trigger an automated crates.io publish).
 4. Create the GitHub Release on GitHub, pasting or linking content from `docs/release-vX.Y.Z.md`.

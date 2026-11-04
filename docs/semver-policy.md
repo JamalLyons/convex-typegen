@@ -78,7 +78,7 @@ Versions **0.x** may ship breaking changes in **minor** releases when needed for
 
 Maintainers (default branch is **`master`**):
 
-1. Update `CHANGELOG.md` and crate version in `Cargo.toml`.
+1. Update `CHANGELOG.md` and `workspace.package.version` in `Cargo.toml`.
 2. Add `docs/release-vX.Y.Z.md`, merge to `master`, tag `vX.Y.Z`, and create a GitHub Release.
 3. Publish to crates.io with `cargo publish --locked` (or `just publish`). There is no automated publish workflow.
 

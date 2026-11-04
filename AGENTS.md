@@ -14,33 +14,34 @@ Read these before changing the crate:
 
 ## Build, test, lint, format
 
-Commands below match the `Justfile` and `.github/workflows/rust.yml`. Run them from the crate root.
+Run these from the workspace root.
 
 ```bash
-just check       # clippy (warnings denied) + cargo test
-just lint        # cargo clippy --all-targets --all-features -- -D warnings
-just test        # cargo test
-just build       # cargo build --all-features --release
-just fmt         # nightly rustfmt, including the runtime and both examples
-just fmt-check   # same, check only
+just check          # workspace clippy (warnings denied) + tests
+just lint           # workspace clippy on all targets and features
+just test           # workspace tests with all features
+just build          # workspace release build with all features
+just runtime-msrv   # check and test only the runtime on Rust 1.85
+just fmt            # nightly rustfmt for all workspace members
+just fmt-check      # same, check only
 ```
 
 CI equivalents:
 
 ```bash
 cargo +nightly fmt --all --check
-cargo +nightly fmt --manifest-path runtime/Cargo.toml --check
-cargo +nightly fmt --manifest-path examples/basic/Cargo.toml --check
-cargo +nightly fmt --manifest-path examples/advanced/Cargo.toml --check
-cargo clippy --locked --all-targets --all-features -- -D warnings
-cargo test --locked --all-features
-cargo build --locked --no-default-features
-cargo test --locked --no-default-features
-cargo +1.85.0 build --locked --manifest-path runtime/Cargo.toml
-cargo +1.85.0 test --locked --manifest-path runtime/Cargo.toml
+cargo clippy --workspace --locked --all-targets --all-features -- -D warnings
+cargo test --workspace --locked --all-features
+cargo build --workspace --locked --all-features
+cargo build --locked -p convex-typegen --no-default-features
+cargo test --locked -p convex-typegen --no-default-features
+cargo +1.85.0 check --locked -p convex-typegen-runtime
+cargo +1.85.0 test --locked -p convex-typegen-runtime
 ```
 
-The generator MSRV is **1.95**. The `msrv` job installs Rust 1.95.0 and runs clippy, tests, and a `no-default-features` build. The `runtime-msrv` job builds and tests `runtime/Cargo.toml` on Rust **1.85**. `rustfmt.toml` uses unstable options, `toolchain.toml` pins nightly, and both `just fmt` and the Rustfmt job run `cargo +nightly fmt`. Stable rustfmt will reject the config.
+Workspace CI uses stable Rust. The generator declares Rust **1.95**, which the `msrv` job checks.
+The `runtime-msrv` job selects only `convex-typegen-runtime` and uses Rust **1.85** with the shared
+lockfile. Nightly rustfmt is required for the unstable options in `rustfmt.toml`.
 
 After an intentional codegen change, refresh snapshots with `cargo insta test --accept --all-features` (`tests/golden_generate.rs`).
 

@@ -42,7 +42,7 @@ jobs:
       - name: Check links
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --config docs/site/lychee.toml --verbose --no-progress docs/site/book
+          args: --config docs/site/lychee.toml --extensions html --verbose --no-progress docs/site/book
 
       - name: Upload Pages artifact
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'

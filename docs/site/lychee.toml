@@ -1,5 +1,8 @@
 # Edit links point at the default branch, where these new pages do not exist until merge.
-exclude = ["https://github\\.com/JamalLyons/convex-typegen/edit/.*"]
+exclude = [
+  "https://github\\.com/JamalLyons/convex-typegen/edit/.*",
+  "https://docs\\.rs/convex-typegen-runtime(/.*)?",
+]
 
 # mdBook's not-found page contains root-relative links that need the deployed base URL.
 exclude_path = ["(^|/)404\\.html$"]

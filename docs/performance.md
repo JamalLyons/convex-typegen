@@ -137,6 +137,22 @@ The same-seed comparison did not establish that timings were within noise across
 Criterion flagged differences on the unchanged binary, including small-tier codegen. Three
 of the nine completed comparisons reported no change or a change within the noise threshold.
 
+### Plot the recorded data
+
+Use Python with Matplotlib from the repository root:
+
+```sh
+python3 -m venv target/benchmark-chart-venv
+target/benchmark-chart-venv/bin/python -m pip install matplotlib
+target/benchmark-chart-venv/bin/python scripts/plot-performance.py
+```
+
+The script reads the baseline table above and the checked-in #64 summaries. It writes PNGs
+for wall time, allocation metrics, and profiler hot spots to `target/performance-charts/`.
+Use `--output-dir PATH` to save them elsewhere or `--benchmark-only` to skip the profiler
+chart. Incomplete Criterion observations appear as gaps. The massive-tier profile bars
+show shares within their bounded captures.
+
 ## Pipeline profiling findings (#64)
 
 ### Reference run and reproduction

@@ -202,7 +202,13 @@ impl Emitter
         let returns = match &function.returns {
             Declared::Declared(value) => {
                 let result = format!("{stem}Return");
-                let ty = self.validator(&value.validator, &result, &format!("{context} return"))?;
+                // Keep the return alias available when the enum is wrapped in Option.
+                let ty = self.validator_with_nullable_name(
+                    &value.validator,
+                    &result,
+                    &format!("{result}Value"),
+                    &format!("{context} return"),
+                )?;
                 if ty != result {
                     claim(&mut self.names, &result, &format!("{context} return"))?;
                     writeln!(self.code, "pub type {result} = {ty};\n").unwrap();
@@ -222,6 +228,17 @@ impl Emitter
     }
 
     fn validator(&mut self, validator: &Validator, name: &str, context: &str) -> Result<String>
+    {
+        self.validator_with_nullable_name(validator, name, name, context)
+    }
+
+    fn validator_with_nullable_name(
+        &mut self,
+        validator: &Validator,
+        name: &str,
+        nullable_name: &str,
+        context: &str,
+    ) -> Result<String>
     {
         if let Some((marker, _)) = self.documents.iter().find(|(_, document)| document == validator) {
             return Ok(format!(
@@ -253,7 +270,7 @@ impl Emitter
                 return Ok(format!("::std::collections::BTreeMap<{key}, {value}>"));
             }
             Validator::Optional(inner) => {
-                let inner = self.validator(inner, name, context)?;
+                let inner = self.validator_with_nullable_name(inner, name, nullable_name, context)?;
                 return Ok(format!("Option<{inner}>"));
             }
             Validator::Object {
@@ -266,10 +283,7 @@ impl Emitter
                 )?;
                 return Ok(name.into());
             }
-            Validator::Union(branches) => {
-                self.union(name, context, branches)?;
-                return Ok(name.into());
-            }
+            Validator::Union(branches) => return self.union(name, nullable_name, context, branches),
             Validator::Literal(Some(literal)) => {
                 claim(&mut self.names, name, context)?;
                 self.literal(name, literal);
@@ -322,14 +336,14 @@ impl Emitter
         .unwrap();
     }
 
-    fn union(&mut self, name: &str, context: &str, branches: &[Validator]) -> Result<()>
+    fn union(&mut self, name: &str, nullable_name: &str, context: &str, branches: &[Validator]) -> Result<String>
     {
-        claim(&mut self.names, name, context)?;
-        let mut variants = String::new();
         let mut leaves = Vec::new();
         flatten_union(branches, &mut leaves);
+        let nullable = leaves.iter().any(|branch| matches!(branch, Validator::Null));
         let literals = leaves
             .iter()
+            .filter(|branch| !matches!(branch, Validator::Null))
             .map(|branch| match branch {
                 Validator::Literal(Some(Literal::String(value))) => Some(value.as_str()),
                 _ => None,
@@ -339,9 +353,17 @@ impl Emitter
             && !literals.is_empty()
             && literals.iter().collect::<std::collections::BTreeSet<_>>().len() == literals.len()
         {
-            self.string_enum(name, &literals);
-            return Ok(());
+            let enum_name = if nullable { nullable_name } else { name };
+            claim(&mut self.names, enum_name, context)?;
+            self.string_enum(enum_name, &literals);
+            return Ok(if nullable {
+                format!("Option<{enum_name}>")
+            } else {
+                name.into()
+            });
         }
+        claim(&mut self.names, name, context)?;
+        let mut variants = String::new();
         let tag = discriminator(&leaves);
         // Only unions used as record keys need Ord. Such unions contain only string-shaped validators.
         let order = if leaves.iter().all(|branch| branch.is_record_key()) {
@@ -364,7 +386,7 @@ impl Emitter
             "#[derive(Debug, Clone, ConvexValue{order})]\n{discriminator}pub enum {name} {{\n{variants}}}\n"
         )
         .unwrap();
-        Ok(())
+        Ok(name.into())
     }
 
     fn string_enum(&mut self, name: &str, literals: &[&str])

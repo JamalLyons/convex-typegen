@@ -5,5 +5,5 @@ export const payload = v.object({
   ...common,
   nested: v.object({ note: v.optional(v.string()), nullable: v.nullable(v.string()) }),
   record: v.record(v.string(), v.int64()),
-  choice: v.union(v.literal("red"), v.literal("blue")),
+  choice: v.optional(v.union(v.literal("red"), v.literal("blue"), v.null())),
 });

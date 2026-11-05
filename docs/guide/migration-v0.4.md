@@ -49,6 +49,13 @@ reports its attempted path and I/O errors use the `Io` variant.
 Regenerated unions of distinct string literals use unit variants such as `Role::Admin`
 in place of `Role::Branch1(RoleBranch1)`. The original string is still the wire value.
 
+For unions of distinct string literals plus null, replace positional string
+branches with `Some(Role::Admin)` and the null branch with `None`. On optional
+fields, use `None` for absence, `Some(None)` for explicit null, and
+`Some(Some(Role::Admin))` for a string. For a top-level nullable enum return
+such as `GetRoleReturn`, match `Option` and use variants on `GetRoleReturnValue`.
+The original string values, nulls, and omitted keys retain their wire meanings.
+
 The v1 changes are a breaking runtime API and generated-output change under the
 [semver policy](../semver-policy.md). The migration is intentionally manual; there is no shim to
 make old imports compile.

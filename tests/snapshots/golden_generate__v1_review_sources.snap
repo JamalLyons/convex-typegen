@@ -123,8 +123,8 @@ pub mod api {
             pub struct EchoArgsData {
                 #[convex(rename = "bytes")]
                 pub bytes: Bytes,
-                #[convex(rename = "choice")]
-                pub choice: EchoArgsDataChoice,
+                #[convex(rename = "choice", optional)]
+                pub choice: Option<Option<EchoArgsDataChoice>>,
                 #[convex(rename = "count")]
                 pub count: i64,
                 #[convex(rename = "nested")]
@@ -167,8 +167,8 @@ pub mod api {
             pub struct EchoReturn {
                 #[convex(rename = "bytes")]
                 pub bytes: Bytes,
-                #[convex(rename = "choice")]
-                pub choice: EchoReturnChoice,
+                #[convex(rename = "choice", optional)]
+                pub choice: Option<Option<EchoReturnChoice>>,
                 #[convex(rename = "count")]
                 pub count: i64,
                 #[convex(rename = "nested")]

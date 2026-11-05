@@ -303,9 +303,9 @@ import { query } from "./_generated/server";
 import { v } from "convex/values";
 const role = v.union(v.literal("member"), v.literal("admin"));
 export const roleName = query({
-    args: { role, nested: v.optional(v.object({ selected: v.optional(role), role: v.nullable(role) })) },
+    args: { role, nested: v.optional(v.object({ selected: v.optional(v.nullable(role)), role: v.nullable(role) })) },
     returns: v.union(v.literal(""), v.literal("!"), v.literal("9lives"), v.literal("self"),
-                     v.literal("type"), v.literal("Admin"), v.literal("admin"), v.literal("🦀")),
+                     v.literal("type"), v.literal("Admin"), v.literal("admin"), v.literal("🦀"), v.null()),
     handler: () => "",
 });
 "#;
@@ -327,5 +327,34 @@ fn non_identifier_literals_do_not_rename_semantic_variants()
             assert!(generated.contains("#[convex(literal = \"!\")]\n    _Wire21,"));
             assert!(generated.contains("#[convex(literal = \"wire21\")]\n    Wire21,"));
         }
+    }
+}
+
+#[test]
+fn nullable_enum_names_survive_reordering_and_duplicate_literals_keep_union_branches()
+{
+    for literals in [
+        r#"v.literal("read-only"), v.null(), v.literal("type")"#,
+        r#"v.literal("type"), v.literal("read-only"), v.null()"#,
+    ] {
+        let schema = format!(
+            r#"export default defineSchema({{
+                items: defineTable({{
+                    kind: v.union({literals}),
+                    duplicate: v.union(v.literal("same"), v.null(), v.literal("same")),
+                    mixed: v.union(v.literal("some"), v.null(), v.string()),
+                    nullOnly: v.union(v.null(), v.null()),
+                    single: v.nullable(v.literal("only")),
+                }}),
+            }});"#
+        );
+        let generated = run_generate(&schema, &[]);
+        assert!(generated.contains("pub kind: Option<ItemsDocKind>"));
+        assert!(generated.contains("#[convex(literal = \"read-only\")]\n    ReadOnly,"));
+        assert!(generated.contains("#[convex(literal = \"type\")]\n    Type,"));
+        assert!(generated.contains("pub single: Option<ItemsDocSingle>"));
+        assert!(generated.contains("Branch3(ItemsDocDuplicateBranch3)"));
+        assert!(generated.contains("pub mixed: ItemsDocMixed"));
+        assert!(generated.contains("pub null_only: ItemsDocNullOnly"));
     }
 }

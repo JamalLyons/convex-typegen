@@ -55,19 +55,12 @@ pub mod api {
             Admin,
         }
 
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-        #[convex(literal = "member")]
-        pub struct RoleNameArgsNestedRoleBranch1;
-
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-        #[convex(literal = "admin")]
-        pub struct RoleNameArgsNestedRoleBranch2;
-
-        #[derive(Debug, Clone, ConvexValue)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
         pub enum RoleNameArgsNestedRole {
-            Branch1(RoleNameArgsNestedRoleBranch1),
-            Branch2(RoleNameArgsNestedRoleBranch2),
-            Branch3(()),
+            #[convex(literal = "member")]
+            Member,
+            #[convex(literal = "admin")]
+            Admin,
         }
 
         #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
@@ -81,9 +74,9 @@ pub mod api {
         #[derive(Debug, Clone, ConvexValue)]
         pub struct RoleNameArgsNested {
             #[convex(rename = "role")]
-            pub role: RoleNameArgsNestedRole,
+            pub role: Option<RoleNameArgsNestedRole>,
             #[convex(rename = "selected", optional)]
-            pub selected: Option<RoleNameArgsNestedSelected>,
+            pub selected: Option<Option<RoleNameArgsNestedSelected>>,
         }
 
         #[derive(Debug, Clone, ConvexValue)]
@@ -95,7 +88,7 @@ pub mod api {
         }
 
         #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
-        pub enum RoleNameReturn {
+        pub enum RoleNameReturnValue {
             #[convex(literal = "")]
             _Wire,
             #[convex(literal = "!")]
@@ -113,6 +106,8 @@ pub mod api {
             #[convex(literal = "🦀")]
             _Wiref09fa680,
         }
+
+        pub type RoleNameReturn = Option<RoleNameReturnValue>;
 
         #[allow(non_upper_case_globals)]
         pub const role_name: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, RoleNameArgs, RoleNameReturn> =

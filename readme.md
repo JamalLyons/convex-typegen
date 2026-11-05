@@ -102,6 +102,12 @@ When migrating, replace the normal `convex-typegen` dependency with `convex-type
 move runtime imports to `convex_typegen_runtime`, remove any generator `client` feature flags,
 and regenerate your bindings. Keep the generator in `[build-dependencies]` for offline codegen.
 
+## End-to-end verification
+
+Run `just e2e` to deploy the fixture to a local self-hosted Convex backend in
+Docker and exercise the generated client. See [the E2E guide](docs/e2e.md) for
+prerequisites and coverage.
+
 ## Versioning
 
 - [Semantic versioning policy](docs/semver-policy.md) — library API vs generated output, MSRV, and release rules.

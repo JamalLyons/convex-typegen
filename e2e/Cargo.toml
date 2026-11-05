@@ -1,0 +1,15 @@
+[package]
+name = "convex-typegen-e2e"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+convex.workspace = true
+convex-typegen-runtime.workspace = true
+futures = "0.3"
+tokio.workspace = true
+
+[build-dependencies]
+convex-typegen.workspace = true

@@ -59,7 +59,7 @@ panic = "abort"    # Better optimizations and smaller binaries
 strip = true       # Remove debug symbols from the binary
 
 [workspace]
-members = ["runtime", "macros", "examples/*", "xtask", "benches"]
+members = ["runtime", "macros", "examples/*", "xtask", "benches", "e2e"]
 resolver = "3"
 
 [workspace.package]

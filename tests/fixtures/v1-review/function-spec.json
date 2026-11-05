@@ -147,10 +147,13 @@
                       {
                         "type": "literal",
                         "value": "blue"
+                      },
+                      {
+                        "type": "null"
                       }
                     ]
                   },
-                  "optional": false
+                  "optional": true
                 },
                 "count": {
                   "fieldType": {
@@ -235,10 +238,13 @@
                 {
                   "type": "literal",
                   "value": "blue"
+                },
+                {
+                  "type": "null"
                 }
               ]
             },
-            "optional": false
+            "optional": true
           },
           "count": {
             "fieldType": {

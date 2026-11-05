@@ -64,7 +64,13 @@ fn documents()
         ("_creationTime", Value::Float64(20.5)),
         ("role", Value::String("member".into())),
     ]));
-    assert_eq!(user.role, UsersDocRole::Member);
+    assert_eq!(user.role, Some(UsersDocRole::Member));
+    let null_role = round_trip::<UsersDoc>(object([
+        ("_id", Value::String("user".into())),
+        ("_creationTime", Value::Float64(20.5)),
+        ("role", Value::Null),
+    ]));
+    assert!(null_role.role.is_none());
 
     let tasks = object([
         ("_id", Value::String("task".into())),
@@ -165,6 +171,14 @@ fn string_enums()
     round_trip::<RoleArgs>(object([("role", admin.clone())]));
     let absent = round_trip::<RoleArgsNested>(object([("maybe", Value::Null)]));
     assert!(absent.selected.is_none());
+    assert!(absent.maybe.is_none());
+    assert!(from_value::<RoleArgsNested>(object([])).is_err());
+    let explicit_null = round_trip::<RoleArgsNested>(object([
+        ("maybe", admin.clone()),
+        ("selected", Value::Null),
+    ]));
+    assert_eq!(explicit_null.maybe, Some(RoleArgsNestedMaybe::Admin));
+    assert_eq!(explicit_null.selected, Some(None));
     let present = round_trip::<RoleArgs>(object([
         ("role", Value::String("member".into())),
         (
@@ -172,26 +186,31 @@ fn string_enums()
             object([("maybe", admin.clone()), ("selected", admin)]),
         ),
     ]));
-    assert_eq!(present.nested.unwrap().selected, Some(RoleArgsNestedSelected::Admin));
+    assert_eq!(present.nested.unwrap().selected, Some(Some(RoleArgsNestedSelected::Admin)));
 
     for (wire, variant) in [
-        ("", EdgesReturn::_Wire),
-        ("!", EdgesReturn::_Wire21),
-        ("9lives", EdgesReturn::Type9lives),
-        ("self", EdgesReturn::TypeSelf),
-        ("type", EdgesReturn::Type),
-        ("Admin", EdgesReturn::AdminWire41646d696e),
-        ("admin", EdgesReturn::AdminWire61646d696e),
-        ("read-only", EdgesReturn::ReadOnlyWire726561642d6f6e6c79),
-        ("read_only", EdgesReturn::ReadOnlyWire726561645f6f6e6c79),
-        ("🦀", EdgesReturn::_Wiref09fa680),
+        ("", EdgesReturnValue::_Wire),
+        ("!", EdgesReturnValue::_Wire21),
+        ("9lives", EdgesReturnValue::Type9lives),
+        ("self", EdgesReturnValue::TypeSelf),
+        ("type", EdgesReturnValue::Type),
+        ("Admin", EdgesReturnValue::AdminWire41646d696e),
+        ("admin", EdgesReturnValue::AdminWire61646d696e),
+        ("read-only", EdgesReturnValue::ReadOnlyWire726561642d6f6e6c79),
+        ("read_only", EdgesReturnValue::ReadOnlyWire726561645f6f6e6c79),
+        ("🦀", EdgesReturnValue::_Wiref09fa680),
     ] {
-        assert_eq!(round_trip::<EdgesReturn>(Value::String(wire.into())), variant);
+        assert_eq!(round_trip::<EdgesReturn>(Value::String(wire.into())), Some(variant));
     }
     assert!(from_value::<EdgesReturn>(Value::String("ADMIN".into())).is_err());
     assert!(from_value::<EdgesReturn>(Value::Int64(9)).is_err());
     assert!(from_value::<EdgesReturn>(Value::Bytes(b"admin".to_vec())).is_err());
-    assert!(from_value::<EdgesReturn>(Value::Null).is_err());
+    assert_eq!(round_trip::<EdgesReturn>(Value::Null), None);
+    let array = round_trip::<EdgesArgs>(object([(
+        "roles",
+        Value::Array(vec![Value::Null, Value::String("admin".into())]),
+    )]));
+    assert_eq!(array.roles, vec![None, Some(EdgesArgsRolesElement::Admin)]);
 
     #[derive(Debug, PartialEq, ConvexValue)]
     enum Handwritten {
@@ -213,6 +232,7 @@ fn references()
 
     check::<RawArgs, RawValue, Query>(users::list, "users:list");
     check::<RoleArgs, RoleReturn, Query>(role, "models:role");
+    check::<EdgesArgs, Option<EdgesReturnValue>, Query>(edges, "models:edges");
     check::<(), String, Query>(FunctionRef::new("manual:list"), "manual:list");
     check::<admin::users::ListArgs, Vec<String>, Query>(admin::users::list, "admin/users:list");
     check::<admin::users::AddArgs, Id<tables::Tasks>, Mutation>(admin::users::add, "admin/users:add");

@@ -43,9 +43,6 @@ document branch has its own `_id` and `_creation_time` fields. The latter uses t
 
 - `v.optional(T)` uses `Option<T>`. `None` omits the key. A present key must decode as
   `T`, including inside arrays of objects or records of objects.
-- `v.nullable(T)` emits a union of `T` and the unit value `()` for Convex null.
-  With `v.optional(v.nullable(T))`, `None` is absent and the union's null branch
-  inside `Some` is present null.
 - A union of distinct string literals uses unit variants such as `Admin` and `Member`.
   Each encodes and decodes the exact original string. Variant names are PascalCase
   from ASCII letters and digits, with punctuation and other characters treated as
@@ -56,6 +53,17 @@ document branch has its own `_id` and `_creation_time` fields. The latter uses t
   If names collide, each receives a `Wire` suffix followed by the original string's
   lowercase UTF-8 hex bytes, with trailing `X` characters added if needed to avoid a
   base name. Reordering the literals preserves their names.
+- A union with null and distinct string literals uses `Option<Enum>` with the same
+  naming and exact wire strings. This includes `v.nullable` around a string literal
+  or a union of string literals. A required field must be present and uses `None`
+  for null and `Some(Enum::Variant)` for a string. An optional field uses
+  `Option<Option<Enum>>`. The outer `None` omits the key, `Some(None)` encodes
+  explicit null, and `Some(Some(Enum::Variant))` encodes the string. Unknown
+  strings and other wire kinds are errors. A top-level nullable enum return uses
+  `FooReturn = Option<FooReturnValue>`, with variants on `FooReturnValue`.
+- For other nullable validators, `v.nullable(T)` emits a union of `T` and the
+  unit value `()` for Convex null. An optional field uses `None` for absence
+  and wraps the union's null branch in `Some` for explicit null.
 - Other union enums carry each branch's model. When every branch has a common required
   field with a distinct literal, the decoder selects the branch by that field.
   Other unions decode as the first matching branch in declaration order. Some branches

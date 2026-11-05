@@ -2,7 +2,7 @@
 
 Rust types from your [Convex](https://www.convex.dev) `schema.ts` and function modules. Runs in `build.rs` so generated code stays in sync with your backend.
 
-**Docs:** [docs.rs/convex-typegen](https://docs.rs/convex-typegen)
+**Docs:** [getting started](docs/guide/getting-started.md) · [support matrix](docs/guide/support.md) · [concepts](docs/guide/concepts.md) · [v0.4 migration](docs/guide/migration-v0.4.md) · [docs.rs/convex-typegen](https://docs.rs/convex-typegen)
 
 ## Setup
 
@@ -25,7 +25,7 @@ fn main() {
 }
 ```
 
-3. Include Cargo's generated file with `mod convex_types { convex_typegen_runtime::include!(); }` and pull in `convex_typegen_runtime::prelude::*` where you call Convex with the generated arg types. The build helper tracks the schema, function spec, and discovered/imported source files. See [macros](docs/macros.md) for custom output filenames and handwritten models.
+3. Include Cargo's generated file with `mod convex_types { convex_typegen_runtime::include!(); }`. Import runtime APIs from `convex_typegen_runtime`; the generator and runtime are separate crates with no re-exports. The default build helper tracks the schema and discovered/imported TypeScript sources. For a committed function spec, configure it explicitly. See the [tutorial](docs/guide/getting-started.md) and [macros](docs/macros.md).
 
 A full minimal setup lives in [examples/basic](https://github.com/JamalLyons/convex-typegen/tree/master/examples/basic) in this repo.
 
@@ -45,6 +45,10 @@ Use `convex_typegen_runtime::value_serde::{to_value, from_value}` to convert mod
 See [generated models](docs/generated-models.md) for unions, field presence, and raw values.
 Use the [typed client](docs/typed-client.md) to call generated references, subscribe to queries,
 and decode application errors.
+
+The [support matrix](docs/guide/support.md) lists parsed validators, discovery limits, skipped
+functions, and raw fallbacks. See the [v0.4 migration guide](docs/guide/migration-v0.4.md) for the
+breaking crate, generated-name, output-path, and client API changes.
 
 ## Defaults
 
@@ -98,9 +102,9 @@ Select the nullable union's null branch to encode explicit `Null`.
 Generated code imports Serde through the runtime. If your own code imports the
 official client directly, declare `convex` in your dependencies too.
 
-When migrating, replace the normal `convex-typegen` dependency with `convex-typegen-runtime`,
-move runtime imports to `convex_typegen_runtime`, remove any generator `client` feature flags,
-and regenerate your bindings. Keep the generator in `[build-dependencies]` for offline codegen.
+Keep `convex-typegen` in `[build-dependencies]` and `convex-typegen-runtime` in `[dependencies]`.
+There are no v0.4 aliases or re-export shims; regenerate bindings and update imports using the
+[migration guide](docs/guide/migration-v0.4.md).
 
 ## End-to-end verification
 

@@ -4,11 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- Add a local self-hosted Convex typed-client E2E gate to CI (`just e2e`).
-
-- Generate bindings in Cargo's `OUT_DIR` by default, with atomic writes and a non-writing CLI `--check` mode. Add source-aware diagnostics and migrate examples to `include!`.
-
 ### Added
+
+- Add the local self-hosted Convex typed-client E2E gate (`just e2e`) and user guides for getting
+  started, supported validators and source limits, v1 concepts, and migration from v0.4.
+- Generate bindings in Cargo's `OUT_DIR` by default, with atomic writes and a non-writing CLI
+  `--check` mode. Add source-aware diagnostics and migrate examples to `include!`.
 
 - Add safe agent-worktree cleanup and stale Rust build-output cleanup with `just clean-worktrees` and a side-effect-free dry run.
 

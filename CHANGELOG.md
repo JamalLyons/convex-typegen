@@ -60,6 +60,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **Breaking default generated filename:** Rename `convex_types.rs` to `convex_api.rs`; the file contains generated API references and the typed client surface, and is written to `OUT_DIR` by default. There is no compatibility alias or fallback.
+
 - **Breaking runtime API:** Replace `ConvexClientExt::prepare_args` with
   [`TypedClient`](docs/typed-client.md) for typed queries, mutations, actions,
   and query subscriptions. Function references can declare typed application

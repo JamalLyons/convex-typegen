@@ -116,7 +116,7 @@ jobs:
             fi
           done
           cargo build --locked --manifest-path "$fixture/Cargo.toml"
-          test -s "$fixture/src/convex_types.rs"
+          test -s "$fixture/src/convex_api.rs"
 
   runtime-msrv:
     name: Runtime MSRV (1.85)

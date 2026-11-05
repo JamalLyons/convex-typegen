@@ -34,7 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
         "E2E must use a loopback self-hosted backend"
     );
 
-    let generated = include_str!(concat!(env!("OUT_DIR"), "/convex_types.rs"));
+    let generated = include_str!(concat!(env!("OUT_DIR"), "/convex_api.rs"));
     for forbidden in [
         "hiddenQuery",
         "hiddenMutation",

@@ -36,7 +36,7 @@ CONVEX_URL=https://<your-deployment>.convex.cloud
 ## 2. Rust app
 
 ```bash
-cargo build   # runs build.rs → generates OUT_DIR/convex_types.rs
+cargo build   # runs build.rs → generates OUT_DIR/convex_api.rs
 cargo run     # seeds demo data (if empty), runs queries/mutations/action using generated args
 ```
 

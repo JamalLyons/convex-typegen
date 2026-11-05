@@ -46,12 +46,12 @@ pub mod prelude
 
 /// Include Rust bindings from this package's Cargo output directory.
 ///
-/// Defaults to `convex_types.rs`. Pass a string literal relative to `OUT_DIR`
+/// Defaults to `convex_api.rs`. Pass a string literal relative to `OUT_DIR`
 /// when the build script uses a custom output filename.
 #[macro_export]
 macro_rules! include {
     () => {
-        $crate::include!("convex_types.rs");
+        $crate::include!("convex_api.rs");
     };
     ($file:literal $(,)?) => {
         ::core::include!(::core::concat!(::core::env!("OUT_DIR"), "/", $file));

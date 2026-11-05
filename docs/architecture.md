@@ -4,7 +4,7 @@ This document is for **contributors** who want to understand how the crate works
 
 ## Goals and constraints
 
-- **Run at build time** (`build.rs`): read Convex TypeScript (`schema.ts` + function modules), emit a single Rust file to `$OUT_DIR/convex_types.rs` by default.
+- **Run at build time** (`build.rs`): read Convex TypeScript (`schema.ts` + function modules), emit a single Rust file to `$OUT_DIR/convex_api.rs` by default.
 - **Stay dependency-light on the codegen path**: no `syn` / `quote` for output; Rust text is built with string formatting.
 - **Stable public API**: small generator surface (`generate`, `Configuration`, `prelude`) and a separate runtime crate. Almost everything interesting lives under the private `convex` module.
 

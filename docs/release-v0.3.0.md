@@ -26,14 +26,14 @@ This release focuses on **correct multi-module codegen**, **safer argument seria
 
 ```rust
 // Before (0.2.x)
-use convex_types::GetGameArgs;
+use convex_api::GetGameArgs;
 client.query(
     GetGameArgs::FUNCTION_PATH,
     ConvexClient::prepare_args(GetGameArgs { logData: None })?,
 )?;
 
 // After (0.3.x)
-use convex_types::GamesGetGameArgs;
+use convex_api::GamesGetGameArgs;
 client.query(
     GamesGetGameArgs::FUNCTION_PATH,
     ConvexClient::prepare_args(GamesGetGameArgs { logData: None })?,
@@ -76,7 +76,7 @@ convex-typegen = { version = "0.3", default-features = false }
 ### Upgrade checklist
 
 1. Bump `convex-typegen` to `0.3` in `[dependencies]` and `[build-dependencies]`.
-2. `cargo build` to regenerate `convex_types.rs`.
+2. `cargo build` to regenerate `convex_api.rs`.
 3. Update imports for renamed `*Args` structs and prelude aliases.
 4. Handle `prepare_args` / `TryFrom` as `Result` where needed.
 

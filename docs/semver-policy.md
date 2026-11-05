@@ -7,7 +7,7 @@ This document defines how [convex-typegen](https://github.com/JamalLyons/convex-
 | Surface | What it is | Semver |
 | --- | --- | --- |
 | **Library API** | Rust items you import from `convex_typegen` (`generate`, `Configuration`, errors, prelude, features) or `convex_typegen_runtime` (client helpers, codecs, generated-code support) | Standard [SemVer 2.0](https://semver.org/) on the crate version |
-| **Generated output** | `convex_types.rs` (or your `out_file`) emitted at build time | **Not** the crate’s public API, but changes are **breaking for your app** — we bump the **crate major** when we intentionally change generated shapes |
+| **Generated output** | `convex_api.rs` (or your `out_file`) emitted at build time | **Not** the crate’s public API, but changes are **breaking for your app** — we bump the **crate major** when we intentionally change generated shapes |
 
 Matching release versions of `convex-typegen` and `convex-typegen-runtime` are supported. Declare the generator in `[build-dependencies]` and the runtime in `[dependencies]`. After upgrading, regenerate the bindings against the matching runtime.
 

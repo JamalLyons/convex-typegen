@@ -12,7 +12,7 @@
 //!
 //! # Example
 //!
-//! In a consumer's `build.rs`, generate the default `OUT_DIR/convex_types.rs` file:
+//! In a consumer's `build.rs`, generate the default `OUT_DIR/convex_api.rs` file:
 //!
 //! ```no_run
 //! fn main()

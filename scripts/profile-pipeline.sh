@@ -39,7 +39,7 @@ find "$run_dir/project/convex" -type f -name '*.ts' | wc -l
 cd "$run_dir"
 case $mode in
     wall|heap)
-        "$bin/profile-pipeline" project convex_types.rs
+        "$bin/profile-pipeline" project convex_api.rs
         ;;
     cpu)
         # Keep the sampled executable available if Cargo rebuilds during a long capture.
@@ -49,11 +49,11 @@ case $mode in
         if [[ -n ${PROFILE_CPU_SECONDS:-} ]]; then
             record+=(--duration "$PROFILE_CPU_SECONDS")
         fi
-        "${record[@]}" --output cpu.json.gz "$run_dir/profile-pipeline" project convex_types.rs
-        if [[ -n ${PROFILE_CPU_SECONDS:-} && ! -f convex_types.rs ]]; then
+        "${record[@]}" --output cpu.json.gz "$run_dir/profile-pipeline" project convex_api.rs
+        if [[ -n ${PROFILE_CPU_SECONDS:-} && ! -f convex_api.rs ]]; then
             echo "Capture ended before the Rust file was written." >&2
             exit 0
         fi
         ;;
 esac
-wc -c convex_types.rs
+wc -c convex_api.rs

@@ -40,7 +40,7 @@ itself the Rust library API.
 ## Build output and the function spec
 
 The default `convex_typegen::build::generate_out_dir()` helper writes
-`$OUT_DIR/convex_types.rs`; load it with `convex_typegen_runtime::include!()`. This keeps generated
+`$OUT_DIR/convex_api.rs`; load it with `convex_typegen_runtime::include!()`. This keeps generated
 files out of source control and lets Cargo rebuild when inputs change. Build scripts stay offline:
 they only read TypeScript and JSON inputs.
 

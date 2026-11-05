@@ -41,7 +41,7 @@ export const ping = query({
     )
     .unwrap();
 
-    let out = tmp.path().join("src/convex_types.rs");
+    let out = tmp.path().join("src/convex_api.rs");
     fs::create_dir_all(out.parent().unwrap()).unwrap();
 
     let config = Configuration {
@@ -79,7 +79,7 @@ fn configured_spec_is_authoritative_and_tracked()
     .unwrap();
     let spec = convex.join("function-spec.json");
     fs::write(&spec, r#"{"functions":[{"identifier":"tasks.js:ping","functionType":"Query","visibility":{"kind":"public"},"args":{"type":"object","value":{}},"returns":{"type":"string"}}]}"#).unwrap();
-    let out = tmp.path().join("src/convex_types.rs");
+    let out = tmp.path().join("src/convex_api.rs");
     fs::create_dir_all(out.parent().unwrap()).unwrap();
     let config = Configuration {
         schema_path: schema,
@@ -137,14 +137,14 @@ convex-typegen = {{ path = {:?} }}
         r#"fn main() {
     convex_typegen::build::generate_out_dir().unwrap();
     let out = std::path::PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
-    std::fs::copy(out.join("convex_types.rs"), out.join("custom.rs")).unwrap();
+    std::fs::copy(out.join("convex_api.rs"), out.join("custom.rs")).unwrap();
 }"#,
     )
     .unwrap();
     fs::write(
         temp.path().join("src/lib.rs"),
         r#"
-pub mod convex_types {
+pub mod convex_api {
     convex_typegen_runtime::include!();
 }
 pub mod custom {
@@ -162,6 +162,6 @@ pub mod custom {
         .status()
         .unwrap();
     assert!(status.success());
-    assert!(!temp.path().join("src/convex_types.rs").exists());
+    assert!(!temp.path().join("src/convex_api.rs").exists());
     assert!(fs::read_dir(temp.path().join("target")).is_err());
 }

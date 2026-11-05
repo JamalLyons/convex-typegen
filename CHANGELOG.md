@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- **Breaking generator API.** Construct non-exhaustive `Configuration` with setters and use
+  `build::generate(config)` for Cargo input tracking. The default schema follows `convex_dir`.
+  Match the crate-root `ConvexTypeGeneratorError` with a fallback arm. Missing schemas report
+  the attempted path and I/O errors use the `Io` variant with a path.
+- **Breaking runtime API.** Match extensible call errors with a fallback arm and `..` for
+  extensible fields. Use `FunctionRef` constructors for handwritten endpoints.
+- **Breaking generated output.** Distinct string-literal unions now use semantic unit variants
+  and preserve their exact wire strings. Punctuation-only and empty literals use a separate
+  deterministic naming fallback. See the [migration guide](docs/guide/migration-v0.4.md).
+
 ## [1.0.0] - Unreleased
 
 Release notes prepared for v1.0.0; tagging and publishing are separate release steps.
@@ -47,11 +57,8 @@ See the [migration guide](docs/guide/migration-v0.4.md) for the breaking changes
 - Generate seed-replayable synthetic Convex projects with `just gen-project`. See
   [performance tooling](docs/performance.md).
 
-- Read a committed Convex function-spec JSON as the authoritative function inventory when
-  `Configuration::function_spec_path` is set. `rcfp` tracks that file for Cargo rebuilds; schema
-  parsing remains TypeScript-based. The new optional public configuration field defaults to `None`.
-  Existing `Configuration { ... }` literals must add `function_spec_path: None` or use
-  `..Configuration::default()`.
+- Read a committed Convex function-spec JSON as the authoritative function inventory with
+  `Configuration::with_function_spec_path`. Schema parsing still uses TypeScript.
 
 - Resolve function builders through recognized Convex server imports and aliases. Resolve static
   local/imported validator constants and object spreads with bounded cycle diagnostics, preserve

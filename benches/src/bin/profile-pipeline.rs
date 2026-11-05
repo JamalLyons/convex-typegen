@@ -16,13 +16,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>
         return Err("usage: profile-pipeline PROJECT_DIRECTORY OUTPUT_RS".into());
     };
     let convex_dir = PathBuf::from(project).join("convex");
-    let config = Configuration {
-        schema_path: convex_dir.join("schema.ts"),
-        out_file: output.into(),
-        convex_dir,
-        function_paths: Vec::new(),
-        function_spec_path: None,
-    };
+    let config = Configuration::default().with_out_file(output).with_convex_dir(convex_dir);
     #[cfg(feature = "profile-heap")]
     let elapsed = profile_heap(config)?;
     #[cfg(not(feature = "profile-heap"))]

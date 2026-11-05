@@ -267,12 +267,11 @@ mod tests
             write_project(&root, TIERS[0].1, seed).unwrap();
             let convex_dir = root.join("convex");
             let out_file = root.join("bindings.rs");
-            generate(Configuration {
-                schema_path: convex_dir.join("schema.ts"),
-                convex_dir,
-                out_file: out_file.clone(),
-                ..Configuration::default()
-            })
+            generate(
+                Configuration::default()
+                    .with_convex_dir(convex_dir)
+                    .with_out_file(out_file.clone()),
+            )
             .unwrap();
             let rust = fs::read_to_string(out_file).unwrap();
             assert!(rust.contains("pub struct AccountsDoc"));

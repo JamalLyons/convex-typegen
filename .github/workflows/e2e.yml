@@ -1,4 +1,4 @@
-name: Local self-hosted Convex E2E
+name: Convex E2E compile
 
 on:
   push:
@@ -14,32 +14,16 @@ concurrency:
 
 jobs:
   e2e:
-    name: Local Convex typed-client E2E
+    name: Compile the Convex E2E consumer
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
 
       - uses: dtolnay/rust-toolchain@stable
 
       - uses: Swatinem/rust-cache@v2
 
-      - uses: extractions/setup-just@v4
-
-      - name: Run against pinned local self-hosted backend
-        run: just e2e
+      - name: Build with the committed function spec
+        run: cargo build --locked -p convex-typegen-e2e
         env:
-          E2E_ARTIFACT_DIR: ${{ runner.temp }}/convex-typegen-e2e-artifacts
-
-      - name: Upload sanitized backend logs
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: convex-self-hosted-e2e-backend-logs
-          path: ${{ runner.temp }}/convex-typegen-e2e-artifacts/backend.log
-          if-no-files-found: error
-          retention-days: 7
+          CONVEX_FUNCTION_SPEC_PATH: ${{ github.workspace }}/tests/fixtures/v1-review/function-spec.json

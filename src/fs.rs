@@ -1,81 +1,21 @@
-//! Discover Convex function modules on disk for `build.rs`.
-//!
-//! With [`crate::config::Configuration::function_spec_path`] set, returns only that spec path.
-//! Otherwise, with an empty [`crate::config::Configuration::function_paths`], walks `convex_dir`
-//! for `*.ts`, skips `_generated/`, `node_modules/`, `*.d.ts`, reserved modules, and the canonical
-//! [`Configuration::schema_path`]. Relative imports are included for Cargo invalidation. A missing
-//! `convex_dir` returns an empty `Vec` (no error) so callers can use explicit inputs.
+//! Discover TypeScript endpoint sources in the configured Convex directory.
 
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::config::Configuration;
-use crate::convex::lexer::generate_javascript_ast;
 use crate::error::ConvexTypeGeneratorError;
 
 const SKIP_DIR_NAMES: &[&str] = &["_generated", "node_modules"];
 const RESERVED_MODULES: &[&str] = &["http.ts", "crons.ts", "convex.config.ts"];
 
-/// **R**esolved **C**onvex **f**unction **p**aths — identical set to what [`crate::generate`] parses.
-///
-/// Use from `build.rs` with `cargo:rerun-if-changed` on each path so source and imported helper edits
-/// invalidate the build.
-pub fn rcfp(config: &Configuration) -> Result<Vec<PathBuf>, ConvexTypeGeneratorError>
+pub(crate) fn function_source_paths(config: &Configuration) -> Result<Vec<PathBuf>, ConvexTypeGeneratorError>
 {
-    if let Some(spec) = &config.function_spec_path {
-        return Ok(vec![spec.clone()]);
-    }
-    let paths = if !config.function_paths.is_empty() {
-        config.function_paths.clone()
+    if config.function_paths.is_empty() {
+        find_convex_function_source_paths(&config.convex_dir, &config.resolved_schema_path())
     } else {
-        find_convex_function_source_paths(&config.convex_dir, &config.schema_path)?
-    };
-    expand_relative_import_paths(paths)
-}
-
-fn expand_relative_import_paths(paths: Vec<PathBuf>) -> Result<Vec<PathBuf>, ConvexTypeGeneratorError>
-{
-    let mut pending = paths;
-    let mut sources = std::collections::BTreeMap::new();
-    while let Some(path) = pending.pop() {
-        let canonical = path.canonicalize().map_err(|error| ConvexTypeGeneratorError::IOError {
-            file: path.to_string_lossy().into_owned(),
-            error,
-        })?;
-        let key = canonical.to_string_lossy().into_owned();
-        if sources.contains_key(&key) {
-            continue;
-        }
-        let ast = generate_javascript_ast(&canonical)?;
-        for import in ast["body"]
-            .as_array()
-            .into_iter()
-            .flatten()
-            .filter(|node| node["type"] == "ImportDeclaration")
-        {
-            let Some(specifier) = import["source"]["value"].as_str().filter(|value| value.starts_with('.')) else {
-                continue;
-            };
-            let base = canonical.parent().unwrap_or(Path::new(".")).join(specifier);
-            let mut candidates = vec![base.clone()];
-            if base.extension().is_none() {
-                candidates.extend([
-                    base.with_extension("ts"),
-                    base.with_extension("tsx"),
-                    base.with_extension("js"),
-                    base.with_extension("jsx"),
-                    base.join("index.ts"),
-                ]);
-            }
-            if let Some(dependency) = candidates.into_iter().find(|candidate| candidate.is_file()) {
-                pending.push(dependency);
-            }
-        }
-        sources.insert(key, path);
+        Ok(config.function_paths.clone())
     }
-    let mut result = sources.into_values().collect::<Vec<_>>();
-    result.sort();
-    Ok(result)
 }
 
 /// Collect `*.ts` files under `convex_dir`, excluding declaration files and the schema file.
@@ -125,14 +65,14 @@ fn find_convex_function_source_paths(convex_dir: &Path, schema_path: &Path)
 
 fn walk_ts_files(dir: &Path, out: &mut Vec<PathBuf>) -> Result<(), ConvexTypeGeneratorError>
 {
-    let entries = fs::read_dir(dir).map_err(|error| ConvexTypeGeneratorError::IOError {
-        file: dir.to_string_lossy().to_string(),
+    let entries = fs::read_dir(dir).map_err(|error| ConvexTypeGeneratorError::Io {
+        file: dir.to_path_buf(),
         error,
     })?;
 
     for entry in entries {
-        let entry = entry.map_err(|error| ConvexTypeGeneratorError::IOError {
-            file: dir.to_string_lossy().to_string(),
+        let entry = entry.map_err(|error| ConvexTypeGeneratorError::Io {
+            file: dir.to_path_buf(),
             error,
         })?;
         let path = entry.path();
@@ -213,13 +153,13 @@ mod find_convex_function_source_paths_tests
 }
 
 #[cfg(test)]
-mod rcfp_tests
+mod function_source_paths_tests
 {
     use std::fs;
 
     use tempfile::tempdir;
 
-    use super::rcfp;
+    use super::function_source_paths;
     use crate::config::Configuration;
 
     #[test]
@@ -230,11 +170,8 @@ mod rcfp_tests
         let b = tmp.path().join("b.ts");
         fs::write(&a, "export const a = 1;").unwrap();
         fs::write(&b, "export const b = 1;").unwrap();
-        let cfg = Configuration {
-            function_paths: vec![a.clone(), b.clone()],
-            ..Default::default()
-        };
-        let got = rcfp(&cfg).unwrap();
+        let cfg = Configuration::default().with_function_paths(vec![a.clone(), b.clone()]);
+        let got = function_source_paths(&cfg).unwrap();
         assert_eq!(got, vec![a, b]);
     }
 
@@ -249,36 +186,14 @@ mod rcfp_tests
         let api = convex.join("z.ts");
         fs::write(&api, "export const x = 1;\n").unwrap();
 
-        let cfg = Configuration {
-            convex_dir: convex.clone(),
-            schema_path: schema,
-            function_paths: Vec::new(),
-            ..Default::default()
-        };
+        let cfg = Configuration::default().with_convex_dir(convex);
 
-        let names: Vec<_> = rcfp(&cfg)
+        let names: Vec<_> = function_source_paths(&cfg)
             .unwrap()
             .into_iter()
             .map(|p| p.file_name().unwrap().to_string_lossy().into_owned())
             .collect();
         assert_eq!(names, vec!["z.ts"]);
-    }
-
-    #[test]
-    fn explicit_inputs_include_relative_imports_for_cargo_invalidation()
-    {
-        let tmp = tempdir().unwrap();
-        let source = tmp.path().join("entry.ts");
-        let helper = tmp.path().join("validators.ts");
-        fs::write(&source, "import { shape } from './validators'; export const q = shape;").unwrap();
-        fs::write(&helper, "export const shape = {};").unwrap();
-        let config = Configuration {
-            function_paths: vec![source.clone()],
-            ..Default::default()
-        };
-        let paths = rcfp(&config).unwrap();
-        assert!(paths.contains(&source));
-        assert!(paths.contains(&helper.canonicalize().unwrap()));
     }
 }
 

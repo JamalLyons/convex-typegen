@@ -18,6 +18,11 @@ just runtime-msrv   # runtime on Rust 1.85
 mdbook build docs/site
 ```
 
+Run `just generator-msrv` to reproduce the generator's Rust 1.97.0 CI job, including
+the exact trybuild diagnostics. Regular workspace tests run the generated consumer
+without comparing compiler diagnostics. Run `just runtime-msrv` to check Rust 1.85.0,
+including an external consumer built from pregenerated bindings.
+
 Run `just e2e` for codegen, runtime, or client changes. It needs Docker, Node.js/npm, and
 `jq`, and uses only a local self-hosted Convex backend; see the [E2E guide](docs/e2e.md).
 Build scripts must stay offline. After intentional codegen changes, refresh snapshots with

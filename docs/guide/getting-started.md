@@ -42,9 +42,19 @@ mod generated {
 use generated::api;
 ```
 
-`generate_out_dir()` writes `$OUT_DIR/convex_api.rs`, emits Cargo rebuild directives for its
-inputs, and does not invoke the Convex CLI or access the network. If your paths or output filename
-differ, use `Configuration` and `generate` directly; see [macros](../macros.md).
+`generate_out_dir()` writes `$OUT_DIR/convex_api.rs` and emits Cargo rebuild directives for
+its inputs. For a custom layout, use the same offline Cargo flow with a configuration:
+
+```rust,no_run
+use convex_typegen::{build, config::Configuration};
+
+fn main() {
+    build::generate(Configuration::default().with_convex_dir("backend/convex"))
+        .expect("generate Convex bindings");
+}
+```
+
+This uses `backend/convex/schema.ts`. Override that path with `.with_schema_path("path/to/schema.ts")`.
 
 ## Capture and refresh a committed function spec
 
@@ -70,12 +80,22 @@ backend or deploy the fixture. The supported, one-command Docker deployment and 
 is `just e2e` below. See [the E2E guide](../e2e.md) for its pinned local backend, ports, and
 prerequisites. Never substitute a cloud URL or key.
 
-To use a committed spec in your own build script, set
-`Configuration::function_spec_path: Some("convex/function-spec.json".into())`; with a custom
-configuration, call `convex_typegen::generate(config)` and emit `cargo:rerun-if-changed` for paths
-from `convex_typegen::prelude::rcfp(&config)`. The default `generate_out_dir()` helper discovers
-TypeScript functions and does not enable a spec by itself. The E2E consumer shows the complete
-custom-config pattern in [`e2e/build.rs`](../../e2e/build.rs).
+To use a committed spec in your own build script, pass its path to the helper:
+
+```rust,no_run
+use convex_typegen::{build, config::Configuration};
+
+fn main() {
+    build::generate(
+        Configuration::default()
+            .with_convex_dir("backend/convex")
+            .with_function_spec_path("backend/function-spec.json"),
+    ).expect("generate Convex bindings");
+}
+```
+
+Cargo tracks the schema, its imports, and the spec. The build reads local files only.
+The [E2E consumer](../../e2e/build.rs) uses this helper with a committed fallback spec.
 
 ## Call queries, mutations, and actions
 

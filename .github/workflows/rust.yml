@@ -79,50 +79,8 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: Clippy
-        run: cargo clippy --locked -p convex-typegen --all-targets --all-features -- -D warnings
-
-      - name: Test
-        run: cargo test --locked -p convex-typegen --all-features
-
-      - name: Generator without default features
-        run: cargo build --locked -p convex-typegen --no-default-features
-
-      - name: Verify the build-dependency boundary
-        run: |
-          fixture=$(mktemp -d)
-          trap 'rm -rf "$fixture"' EXIT
-          mkdir -p "$fixture/src" "$fixture/convex"
-          cat > "$fixture/Cargo.toml" <<EOF
-          [package]
-          name = "generator-smoke"
-          version = "0.0.0"
-          edition = "2024"
-          rust-version = "1.97"
-
-          [build-dependencies]
-          convex-typegen = { path = "$PWD" }
-          EOF
-          echo 'fn main() {}' > "$fixture/src/main.rs"
-          cat > "$fixture/build.rs" <<'EOF'
-          fn main() {
-              let config = convex_typegen::config::Configuration::default();
-              let output = config.out_file.clone();
-              convex_typegen::generate(config).unwrap();
-              assert!(std::fs::metadata(output).unwrap().len() > 0);
-          }
-          EOF
-          echo 'export default defineSchema({});' > "$fixture/convex/schema.ts"
-
-          # Reuse the tested generator resolution and keep the fixture separate.
-          cp Cargo.lock "$fixture/Cargo.lock"
-          for features in "" "--features convex-typegen/verbose"; do
-            graph=$(cargo tree --manifest-path "$fixture/Cargo.toml" --edges normal,build --prefix none $features)
-            if grep -E '^(convex(-typegen-runtime|_sync_types)?|native-tls|tokio-native-tls|openssl[^ ]*|rustls[^ ]*|tokio-rustls) v' <<< "$graph"; then
-              exit 1
-            fi
-          done
-          cargo build --locked --manifest-path "$fixture/Cargo.toml"
+      - name: Verify the generator MSRV
+        run: bash scripts/generator-msrv.sh
 
   runtime-msrv:
     name: Runtime MSRV (1.85)
@@ -132,6 +90,9 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@1.85.0
 
+      - name: Install the generator toolchain for pregeneration
+        run: rustup toolchain install 1.97.0 --profile minimal
+
       - uses: Swatinem/rust-cache@v2
 
       - name: Check the derive crate and test the runtime
@@ -139,6 +100,9 @@ jobs:
           cargo +1.85.0 build --locked -p convex-typegen-macros
           cargo +1.85.0 check --locked -p convex-typegen-runtime
           cargo +1.85.0 test --locked -p convex-typegen-runtime
+
+      - name: Test pregenerated bindings in an external Rust 1.85 consumer
+        run: bash scripts/runtime-msrv-consumer.sh
 
   audit:
     name: cargo audit

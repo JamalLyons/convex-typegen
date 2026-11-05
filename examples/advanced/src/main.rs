@@ -60,9 +60,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
             projects::list_by_team,
             projects::ListByTeamArgs {
                 team_id: team_id.into(),
-                status_filter: Some(projects::ListByTeamArgsStatusFilter::Branch2(
-                    projects::ListByTeamArgsStatusFilterBranch2,
-                )),
+                status_filter: Some(projects::ListByTeamArgsStatusFilter::Active),
             },
         )
         .await?;
@@ -74,9 +72,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
             tasks::SearchArgs {
                 filter: tasks::SearchArgsFilter {
                     project_id: project_id.clone().into(),
-                    min_priority: Some(tasks::SearchArgsFilterMinPriority::Branch2(
-                        tasks::SearchArgsFilterMinPriorityBranch2,
-                    )),
+                    min_priority: Some(tasks::SearchArgsFilterMinPriority::P1),
                 },
                 limit: Some(10.0),
             },
@@ -94,7 +90,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
                     verbose: true,
                     trace: false,
                 },
-                mode: integrations::MirrorArgsMode::Branch1(integrations::MirrorArgsModeBranch1),
+                mode: integrations::MirrorArgsMode::Json,
                 extra: Some(std::collections::BTreeMap::from([("k".to_string(), "v".to_string())])),
             },
         )
@@ -140,7 +136,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
             tasks::CreateArgs {
                 project_id: project_id.clone().into(),
                 title: "From Rust client".to_string(),
-                priority: tasks::CreateArgsPriority::Branch3(tasks::CreateArgsPriorityBranch3),
+                priority: tasks::CreateArgsPriority::P2,
                 assignee_user_id: Some(user_id.into()),
                 payload: Some(RawValue(ConvexValue::Object(std::collections::BTreeMap::from([(
                     "source".into(),
@@ -159,7 +155,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
             users::CreateArgs {
                 email: format!("rust-{ts}@example.com"),
                 display_name: "Rust-created".to_string(),
-                role: users::CreateArgsRole::Branch2(users::CreateArgsRoleBranch2),
+                role: users::CreateArgsRole::Member,
                 metadata: Some(std::collections::BTreeMap::from([(
                     "channel".to_string(),
                     "advanced-example".to_string(),

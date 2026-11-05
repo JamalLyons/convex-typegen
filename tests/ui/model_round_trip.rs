@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 
 use convex::Value;
 use convex_typegen_runtime::ConvexValue;
-use convex_typegen_runtime::function::{Action, FunctionReference, Mutation, Query, RawArgs};
+use convex_typegen_runtime::function::{Action, FunctionRef, FunctionReference, Mutation, Query, RawArgs};
 use convex_typegen_runtime::model::{Doc, Id, RawValue};
 use convex_typegen_runtime::value_serde::{Bytes, from_value, to_value};
 use models::api::admin::users::EchoArgsDataNested;
@@ -59,6 +59,13 @@ fn presence()
 
 fn documents()
 {
+    let user = round_trip::<UsersDoc>(object([
+        ("_id", Value::String("user".into())),
+        ("_creationTime", Value::Float64(20.5)),
+        ("role", Value::String("member".into())),
+    ]));
+    assert_eq!(user.role, UsersDocRole::Member);
+
     let tasks = object([
         ("_id", Value::String("task".into())),
         ("_creationTime", Value::Float64(20.5)),
@@ -141,13 +148,60 @@ fn kinds_and_records()
     let model = round_trip::<RoundTripArgs>(wire.clone());
     assert!(matches!(
         model.by_key.first_key_value().unwrap().0,
-        RoundTripArgsByKeyKey::Branch2(_)
+        RoundTripArgsByKeyKey::Two
     ));
     assert_eq!(model.by_id.first_key_value().unwrap().0.as_str(), "task");
     assert!(matches!(model.raw, Some(RawValue(Value::Object(_)))));
     let Value::Object(ref mut fields) = wire else { unreachable!() };
     fields.insert("byKey".into(), object([("three", Value::Bytes(vec![]))]));
     assert!(from_value::<RoundTripArgs>(wire).is_err());
+}
+
+fn string_enums()
+{
+    let admin = Value::String("admin".into());
+    assert_eq!(round_trip::<RoleArgsRole>(admin.clone()), RoleArgsRole::Admin);
+    assert_eq!(round_trip::<RoleReturn>(admin.clone()), RoleReturn::Admin);
+    round_trip::<RoleArgs>(object([("role", admin.clone())]));
+    let absent = round_trip::<RoleArgsNested>(object([("maybe", Value::Null)]));
+    assert!(absent.selected.is_none());
+    let present = round_trip::<RoleArgs>(object([
+        ("role", Value::String("member".into())),
+        (
+            "nested",
+            object([("maybe", admin.clone()), ("selected", admin)]),
+        ),
+    ]));
+    assert_eq!(present.nested.unwrap().selected, Some(RoleArgsNestedSelected::Admin));
+
+    for (wire, variant) in [
+        ("", EdgesReturn::TypeWire),
+        ("!", EdgesReturn::TypeWire21),
+        ("9lives", EdgesReturn::Type9lives),
+        ("self", EdgesReturn::TypeSelf),
+        ("type", EdgesReturn::TypeWire74797065),
+        ("Admin", EdgesReturn::AdminWire41646d696e),
+        ("admin", EdgesReturn::AdminWire61646d696e),
+        ("read-only", EdgesReturn::ReadOnlyWire726561642d6f6e6c79),
+        ("read_only", EdgesReturn::ReadOnlyWire726561645f6f6e6c79),
+        ("🦀", EdgesReturn::TypeWiref09fa680),
+    ] {
+        assert_eq!(round_trip::<EdgesReturn>(Value::String(wire.into())), variant);
+    }
+    assert!(from_value::<EdgesReturn>(Value::String("ADMIN".into())).is_err());
+    assert!(from_value::<EdgesReturn>(Value::Int64(9)).is_err());
+    assert!(from_value::<EdgesReturn>(Value::Bytes(b"admin".to_vec())).is_err());
+    assert!(from_value::<EdgesReturn>(Value::Null).is_err());
+
+    #[derive(Debug, PartialEq, ConvexValue)]
+    enum Handwritten {
+        #[convex(literal = "read-only")]
+        ReadOnly,
+        #[convex(literal = "")]
+        Empty,
+    }
+    assert_eq!(round_trip::<Handwritten>(Value::String("read-only".into())), Handwritten::ReadOnly);
+    assert_eq!(round_trip::<Handwritten>(Value::String(String::new())), Handwritten::Empty);
 }
 
 fn references()
@@ -158,6 +212,8 @@ fn references()
     }
 
     check::<RawArgs, RawValue, Query>(users::list, "users:list");
+    check::<RoleArgs, RoleReturn, Query>(role, "models:role");
+    check::<(), String, Query>(FunctionRef::new("manual:list"), "manual:list");
     check::<admin::users::ListArgs, Vec<String>, Query>(admin::users::list, "admin/users:list");
     check::<admin::users::AddArgs, Id<tables::Tasks>, Mutation>(admin::users::add, "admin/users:add");
     check::<admin::users::FailArgs, (), Action>(admin::users::fail, "admin/users:fail");
@@ -362,6 +418,7 @@ fn main()
     documents();
     literals();
     kinds_and_records();
+    string_enums();
     references();
     handwritten_models();
 }
@@ -379,4 +436,13 @@ async fn typed_calls(
     let _: admin::users::ListReturn = TypedClient::new(sdk).query(reference, args).await?;
     drop(updates);
     Ok(())
+}
+
+
+#[allow(dead_code)]
+async fn typed_role(sdk: &mut convex::ConvexClient) -> Result<RoleReturn, convex_typegen_runtime::CallError<Value>>
+{
+    convex_typegen_runtime::TypedClient::new(sdk)
+        .query(role, RoleArgs { role: RoleArgsRole::Member, nested: None })
+        .await
 }

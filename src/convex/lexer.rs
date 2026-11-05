@@ -5,7 +5,7 @@
 //! again for the ESTree adapter in [`super::parser`].
 //!
 //! Enable the **`verbose`** Cargo feature to print Oxc diagnostics to stderr in addition to the
-//! string folded into [`crate::error::ConvexTypeGeneratorError::ParsingFailed`].
+//! string folded into [`crate::ConvexTypeGeneratorError::ParsingFailed`].
 
 use std::path::Path;
 
@@ -24,22 +24,23 @@ pub(crate) const MAX_SOURCE_BYTES: usize = 10 * 1024 * 1024;
 /// Read `path`, parse with Oxc, and return the program as ESTree JSON.
 pub(crate) fn generate_javascript_ast(path: &Path) -> Result<JsonValue, ConvexTypeGeneratorError>
 {
-    let path_str = path.to_string_lossy().to_string();
     let allocator = Allocator::default();
 
     // Read file contents
-    let source_text = std::fs::read_to_string(path).map_err(|error| ConvexTypeGeneratorError::IOError {
-        file: path_str.clone(),
+    let source_text = std::fs::read_to_string(path).map_err(|error| ConvexTypeGeneratorError::Io {
+        file: path.to_path_buf(),
         error,
     })?;
 
     if source_text.trim().is_empty() {
-        return Err(ConvexTypeGeneratorError::EmptySchemaFile { file: path_str });
+        return Err(ConvexTypeGeneratorError::EmptySchemaFile {
+            file: path.to_path_buf(),
+        });
     }
 
     if source_text.len() > MAX_SOURCE_BYTES {
         return Err(ConvexTypeGeneratorError::ParsingFailed {
-            file: path_str.clone(),
+            file: path.to_path_buf(),
             details: format!(
                 "Source file exceeds maximum size ({} bytes, limit is {} bytes)",
                 source_text.len(),
@@ -49,7 +50,7 @@ pub(crate) fn generate_javascript_ast(path: &Path) -> Result<JsonValue, ConvexTy
     }
 
     let source_type = SourceType::from_path(path).map_err(|_| ConvexTypeGeneratorError::ParsingFailed {
-        file: path_str.clone(),
+        file: path.to_path_buf(),
         details: "Failed to determine source type".to_string(),
     })?;
 
@@ -64,13 +65,15 @@ pub(crate) fn generate_javascript_ast(path: &Path) -> Result<JsonValue, ConvexTy
             eprintln!("{error:?}");
         }
         return Err(ConvexTypeGeneratorError::ParsingFailed {
-            file: path_str.clone(),
+            file: path.to_path_buf(),
             details: parsing_failure_details("Parser panicked", &errors),
         });
     }
 
     if ret.program.is_empty() {
-        return Err(ConvexTypeGeneratorError::EmptySchemaFile { file: path_str });
+        return Err(ConvexTypeGeneratorError::EmptySchemaFile {
+            file: path.to_path_buf(),
+        });
     }
 
     let semantics = SemanticBuilder::new().with_check_syntax_error(true).build(&ret.program);
@@ -82,7 +85,7 @@ pub(crate) fn generate_javascript_ast(path: &Path) -> Result<JsonValue, ConvexTy
             eprintln!("{error:?}");
         }
         return Err(ConvexTypeGeneratorError::ParsingFailed {
-            file: path_str,
+            file: path.to_path_buf(),
             details: parsing_failure_details("Semantic analysis failed", &errors),
         });
     }
@@ -145,7 +148,7 @@ mod generate_javascript_ast_tests
     {
         let p = PathBuf::from("/nonexistent/convex-typegen/lexer-missing.ts");
         let e = generate_javascript_ast(&p).unwrap_err();
-        assert!(matches!(e, crate::error::ConvexTypeGeneratorError::IOError { .. }));
+        assert!(matches!(e, crate::error::ConvexTypeGeneratorError::Io { .. }));
     }
 
     #[test]
@@ -167,7 +170,7 @@ mod generate_javascript_ast_tests
         let p = tmp.path().join("bad.ts");
         fs::write(&p, "export const x = )));\n").unwrap();
         let e = generate_javascript_ast(&p).unwrap_err();
-        assert!(matches!(e, crate::error::ConvexTypeGeneratorError::ParsingFailed { .. }));
+        assert!(matches!(e, crate::ConvexTypeGeneratorError::ParsingFailed { .. }));
     }
 
     #[test]
@@ -178,7 +181,7 @@ mod generate_javascript_ast_tests
         let oversized = "x".repeat(MAX_SOURCE_BYTES + 1);
         fs::write(&p, oversized).unwrap();
         let e = generate_javascript_ast(&p).unwrap_err();
-        assert!(matches!(e, crate::error::ConvexTypeGeneratorError::ParsingFailed { .. }));
+        assert!(matches!(e, crate::ConvexTypeGeneratorError::ParsingFailed { .. }));
     }
 }
 

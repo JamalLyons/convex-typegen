@@ -97,13 +97,10 @@ fn run_generate(schema: &str, extra_files: &[(&str, &str)]) -> String
         fs::write(path, body).unwrap();
     }
     let out = tmp.path().join("out.rs");
-    let cfg = Configuration {
-        schema_path,
-        out_file: out.clone(),
-        convex_dir: convex,
-        function_paths: Vec::new(),
-        function_spec_path: None,
-    };
+    let cfg = Configuration::default()
+        .with_schema_path(schema_path)
+        .with_out_file(out.clone())
+        .with_convex_dir(convex);
     generate(cfg).unwrap();
     fs::read_to_string(&out).unwrap()
 }
@@ -160,14 +157,13 @@ fn golden_v1_review_sources_and_spec()
         ("v1_review_spec", Some(fixture.join("function-spec.json"))),
     ] {
         let out = tmp.path().join("models.rs");
-        generate(Configuration {
-            schema_path: fixture.join("convex/schema.ts"),
-            convex_dir: fixture.join("convex"),
-            out_file: out.clone(),
-            function_paths: Vec::new(),
-            function_spec_path: spec,
-        })
-        .unwrap();
+        let mut config = Configuration::default()
+            .with_convex_dir(fixture.join("convex"))
+            .with_out_file(out.clone());
+        if let Some(spec) = spec {
+            config = config.with_function_spec_path(spec);
+        }
+        generate(config).unwrap();
         insta::assert_snapshot!(name, fs::read_to_string(out).unwrap());
     }
 }
@@ -183,12 +179,12 @@ fn reports_identifier_collisions_with_both_wire_names()
         &schema_path,
         r#"export default defineSchema({ items: defineTable({ nested: v.object({ camelCase: v.string(), "camel-case": v.string() }) }) });"#,
     ).unwrap();
-    let err = generate(Configuration {
-        schema_path,
-        convex_dir: tmp.path().into(),
-        out_file: out_file.clone(),
-        ..Configuration::default()
-    })
+    let err = generate(
+        Configuration::default()
+            .with_schema_path(schema_path)
+            .with_convex_dir(tmp.path())
+            .with_out_file(out_file.clone()),
+    )
     .unwrap_err()
     .to_string();
     assert!(err.contains("Rust identifier collision for `camel_case`"), "{err}");
@@ -205,12 +201,12 @@ fn reports_module_spelling_collisions()
     fs::write(&schema_path, MINIMAL_SCHEMA).unwrap();
     fs::write(convex.join("foo-bar.ts"), DUP_MOD_A).unwrap();
     fs::write(convex.join("foo_bar.ts"), DUP_MOD_B).unwrap();
-    let err = generate(Configuration {
-        schema_path,
-        convex_dir: convex.into(),
-        out_file: convex.join("models.rs"),
-        ..Configuration::default()
-    })
+    let err = generate(
+        Configuration::default()
+            .with_schema_path(schema_path)
+            .with_convex_dir(convex)
+            .with_out_file(convex.join("models.rs")),
+    )
     .unwrap_err()
     .to_string();
     assert!(err.contains("Rust identifier collision for `foo_bar`"), "{err}");
@@ -254,15 +250,13 @@ export const userToolsFind = query({
     fs::write(&spec, functions.to_string()).unwrap();
 
     let out_file = tmp.path().join("models.rs");
-    let mut config = Configuration {
-        schema_path,
-        convex_dir: convex,
-        out_file: out_file.clone(),
-        ..Configuration::default()
-    };
+    let config = Configuration::default()
+        .with_schema_path(schema_path)
+        .with_convex_dir(convex)
+        .with_out_file(out_file.clone());
     generate(config.clone()).unwrap();
     let from_source = fs::read_to_string(&out_file).unwrap();
-    config.function_spec_path = Some(spec.clone());
+    let config = config.with_function_spec_path(&spec);
     generate(config.clone()).unwrap();
     assert_eq!(fs::read_to_string(&out_file).unwrap(), from_source);
     for expected in [
@@ -290,4 +284,30 @@ export const userToolsFind = query({
         "{err}"
     );
     assert_eq!(fs::read_to_string(out_file).unwrap(), from_source);
+}
+
+#[test]
+fn golden_string_literal_enums()
+{
+    let schema = r#"
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+export default defineSchema({
+    users: defineTable({
+        role: v.union(v.literal("admin"), v.literal("member")),
+    }),
+});
+"#;
+    let endpoint = r#"
+import { query } from "./_generated/server";
+import { v } from "convex/values";
+const role = v.union(v.literal("member"), v.literal("admin"));
+export const roleName = query({
+    args: { role, nested: v.optional(v.object({ selected: v.optional(role), role: v.nullable(role) })) },
+    returns: v.union(v.literal(""), v.literal("!"), v.literal("9lives"), v.literal("self"),
+                     v.literal("type"), v.literal("Admin"), v.literal("admin"), v.literal("🦀")),
+    handler: () => "",
+});
+"#;
+    insta::assert_snapshot!("string_literal_enums", run_generate(schema, &[("users.ts", endpoint)]));
 }

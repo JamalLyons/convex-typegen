@@ -158,12 +158,11 @@ fn generated_projects_compile_and_round_trip_convex_values()
             .unwrap_or_else(|error| panic!("seed={current_seed} tier={tier}: generator failed: {error}"));
         let convex_dir = project_root.join("convex");
         let bindings = project_root.join("bindings.rs");
-        generate(Configuration {
-            schema_path: convex_dir.join("schema.ts"),
-            convex_dir,
-            out_file: bindings.clone(),
-            ..Configuration::default()
-        })
+        generate(
+            Configuration::default()
+                .with_convex_dir(convex_dir)
+                .with_out_file(bindings.clone()),
+        )
         .unwrap_or_else(|error| panic!("seed={current_seed} tier={tier}: parse -> IR -> codegen failed: {error}"));
         projects.insert(current_seed, bindings);
     }

@@ -328,6 +328,20 @@ impl Emitter
         let mut variants = String::new();
         let mut leaves = Vec::new();
         flatten_union(branches, &mut leaves);
+        let literals = leaves
+            .iter()
+            .map(|branch| match branch {
+                Validator::Literal(Some(Literal::String(value))) => Some(value.as_str()),
+                _ => None,
+            })
+            .collect::<Option<Vec<_>>>();
+        if let Some(literals) = literals
+            && !literals.is_empty()
+            && literals.iter().collect::<std::collections::BTreeSet<_>>().len() == literals.len()
+        {
+            self.string_enum(name, &literals);
+            return Ok(());
+        }
         let tag = discriminator(&leaves);
         // Only unions used as record keys need Ord. Such unions contain only string-shaped validators.
         let order = if leaves.iter().all(|branch| branch.is_record_key()) {
@@ -351,6 +365,35 @@ impl Emitter
         )
         .unwrap();
         Ok(())
+    }
+
+    fn string_enum(&mut self, name: &str, literals: &[&str])
+    {
+        let names = literals.iter().map(|wire| type_ident(wire)).collect::<Vec<_>>();
+        let mut counts = BTreeMap::new();
+        for ident in &names {
+            *counts.entry(ident.as_str()).or_insert(0) += 1;
+        }
+
+        writeln!(
+            self.code,
+            "#[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]\npub enum {name} {{"
+        )
+        .unwrap();
+        for (wire, mut ident) in literals.iter().zip(names.iter().cloned()) {
+            if counts[ident.as_str()] > 1 {
+                // The final Wire separates the stem from its unique UTF-8 spelling.
+                ident.push_str("Wire");
+                for byte in wire.bytes() {
+                    write!(ident, "{byte:02x}").unwrap();
+                }
+                while counts.contains_key(ident.as_str()) {
+                    ident.push('X');
+                }
+            }
+            writeln!(self.code, "    #[convex(literal = {wire:?})]\n    {ident},").unwrap();
+        }
+        writeln!(self.code, "}}\n").unwrap();
     }
 }
 

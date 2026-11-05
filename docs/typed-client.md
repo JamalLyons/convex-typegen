@@ -47,7 +47,7 @@ match client.mutation(send, send_args).await {
     Err(CallError::Application { data: Ok(failure), .. }) => {
         eprintln!("Application error code: {}", failure.code);
     }
-    Err(CallError::Application { message, data: Err(invalid) }) => {
+    Err(CallError::Application { message, data: Err(invalid), .. }) => {
         eprintln!("{message}: {}", invalid.source);
         // invalid.raw is the original convex::Value.
     }

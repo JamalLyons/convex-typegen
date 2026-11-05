@@ -110,7 +110,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     let input = api::admin::users::EchoArgs {
         data: api::admin::users::EchoArgsData {
             bytes: Bytes(vec![0, 1, 127, 255]),
-            choice: api::admin::users::EchoArgsDataChoice::Branch1(api::admin::users::EchoArgsDataChoiceBranch1),
+            choice: api::admin::users::EchoArgsDataChoice::Red,
             count: i64::MAX,
             nested: api::admin::users::EchoArgsDataNested {
                 note: None,
@@ -121,6 +121,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
         },
     };
     let echoed = tokio::time::timeout(CALL_TIMEOUT, client.query(api::admin::users::echo, input)).await??;
+    assert_eq!(echoed.choice, api::admin::users::EchoReturnChoice::Red);
     assert_eq!(echoed.count, i64::MAX);
     assert_eq!(echoed.number.to_bits(), 0x3fb9_9999_9999_999a);
     assert_eq!(echoed.bytes.0, [0, 1, 127, 255]);

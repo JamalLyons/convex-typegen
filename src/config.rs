@@ -13,25 +13,28 @@ use std::path::PathBuf;
 /// # Example
 ///
 /// ```
-/// let config = convex_typegen::config::Configuration {
-///     function_spec_path: Some("convex/function-spec.json".into()),
-///     ..Default::default()
-/// };
-/// assert_eq!(config.schema_path, std::path::Path::new("convex/schema.ts"));
+/// let config = convex_typegen::config::Configuration::default()
+///     .with_convex_dir("backend")
+///     .with_function_spec_path("backend/function-spec.json");
+/// assert_eq!(
+///     config.resolved_schema_path(),
+///     std::path::Path::new("backend/schema.ts")
+/// );
 /// ```
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct Configuration
 {
-    /// Path to the Convex schema file (default: "convex/schema.ts")
-    pub schema_path: PathBuf,
+    /// Explicit schema path. When unset, use `schema.ts` under [`Self::convex_dir`].
+    pub schema_path: Option<PathBuf>,
 
     /// Output file path for generated Rust bindings (defaults to `$OUT_DIR/convex_api.rs`).
     pub out_file: PathBuf,
 
     /// Convex backend directory (default: `"convex"`, i.e. next to `Cargo.toml` when the build
     /// runs from the package root). When [`function_paths`](Self::function_paths) is empty, all
-    /// `*.ts` files under this directory are used as function sources except `schema.ts` (same
-    /// file as [`schema_path`](Self::schema_path)), `_generated/`, `node_modules/`, `http.ts`,
+    /// `*.ts` files under this directory are used as function sources except the
+    /// [resolved schema](Self::resolved_schema_path), `_generated/`, `node_modules/`, `http.ts`,
     /// `crons.ts`, `convex.config.ts`, and `*.d.ts`.
     pub convex_dir: PathBuf,
 
@@ -52,7 +55,7 @@ impl Default for Configuration
     fn default() -> Self
     {
         Self {
-            schema_path: PathBuf::from("convex/schema.ts"),
+            schema_path: None,
             out_file: std::env::var_os("OUT_DIR")
                 .map(PathBuf::from)
                 .unwrap_or_else(|| PathBuf::from("OUT_DIR"))
@@ -64,34 +67,64 @@ impl Default for Configuration
     }
 }
 
+impl Configuration
+{
+    /// Override the schema path, resolved relative to the consumer package.
+    pub fn with_schema_path(mut self, path: impl Into<PathBuf>) -> Self
+    {
+        self.schema_path = Some(path.into());
+        self
+    }
+
+    /// Set the generated Rust output path.
+    pub fn with_out_file(mut self, path: impl Into<PathBuf>) -> Self
+    {
+        self.out_file = path.into();
+        self
+    }
+
+    /// Set the Convex root for discovery, module names, and the default schema path.
+    pub fn with_convex_dir(mut self, path: impl Into<PathBuf>) -> Self
+    {
+        self.convex_dir = path.into();
+        self
+    }
+
+    /// Set the explicit function source list. An empty list enables discovery.
+    pub fn with_function_paths(mut self, paths: Vec<PathBuf>) -> Self
+    {
+        self.function_paths = paths;
+        self
+    }
+
+    /// Use a committed function spec as the authoritative function inventory.
+    pub fn with_function_spec_path(mut self, path: impl Into<PathBuf>) -> Self
+    {
+        self.function_spec_path = Some(path.into());
+        self
+    }
+
+    /// Return the configured schema override or `<convex_dir>/schema.ts`.
+    pub fn resolved_schema_path(&self) -> PathBuf
+    {
+        self.schema_path.clone().unwrap_or_else(|| self.convex_dir.join("schema.ts"))
+    }
+}
+
 #[cfg(test)]
-mod default_tests
+mod tests
 {
     use super::*;
 
     #[test]
-    fn default_paths_match_convex_layout_convention()
+    fn schema_defaults_follow_the_convex_root()
     {
-        let c = Configuration::default();
-        assert_eq!(c.schema_path, PathBuf::from("convex/schema.ts"));
-        assert!(c.out_file.ends_with("convex_api.rs"));
-        assert!(!c.out_file.starts_with("src"));
-        assert_eq!(c.convex_dir, PathBuf::from("convex"));
-        assert!(c.function_paths.is_empty());
-        assert!(c.function_spec_path.is_none());
-    }
-
-    #[test]
-    fn configuration_clone_roundtrip()
-    {
-        let c = Configuration {
-            schema_path: PathBuf::from("a/schema.ts"),
-            out_file: PathBuf::from("b/out.rs"),
-            convex_dir: PathBuf::from("c"),
-            function_paths: vec![PathBuf::from("d/e.ts")],
-            function_spec_path: None,
-        };
-        assert_eq!(c.clone().schema_path, c.schema_path);
-        assert_eq!(c.clone().function_paths, c.function_paths);
+        let config = Configuration::default();
+        assert_eq!(config.resolved_schema_path(), PathBuf::from("convex/schema.ts"));
+        assert!(config.out_file.ends_with("convex_api.rs"));
+        let config = config.with_convex_dir("backend");
+        assert_eq!(config.resolved_schema_path(), PathBuf::from("backend/schema.ts"));
+        let config = config.with_schema_path("models/schema.ts").with_convex_dir("other");
+        assert_eq!(config.resolved_schema_path(), PathBuf::from("models/schema.ts"));
     }
 }

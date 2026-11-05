@@ -109,18 +109,12 @@ pub mod api {
             pub const docs: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, DocsArgs, DocsReturn> =
                 ::convex_typegen_runtime::function::FunctionRef::new("admin/users:docs");
 
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-            #[convex(literal = "red")]
-            pub struct EchoArgsDataChoiceBranch1;
-
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-            #[convex(literal = "blue")]
-            pub struct EchoArgsDataChoiceBranch2;
-
             #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
             pub enum EchoArgsDataChoice {
-                Branch1(EchoArgsDataChoiceBranch1),
-                Branch2(EchoArgsDataChoiceBranch2),
+                #[convex(literal = "red")]
+                Red,
+                #[convex(literal = "blue")]
+                Blue,
             }
 
             #[derive(Debug, Clone, ConvexValue)]
@@ -159,18 +153,12 @@ pub mod api {
                 pub data: EchoArgsData,
             }
 
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-            #[convex(literal = "red")]
-            pub struct EchoReturnChoiceBranch1;
-
-            #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-            #[convex(literal = "blue")]
-            pub struct EchoReturnChoiceBranch2;
-
             #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
             pub enum EchoReturnChoice {
-                Branch1(EchoReturnChoiceBranch1),
-                Branch2(EchoReturnChoiceBranch2),
+                #[convex(literal = "red")]
+                Red,
+                #[convex(literal = "blue")]
+                Blue,
             }
 
             #[derive(Debug, Clone, ConvexValue)]

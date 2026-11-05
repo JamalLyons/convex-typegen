@@ -22,8 +22,17 @@ pub enum Mutation {}
 /// Kind marker for a Convex action.
 pub enum Action {}
 
-/// Type information carried by a generated function reference.
-pub trait FunctionReference
+mod private
+{
+    pub trait Sealed {}
+
+    impl<Kind, Args, Returns, Error> Sealed for super::FunctionRef<Kind, Args, Returns, Error> {}
+}
+
+/// Type information carried by a generated or handwritten [`FunctionRef`].
+///
+/// This trait is sealed. Use [`FunctionRef::new`] to describe a handwritten endpoint.
+pub trait FunctionReference: private::Sealed
 {
     type Args;
     type Returns;

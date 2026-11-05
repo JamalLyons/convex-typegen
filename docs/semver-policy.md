@@ -15,14 +15,17 @@ Matching release versions of `convex-typegen` and `convex-typegen-runtime` are s
 
 These items are covered by semver once we tag **1.0.0**:
 
-- `convex_typegen::generate`
-- `convex_typegen::config::Configuration` and its fields (additive fields only in minors)
-- `convex_typegen::fs::rcfp`
-- `convex_typegen::error::ConvexTypeGeneratorError` (new variants = minor; removed/renamed variants = major)
+- `convex_typegen::{generate, check}`
+- `convex_typegen::config::Configuration`, its fields, and its setters
+- `convex_typegen::build::{generate, generate_out_dir}`
+- `convex_typegen::ConvexTypeGeneratorError`
 - `convex_typegen::prelude` re-exports
 - Generator Cargo feature `verbose`
-- Runtime `TypedClient`, `CallError`, `InvalidApplicationData`, `function`, `value_serde`, and `prelude`
+- Runtime `TypedClient`, `CallError`, `InvalidApplicationData`, `function`, `model`, `value_serde`, and `prelude`
 - Runtime macros `ConvexValue` and `include!`, and crate-root `serde` / `serde_json` re-exports
+
+The runtime wraps the official SDK directly. An incompatible update of a publicly exposed
+`convex` 0.x type (for example, `ConvexClient` or `Value`) requires a runtime major release.
 
 See [api-stability.md](api-stability.md) for a per-item table.
 
@@ -47,7 +50,7 @@ When in doubt, bump **major**.
 
 | Change | Bump |
 | --- | --- |
-| New `ConvexTypeGeneratorError` variant | Minor |
+| New variant on a non-exhaustive public error enum | Minor |
 | New optional field on `Configuration` with a default | Minor |
 | New Cargo feature, **default off** | Minor |
 | New Cargo feature, **default on** | Major (or avoid; use default off) |

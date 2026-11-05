@@ -12,7 +12,7 @@ and calls using this map.
 | `convex_typegen::prelude::{Deserialize, Serialize, ConvexJsonValue, ConvexJsonError}` | Import Serde through `convex_typegen_runtime::serde` or the runtime prelude. `ConvexJsonValue` remains a JSON alias in the runtime prelude for JSON work; generated arbitrary Convex values use `model::RawValue`. `ConvexJsonError` has no replacement alias. |
 | `convex_types.rs` default generated output | `$OUT_DIR/convex_api.rs` by default, included with `convex_typegen_runtime::include!()` |
 | `mod convex_types;` for the default generated source file | `mod convex_api { convex_typegen_runtime::include!(); }` (or choose another Rust module name) |
-| `Configuration::default()` and `generate(config)` called directly in a minimal build script | `convex_typegen::build::generate_out_dir()` for the default offline Cargo flow; use `Configuration` + `generate` for overrides/spec input |
+| `Configuration::default()` and `generate(config)` called directly in a minimal build script | `convex_typegen::build::generate_out_dir()` for the default offline Cargo flow; use `build::generate(config)` for overrides/spec input |
 | Flat `{Module}{Export}Args` names such as `GamesGetGameArgs` (v0.4 did not generate return models) | Path-scoped references and types in the same module, e.g. `api::games::get_game` with `api::games::GetGameArgs` and the new `GetGameReturn`; `admin/users:list` becomes `api::admin::users::list` with `ListArgs` / `ListReturn` |
 | `FUNCTION_PATH` associated string | Generated reference `.path()`, e.g. `api::admin::users::list.path()` |
 | `ConvexClientExt::prepare_args` and string-based `client.query`/`mutation`/`action` | `TypedClient` methods taking the generated reference and its associated args |
@@ -30,14 +30,24 @@ and calls using this map.
 2. Replace the old handwritten `build.rs` with `convex_typegen::build::generate_out_dir()` when
    using default paths. This writes to `OUT_DIR` and tracks the schema, Convex directory, and
    discovered function inputs. For a committed function spec or custom paths, use
-   `Configuration`, `rcfp`, and `generate` as shown in [getting started](getting-started.md).
+   `build::generate(Configuration::default().with_convex_dir(...))` as shown in [getting started](getting-started.md).
 3. Replace the old `mod convex_types;` declaration with the runtime `include!` macro, then
    regenerate bindings. Update flat names, paths, changed field types, and imports from compiler
    diagnostics. v1 generated names are scoped to the Convex module path.
 4. Replace `prepare_args` and untyped SDK calls with `TypedClient`. Use
    `.with_error::<Payload>()` for a known application-error payload and handle
-   `CallError::Application`.
+   `CallError::Application` with `..` for extensible fields and a fallback match arm.
+   Use `FunctionRef::new` for handwritten endpoint references.
 5. Run `cargo check` and the local self-hosted fixture gate, `just e2e`, from a clean checkout.
+
+If you tried a v1 development build, replace configuration struct literals with
+`Configuration::default().with_...` setters. An unset schema follows `convex_dir`.
+Use `build::generate(config)` in place of manual `rcfp` tracking. Match
+`convex_typegen::ConvexTypeGeneratorError` with a fallback arm. A missing schema
+reports its attempted path and I/O errors use the `Io` variant.
+
+Regenerated unions of distinct string literals use unit variants such as `Role::Admin`
+in place of `Role::Branch1(RoleBranch1)`. The original string is still the wire value.
 
 The v1 changes are a breaking runtime API and generated-output change under the
 [semver policy](../semver-policy.md). The migration is intentionally manual; there is no shim to

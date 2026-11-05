@@ -46,7 +46,14 @@ document branch has its own `_id` and `_creation_time` fields. The latter uses t
 - `v.nullable(T)` emits a union of `T` and the unit value `()` for Convex null.
   With `v.optional(v.nullable(T))`, `None` is absent and the union's null branch
   inside `Some` is present null.
-- Union enums carry each branch's model. When every branch has a common required
+- A union of distinct string literals uses unit variants such as `Admin` and `Member`.
+  Each encodes and decodes the exact original string. Variant names are PascalCase
+  from ASCII letters and digits, with punctuation and other characters treated as
+  separators. Empty names, leading digits, and `Self` receive a `Type` prefix.
+  If names collide, each receives a `Wire` suffix followed by the original string's
+  lowercase UTF-8 hex bytes, with trailing `X` characters added if needed to avoid a
+  base name. Reordering the literals preserves their names.
+- Other union enums carry each branch's model. When every branch has a common required
   field with a distinct literal, the decoder selects the branch by that field.
   Other unions decode as the first matching branch in declaration order. Some branches
   share the same wire representation, such as IDs from different tables. The runtime

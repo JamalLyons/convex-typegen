@@ -12,6 +12,7 @@ use crate::value_serde;
 
 /// A failure while calling a Convex function or decoding a subscription item.
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum CallError<E>
 {
     /// Arguments could not be encoded as a Convex object.
@@ -28,6 +29,7 @@ pub enum CallError<E>
     Server(String),
     /// The function threw a ConvexError with application data.
     #[error("{message}")]
+    #[non_exhaustive]
     Application
     {
         /// The message supplied by Convex.
@@ -40,6 +42,7 @@ pub enum CallError<E>
 /// A ConvexError payload that did not match the declared Rust type.
 #[derive(Debug, thiserror::Error)]
 #[error("could not decode Convex application error data: {source}")]
+#[non_exhaustive]
 pub struct InvalidApplicationData
 {
     /// The original SDK value, with its wire kinds intact.

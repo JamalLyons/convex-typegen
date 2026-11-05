@@ -6,16 +6,16 @@ Quick reference for what is **stable** vs **unstable** in convex-typegen. Full r
 
 | Item | Stability | Notes |
 | --- | --- | --- |
-| `generate(config) -> Result<(), ConvexTypeGeneratorError>` | Stable | Entry point for build scripts |
-| `Configuration` | Stable | Additive fields only in minors; `function_spec_path` is optional and defaults to `None` |
-| `Configuration::default()` | Stable | Default paths documented in readme |
-| `rcfp(&Configuration) -> Result<Vec<PathBuf>, _>` | Stable | For `cargo:rerun-if-changed` |
-| `ConvexTypeGeneratorError` | Stable | Additive variants in minors only |
+| `generate(config)` | Stable | Write the configured artifact |
+| `check(config)` | Stable | Check for drift without writing |
+| `config::Configuration` | Stable | Non-exhaustive. Construct with `Default` and chainable setters |
+| `build::generate(config)` | Stable | Offline Cargo generation with input tracking |
+| `build::generate_out_dir()` | Stable | Standard Convex layout and `$OUT_DIR/convex_api.rs` |
+| `ConvexTypeGeneratorError` | Stable | Crate-root error export with a non-exhaustive variant set |
 | `prelude::*` | Stable | See below |
 | Feature `verbose` | Stable | Default off |
 
-The generator prelude exports `Configuration`, `generate`, `rcfp`, and
-`ConvexTypeGeneratorError` for build scripts.
+The generator prelude exports `Configuration`, `generate`, `check`, and `ConvexTypeGeneratorError`.
 
 ### Runtime crate
 
@@ -24,9 +24,15 @@ The generator prelude exports `Configuration`, `generate`, `rcfp`, and
 | `ConvexValue`, `include!` | Derive for Convex wire models and helper for including generated bindings |
 | `serde`, `serde_json` | Re-exports used by generated bindings |
 | `TypedClient`, `CallError`, `InvalidApplicationData` | Typed calls, subscriptions, and errors over the official SDK |
-| `function` | Typed endpoint references, kind markers, and raw args |
+| `function` | Typed endpoint references, kind markers, raw args, and the sealed `FunctionReference` trait |
+| `model::{Doc, Id, RawValue, Table}` | Document models, typed IDs, raw wire values, and table markers |
 | `value_serde::{to_value, from_value, Bytes, Error}` | Direct Serde conversion to and from `convex::Value` |
 | `prelude::*` | Serde derives, typed client, codecs, and `ConvexJsonValue`, `ConvexBytes`, and `ConvexValueSerdeError` aliases |
+
+Runtime errors are non-exhaustive. Match `CallError` with a fallback and include `..`
+when matching `CallError::Application` or destructuring `InvalidApplicationData`.
+The runtime exposes official SDK types directly. An incompatible update to a publicly
+exposed `convex` 0.x type requires a runtime major release.
 
 ## Unstable / not semver-guaranteed
 
@@ -35,7 +41,7 @@ The generator prelude exports `Configuration`, `generate`, `rcfp`, and
 | **Generated `convex_api.rs`** | Type names and fields can change on major crate bumps |
 | **Internal modules** | `convex::*` is private; do not depend on it |
 | **Exact error `Display` strings** | May improve in patches; match on variants, not text |
-| **Oxc / Convex dependency versions** | May affect MSRV or build time; tracked in CHANGELOG |
+| **Dependency versions** | Private dependency updates can affect build time. Public SDK type and MSRV changes follow the semver policy. |
 
 ## Generated code contract
 

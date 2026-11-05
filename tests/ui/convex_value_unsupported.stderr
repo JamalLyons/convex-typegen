@@ -10,7 +10,7 @@ error: ConvexValue requires a concrete model type
 7 | struct Generic<T> {
   |               ^^^
 
-error: a ConvexValue branch requires one unnamed field
+error: missing string literal on unit variant
   --> tests/ui/convex_value_unsupported.rs:13:5
    |
 13 |     Null,

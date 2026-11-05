@@ -218,3 +218,78 @@ fn reports_module_spelling_collisions()
     assert!(err.contains("Rust identifier collision for `foo_bar`"), "{err}");
     assert!(err.contains("foo-bar") && err.contains("foo_bar"), "{err}");
 }
+
+#[test]
+fn scoped_names_match_across_inputs_and_report_shortened_ref_collisions()
+{
+    let tmp = tempdir().unwrap();
+    let convex = tmp.path().join("convex");
+    fs::create_dir_all(convex.join("admin")).unwrap();
+    let schema_path = convex.join("schema.ts");
+    fs::write(&schema_path, MINIMAL_SCHEMA).unwrap();
+    fs::write(
+        convex.join("admin/user-tools.ts"),
+        r#"
+import { query } from "../_generated/server";
+import { v } from "convex/values";
+export const userToolsFind = query({
+    args: {},
+    returns: v.object({ detail: v.object({ ok: v.boolean() }) }),
+    handler: () => ({ detail: { ok: true } }),
+});
+"#,
+    )
+    .unwrap();
+
+    let spec = tmp.path().join("function-spec.json");
+    let mut functions = serde_json::json!([{
+        "identifier": "admin/user-tools.js:userToolsFind",
+        "functionType": "Query",
+        "visibility": {"kind": "public"},
+        "args": {"type": "object", "value": {}},
+        "returns": {"type": "object", "value": {
+            "detail": {"optional": false, "fieldType": {"type": "object", "value": {
+                "ok": {"optional": false, "fieldType": {"type": "boolean"}}
+            }}}
+        }}
+    }]);
+    fs::write(&spec, functions.to_string()).unwrap();
+
+    let out_file = tmp.path().join("models.rs");
+    let mut config = Configuration {
+        schema_path,
+        convex_dir: convex,
+        out_file: out_file.clone(),
+        ..Configuration::default()
+    };
+    generate(config.clone()).unwrap();
+    let from_source = fs::read_to_string(&out_file).unwrap();
+    config.function_spec_path = Some(spec.clone());
+    generate(config.clone()).unwrap();
+    assert_eq!(fs::read_to_string(&out_file).unwrap(), from_source);
+    for expected in [
+        "pub mod user_tools",
+        "pub const find:",
+        "pub struct FindArgs",
+        "pub struct FindReturnDetail",
+        "\"admin/user-tools:userToolsFind\"",
+    ] {
+        assert!(from_source.contains(expected), "missing {expected}");
+    }
+
+    functions.as_array_mut().unwrap().push(serde_json::json!({
+        "identifier": "admin/user-tools.js:find",
+        "functionType": "Query",
+        "visibility": {"kind": "public"},
+        "args": {"type": "any"},
+        "returns": null
+    }));
+    fs::write(&spec, functions.to_string()).unwrap();
+    let err = generate(config).unwrap_err().to_string();
+    assert!(err.contains("Rust identifier collision for `find`"), "{err}");
+    assert!(
+        err.contains("admin/user-tools:find") && err.contains("admin/user-tools:userToolsFind"),
+        "{err}"
+    );
+    assert_eq!(fs::read_to_string(out_file).unwrap(), from_source);
+}

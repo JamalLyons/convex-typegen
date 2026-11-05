@@ -82,3 +82,21 @@ fn diagnostics_include_source_context()
         assert!(!output.exists(), "failed generation must not create output");
     }
 }
+
+#[test]
+fn committed_example_bindings_match_the_generator()
+{
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    for example in ["basic", "advanced"] {
+        let result = cli()
+            .current_dir(root.join("examples").join(example))
+            .args(["--check", "--output", "src/convex_types.rs"])
+            .output()
+            .unwrap();
+        assert!(
+            result.status.success(),
+            "{example}: {}",
+            String::from_utf8_lossy(&result.stderr)
+        );
+    }
+}

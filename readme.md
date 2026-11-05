@@ -2,7 +2,7 @@
 
 Rust types from your [Convex](https://www.convex.dev) `schema.ts` and function modules. Runs in `build.rs` so generated code stays in sync with your backend.
 
-**Docs:** [documentation website](https://jamallyons.github.io/convex-typegen/) · [getting started](docs/guide/getting-started.md) · [support matrix](docs/guide/support.md) · [concepts](docs/guide/concepts.md) · [v0.4 migration](docs/guide/migration-v0.4.md) · [docs.rs/convex-typegen](https://docs.rs/convex-typegen)
+**Docs:** [documentation website](https://jamallyons.github.io/convex-typegen/)
 
 ## Setup
 

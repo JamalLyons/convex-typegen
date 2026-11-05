@@ -67,7 +67,7 @@ version = "0.4.0"
 authors = ["Jamal Lyons"]
 license = "MIT"
 edition = "2024"
-rust-version = "1.95"
+rust-version = "1.97"
 repository = "https://github.com/JamalLyons/convex-typegen"
 homepage = "https://github.com/JamalLyons/convex-typegen"
 

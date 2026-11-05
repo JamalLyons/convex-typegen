@@ -58,7 +58,7 @@ When in doubt, bump **major**.
 
 ## MSRV policy
 
-- The generator requires Rust **1.95**. The runtime and derive crate require Rust **1.85**, matching the official Convex client. A project that runs the generator in `build.rs` requires Rust 1.95. Pregenerated bindings can use the matching runtime on Rust 1.85.
+- The generator requires Rust **1.97**. The runtime and derive crate require Rust **1.85**, matching the official Convex client. A project that runs the generator in `build.rs` requires Rust 1.97. Pregenerated bindings can use the matching runtime on Rust 1.85.
 - Raising MSRV is a **major** version change.
 - CI verifies each crate at its declared MSRV.
 

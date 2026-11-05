@@ -4,6 +4,12 @@ The generator reads `convex/schema.ts` and public function metadata either from 
 resolvable TypeScript or a committed `convex function-spec` JSON file. Errors for unsupported
 static shapes include the input path and byte range where available.
 
+## Rust versions
+
+The generator requires Rust **1.97** because it uses Oxc 0.157. The runtime and derive
+crate support Rust **1.85**. Running generation in `build.rs` therefore requires Rust 1.97;
+consumers of pregenerated bindings can use the runtime on Rust 1.85.
+
 ## Convex validators
 
 The offline TypeScript parser accepts these Convex 1.49.0 validators:

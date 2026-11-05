@@ -21,6 +21,7 @@ just check          # workspace clippy (warnings denied) + tests
 just lint           # workspace clippy on all targets and features
 just test           # workspace tests with all features
 just build          # workspace release build with all features
+just generator-msrv # check the generator on Rust 1.97
 just runtime-msrv   # check and test only the runtime on Rust 1.85
 just fmt            # nightly rustfmt for all workspace members
 just fmt-check      # same, check only
@@ -35,11 +36,12 @@ cargo test --workspace --locked --all-features
 cargo build --workspace --locked --all-features
 cargo build --locked -p convex-typegen --no-default-features
 cargo test --locked -p convex-typegen --no-default-features
+cargo +1.97 check --locked -p convex-typegen --all-features
 cargo +1.85.0 check --locked -p convex-typegen-runtime
 cargo +1.85.0 test --locked -p convex-typegen-runtime
 ```
 
-Workspace CI uses stable Rust. The generator declares Rust **1.95**, which the `msrv` job checks.
+Workspace CI uses stable Rust. The generator declares Rust **1.97**, which the `msrv` job checks.
 The `runtime-msrv` job selects only `convex-typegen-runtime` and uses Rust **1.85** with the shared
 lockfile. Nightly rustfmt is required for the unstable options in `rustfmt.toml`.
 

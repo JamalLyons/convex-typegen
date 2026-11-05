@@ -14,7 +14,7 @@ cargo add convex-typegen-runtime@0.4
 cargo add --build convex-typegen@0.4
 ```
 
-The generator needs Rust 1.95. A pre-generated consumer that does not build the generator can use
+The generator needs Rust 1.97. A pre-generated consumer that does not build the generator can use
 the runtime on Rust 1.85; see [concepts](concepts.md#versions-and-rust-versions).
 
 ## Generate bindings into `OUT_DIR`

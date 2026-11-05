@@ -29,7 +29,7 @@ its own dependency.
 
 Pair `convex-typegen` and `convex-typegen-runtime` at the same release. Regenerate bindings when
 upgrading so the generated code and runtime agree. The runtime's MSRV is Rust **1.85**. Building
-the generator in a consumer's `build.rs` requires Rust **1.95**. If you check in generated output
+the generator in a consumer's `build.rs` requires Rust **1.97**. If you check in generated output
 and do not run the generator as part of your Rust build, the runtime alone supports Rust 1.85.
 
 From 1.0 onward, breaking library API changes and intentional breaking generated-name/type changes

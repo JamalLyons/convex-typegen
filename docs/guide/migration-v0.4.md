@@ -21,7 +21,7 @@ and calls using this map.
 | `ConvexJsonValue` for arbitrary/undeclared values | `model::RawValue`; undeclared args use `function::RawArgs` |
 | Unstructured SDK errors | `CallError<E>` separates encode, decode, transport, server-message, and application errors; declare a thrown payload with `.with_error::<E>()` |
 | The generator's default `client` feature and runtime re-exports from the generator | Removed. The generator is build-only; depend on the runtime for client/codecs/macros |
-| Generator MSRV 1.95 for all crate use | Runtime MSRV 1.85; generator/build-script MSRV 1.95 |
+| Generator MSRV 1.95 for all crate use | Runtime MSRV 1.85; generator/build-script MSRV 1.97 |
 
 ## Upgrade steps
 

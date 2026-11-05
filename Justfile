@@ -29,6 +29,10 @@ fmt-check:
 # Clippy + tests (formatting: use `fmt-check` or `fmt` when you want rustfmt enforced).
 check: lint-scripts lint test
 
+# Check the generator on its minimum supported Rust version (Oxc 0.157 requires Rust 1.97).
+generator-msrv:
+    cargo +1.97 check --locked -p convex-typegen --all-features
+
 # Check and test the runtime on its minimum supported Rust version.
 runtime-msrv:
     cargo +1.85 check --locked -p convex-typegen-runtime

@@ -369,7 +369,19 @@ impl Emitter
 
     fn string_enum(&mut self, name: &str, literals: &[&str])
     {
-        let names = literals.iter().map(|wire| type_ident(wire)).collect::<Vec<_>>();
+        let names = literals
+            .iter()
+            .map(|wire| {
+                if wire.bytes().any(|byte| byte.is_ascii_alphanumeric()) {
+                    type_ident(wire)
+                } else {
+                    // A leading underscore keeps these names separate from all semantic stems.
+                    let mut ident = String::from("_Wire");
+                    append_wire_hex(&mut ident, wire);
+                    ident
+                }
+            })
+            .collect::<Vec<_>>();
         let mut counts = BTreeMap::new();
         for ident in &names {
             *counts.entry(ident.as_str()).or_insert(0) += 1;
@@ -384,9 +396,7 @@ impl Emitter
             if counts[ident.as_str()] > 1 {
                 // The final Wire separates the stem from its unique UTF-8 spelling.
                 ident.push_str("Wire");
-                for byte in wire.bytes() {
-                    write!(ident, "{byte:02x}").unwrap();
-                }
+                append_wire_hex(&mut ident, wire);
                 while counts.contains_key(ident.as_str()) {
                     ident.push('X');
                 }
@@ -394,6 +404,13 @@ impl Emitter
             writeln!(self.code, "    #[convex(literal = {wire:?})]\n    {ident},").unwrap();
         }
         writeln!(self.code, "}}\n").unwrap();
+    }
+}
+
+fn append_wire_hex(ident: &mut String, wire: &str)
+{
+    for byte in wire.bytes() {
+        write!(ident, "{byte:02x}").unwrap();
     }
 }
 

@@ -175,16 +175,16 @@ fn string_enums()
     assert_eq!(present.nested.unwrap().selected, Some(RoleArgsNestedSelected::Admin));
 
     for (wire, variant) in [
-        ("", EdgesReturn::TypeWire),
-        ("!", EdgesReturn::TypeWire21),
+        ("", EdgesReturn::_Wire),
+        ("!", EdgesReturn::_Wire21),
         ("9lives", EdgesReturn::Type9lives),
         ("self", EdgesReturn::TypeSelf),
-        ("type", EdgesReturn::TypeWire74797065),
+        ("type", EdgesReturn::Type),
         ("Admin", EdgesReturn::AdminWire41646d696e),
         ("admin", EdgesReturn::AdminWire61646d696e),
         ("read-only", EdgesReturn::ReadOnlyWire726561642d6f6e6c79),
         ("read_only", EdgesReturn::ReadOnlyWire726561645f6f6e6c79),
-        ("🦀", EdgesReturn::TypeWiref09fa680),
+        ("🦀", EdgesReturn::_Wiref09fa680),
     ] {
         assert_eq!(round_trip::<EdgesReturn>(Value::String(wire.into())), variant);
     }

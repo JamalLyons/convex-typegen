@@ -48,7 +48,7 @@ These are what make the headline trustworthy. A workable order: value layer and 
 - **Serde-correct value layer.** `Serializer` / `Deserializer` for `convex::Value`: exact int64 and float64, bytes, nested optionals omitted (Convex treats `v.optional` as absent, [validation](https://docs.convex.dev/functions/validation)), `Id<T>` newtypes, and serde on tables, unions, and literal enums. The runtime already converts directly against `convex::Value`.
 - **Validator and function-discovery coverage.** The full `v.*` set ([values](https://docs.convex.dev/api/modules/values)), table-level unions, real module paths, public vs internal ([internal functions](https://docs.convex.dev/functions/internal-functions)), `returns`, and non-function files skipped with a warning.
 - **Spec-driven IR.** One neutral IR, fed by a committed [`npx convex function-spec`](https://docs.convex.dev/cli/reference/function-spec) JSON (canonical `module:name`, `functionType`, visibility, resolved `args` and `returns`) with the Oxc parser as the offline fallback. `build.rs` stays offline; `scripts/refresh-function-spec.sh` refreshes the spec only against the local self-hosted fixture backend. Function-spec does not include table schemas, so `schema.ts` parsing remains. Validators the deployment did not declare remain unknown in the IR.
-- **Local-backend end-to-end testing.** CI boots the open-source backend ([self-hosting](https://docs.convex.dev/self-hosting), [testing](https://docs.convex.dev/testing/convex-backend)), deploys a fixture, regenerates, and runs the typed client (query, mutation, action, subscription). That is the v1 acceptance gate.
+- **Local-backend end-to-end testing.** Run `just e2e` locally to deploy the fixture to the open-source backend and exercise typed calls and subscriptions. CI compiles the E2E consumer with the committed function spec.
 - **Build ergonomics and CLI.** Lighter build-dependencies, an `OUT_DIR` option, `--check` for CI drift, span-annotated diagnostics. See open decisions below.
 - **Docs.** A supported-features matrix and an end-to-end tutorial that uses the generated client.
 
@@ -63,7 +63,7 @@ Checked against this tree (0.4.0). Items marked unverified have not been re-run 
 - [x] Typed function references, client methods, query subscriptions, and application error decoding are available.
 - [x] Direct Serde conversion against `convex::Value` is available under `value_serde::{to_value, from_value}` and used by `TypedClient`. It preserves int64/float64 wire kinds, non-finite floats, signed zero, bytes (`ConvexBytes`), and recursive values, with path-aware errors for unsupported values and overflow. The lossy JSON bridge was removed.
 - [x] `convex-typegen` is build-only and has no Convex client or TLS dependency. `convex-typegen-runtime` owns the codecs, Serde re-exports, and extension over the official client.
-- [ ] Tests are unit tests plus `tests/golden_generate.rs` and `tests/build_script_smoke.rs`. `.github/workflows/rust.yml` does not start a Convex backend. The examples call whatever `CONVEX_URL` points at.
+- [ ] Tests are unit tests plus `tests/golden_generate.rs` and `tests/build_script_smoke.rs`. CI compiles the E2E consumer. Backend tests run locally with `just e2e`.
 - [x] Default build output is `$OUT_DIR/convex_api.rs`, included with `convex_typegen_runtime::include!()`; generation is atomic and the CLI supports non-writing drift checks.
 
 ## Open decisions

@@ -11,7 +11,8 @@ All notable changes to this project will be documented in this file.
 - **Breaking runtime API.** Match extensible call errors with a fallback arm and `..` for
   extensible fields. Use `FunctionRef` constructors for handwritten endpoints.
 - **Breaking generated output.** Distinct string-literal unions now use semantic unit variants
-  and preserve their exact wire strings. See the [migration guide](docs/guide/migration-v0.4.md).
+  and preserve their exact wire strings. Punctuation-only and empty literals use a separate
+  deterministic naming fallback. See the [migration guide](docs/guide/migration-v0.4.md).
 
 ## [1.0.0] - Unreleased
 

@@ -97,21 +97,21 @@ pub mod api {
         #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
         pub enum RoleNameReturn {
             #[convex(literal = "")]
-            TypeWire,
+            _Wire,
             #[convex(literal = "!")]
-            TypeWire21,
+            _Wire21,
             #[convex(literal = "9lives")]
             Type9lives,
             #[convex(literal = "self")]
             TypeSelf,
             #[convex(literal = "type")]
-            TypeWire74797065,
+            Type,
             #[convex(literal = "Admin")]
             AdminWire41646d696e,
             #[convex(literal = "admin")]
             AdminWire61646d696e,
             #[convex(literal = "🦀")]
-            TypeWiref09fa680,
+            _Wiref09fa680,
         }
 
         #[allow(non_upper_case_globals)]

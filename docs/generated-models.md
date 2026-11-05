@@ -49,7 +49,10 @@ document branch has its own `_id` and `_creation_time` fields. The latter uses t
 - A union of distinct string literals uses unit variants such as `Admin` and `Member`.
   Each encodes and decodes the exact original string. Variant names are PascalCase
   from ASCII letters and digits, with punctuation and other characters treated as
-  separators. Empty names, leading digits, and `Self` receive a `Type` prefix.
+  separators. Leading digits and `Self` receive a `Type` prefix. Literals with no
+  ASCII letters or digits use `_Wire` followed by the lowercase UTF-8 hex bytes,
+  such as `_Wire21` for `"!"`. The leading underscore keeps those variants separate
+  from semantic names such as `Type`.
   If names collide, each receives a `Wire` suffix followed by the original string's
   lowercase UTF-8 hex bytes, with trailing `X` characters added if needed to avoid a
   base name. Reordering the literals preserves their names.

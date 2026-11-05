@@ -311,3 +311,21 @@ export const roleName = query({
 "#;
     insta::assert_snapshot!("string_literal_enums", run_generate(schema, &[("users.ts", endpoint)]));
 }
+
+#[test]
+fn non_identifier_literals_do_not_rename_semantic_variants()
+{
+    for extra in ["", r#", v.literal("!"), v.literal("wire21")"#] {
+        let schema = format!(
+            r#"export default defineSchema({{
+                items: defineTable({{ kind: v.union(v.literal("type"), v.literal("other"){extra}) }}),
+            }});"#
+        );
+        let generated = run_generate(&schema, &[]);
+        assert!(generated.contains("#[convex(literal = \"type\")]\n    Type,"));
+        if !extra.is_empty() {
+            assert!(generated.contains("#[convex(literal = \"!\")]\n    _Wire21,"));
+            assert!(generated.contains("#[convex(literal = \"wire21\")]\n    Wire21,"));
+        }
+    }
+}

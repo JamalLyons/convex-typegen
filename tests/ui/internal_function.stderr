@@ -2,6 +2,4 @@ error[E0432]: unresolved import `models::api::admin::users::hidden_query`
  --> tests/ui/internal_function.rs:4:5
   |
 4 | use models::api::admin::users::hidden_query;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^------------
-  |                                |
-  |                                no `hidden_query` in `models::api::admin::users`
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `hidden_query` in `models::api::admin::users`

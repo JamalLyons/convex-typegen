@@ -80,11 +80,14 @@ fn generated_models_compile_and_preserve_wire_semantics()
 
     let cases = trybuild::TestCases::new();
     cases.pass("tests/ui/model_round_trip.rs");
-    cases.compile_fail("tests/ui/convex_value_unsupported.rs");
-    cases.compile_fail("tests/ui/wrong_table_id.rs");
-    cases.compile_fail("tests/ui/unescaped_identifier.rs");
-    cases.compile_fail("tests/ui/wrong_function_args.rs");
-    cases.compile_fail("tests/ui/internal_function.rs");
-    cases.compile_fail("tests/ui/wrong_function_kind.rs");
-    cases.compile_fail("tests/ui/subscribe_non_query.rs");
+    // Exact diagnostics are tested by scripts/generator-msrv.sh on Rust 1.97.0.
+    if std::env::var_os("CONVEX_TYPEGEN_UI_SNAPSHOTS").is_some() {
+        cases.compile_fail("tests/ui/convex_value_unsupported.rs");
+        cases.compile_fail("tests/ui/wrong_table_id.rs");
+        cases.compile_fail("tests/ui/unescaped_identifier.rs");
+        cases.compile_fail("tests/ui/wrong_function_args.rs");
+        cases.compile_fail("tests/ui/internal_function.rs");
+        cases.compile_fail("tests/ui/wrong_function_kind.rs");
+        cases.compile_fail("tests/ui/subscribe_non_query.rs");
+    }
 }

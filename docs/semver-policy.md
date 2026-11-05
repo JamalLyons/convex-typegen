@@ -22,7 +22,7 @@ These items are covered by semver once we tag **1.0.0**:
 - `convex_typegen::prelude` re-exports
 - Generator Cargo feature `verbose`
 - Runtime `TypedClient`, `CallError`, `InvalidApplicationData`, `function`, `value_serde`, and `prelude`
-- Runtime crate-root `serde` / `serde_json` re-exports used by generated code
+- Runtime macros `ConvexValue` and `include!`, and crate-root `serde` / `serde_json` re-exports
 
 See [api-stability.md](api-stability.md) for a per-item table.
 
@@ -58,7 +58,7 @@ When in doubt, bump **major**.
 
 ## MSRV policy
 
-- The generator requires Rust **1.95**. The runtime requires Rust **1.85**, matching the official Convex client. A project that runs the generator in `build.rs` requires Rust 1.95. Pregenerated bindings can use the matching runtime on Rust 1.85.
+- The generator requires Rust **1.95**. The runtime and derive crate require Rust **1.85**, matching the official Convex client. A project that runs the generator in `build.rs` requires Rust 1.95. Pregenerated bindings can use the matching runtime on Rust 1.85.
 - Raising MSRV is a **major** version change.
 - CI verifies each crate at its declared MSRV.
 
@@ -80,6 +80,7 @@ Maintainers (default branch is **`master`**):
 
 1. Update `CHANGELOG.md` and `workspace.package.version` in `Cargo.toml`.
 2. Add `docs/release-vX.Y.Z.md`, merge to `master`, tag `vX.Y.Z`, and create a GitHub Release.
-3. Publish to crates.io with `cargo publish --locked` (or `just publish`). There is no automated publish workflow.
+3. Publish to crates.io with `cargo publish --locked` (or `just publish`). Publish the macro crate before the runtime and keep its exact version requirement in
+   `runtime/Cargo.toml` in sync with the workspace version. There is no automated publish workflow.
 
 Contributors: add user-visible changes under `[Unreleased]` in `CHANGELOG.md`.

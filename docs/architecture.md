@@ -178,7 +178,9 @@ using the runtime codec so branch selection preserves wire kinds.
 
 ## Runtime crate (`runtime/`)
 
-Generated Rust uses runtime model types, the direct value codec, and the runtime’s Serde re-export. The generator and runtime share a workspace lockfile. The runtime owns the Convex client
+Generated Rust uses runtime model types and the runtime’s [`ConvexValue` derive](macros.md).
+The derive lives in `macros/` and expands Rust model definitions into Serde implementations
+that use the direct value codec. The macro crate has no dependency on the generator or Oxc. The generator and runtime share a workspace lockfile. The runtime owns the Convex client
 dependency, and its Rust 1.85 check selects only the runtime package.
 
 - **`TypedClient`** borrows the official client, encodes arguments into a Convex object, and decodes call results and subscription updates. See [typed client](typed-client.md).

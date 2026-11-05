@@ -1,6 +1,7 @@
 # Generated models
 
-The generator emits Serde models from schema and function validators. Use them with
+The generator emits Serde models from schema and function validators using the
+[runtime’s `ConvexValue` derive](macros.md). Use them with
 `convex_typegen_runtime::value_serde::{to_value, from_value}` to preserve Convex wire kinds.
 Existing consumers should regenerate their bindings and update Rust names and field types.
 

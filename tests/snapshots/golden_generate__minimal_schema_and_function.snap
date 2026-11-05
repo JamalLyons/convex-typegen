@@ -7,7 +7,7 @@ expression: body
 #[allow(unused_imports)]
 use ::convex_typegen_runtime::{
     model::{Id, RawValue},
-    serde::{Deserialize, Serialize},
+    ConvexValue,
     value_serde::Bytes,
 };
 
@@ -16,15 +16,13 @@ pub mod tables {
     pub struct Items;
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "::convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, ConvexValue)]
 pub struct ItemsDoc {
-    #[serde(rename = "_creationTime")]
+    #[convex(rename = "_creationTime")]
     pub _creation_time: f64,
-    #[serde(rename = "_id")]
+    #[convex(rename = "_id")]
     pub _id: Id<tables::Items>,
-    #[serde(rename = "name")]
+    #[convex(rename = "name")]
     pub name: String,
 }
 
@@ -37,15 +35,13 @@ pub mod api {
         #[allow(unused_imports)]
         use ::convex_typegen_runtime::{
             model::{Id, RawValue},
-            serde::{Deserialize, Serialize},
+            ConvexValue,
             value_serde::Bytes,
         };
 
-        #[derive(Debug, Clone, Serialize, Deserialize)]
-        #[serde(crate = "::convex_typegen_runtime::serde")]
-        #[serde(deny_unknown_fields)]
+        #[derive(Debug, Clone, ConvexValue)]
         pub struct GetItemArgs {
-            #[serde(rename = "id")]
+            #[convex(rename = "id")]
             pub id: String,
         }
 

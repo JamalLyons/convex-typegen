@@ -7,7 +7,7 @@ expression: body
 #[allow(unused_imports)]
 use ::convex_typegen_runtime::{
     model::{Id, RawValue},
-    serde::{Deserialize, Serialize},
+    ConvexValue,
     value_serde::Bytes,
 };
 
@@ -16,25 +16,21 @@ pub mod tables {
     pub struct Projects;
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "::convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, ConvexValue)]
 pub struct ProjectsDocSettings {
-    #[serde(rename = "notifyEmail")]
+    #[convex(rename = "notifyEmail")]
     pub notify_email: bool,
-    #[serde(rename = "theme")]
+    #[convex(rename = "theme")]
     pub theme: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "::convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, ConvexValue)]
 pub struct ProjectsDoc {
-    #[serde(rename = "_creationTime")]
+    #[convex(rename = "_creationTime")]
     pub _creation_time: f64,
-    #[serde(rename = "_id")]
+    #[convex(rename = "_id")]
     pub _id: Id<tables::Projects>,
-    #[serde(rename = "settings")]
+    #[convex(rename = "settings")]
     pub settings: ProjectsDocSettings,
 }
 
@@ -47,25 +43,21 @@ pub mod api {
         #[allow(unused_imports)]
         use ::convex_typegen_runtime::{
             model::{Id, RawValue},
-            serde::{Deserialize, Serialize},
+            ConvexValue,
             value_serde::Bytes,
         };
 
-        #[derive(Debug, Clone, Serialize, Deserialize)]
-        #[serde(crate = "::convex_typegen_runtime::serde")]
-        #[serde(deny_unknown_fields)]
+        #[derive(Debug, Clone, ConvexValue)]
         pub struct MirrorArgsFlags {
-            #[serde(rename = "trace")]
+            #[convex(rename = "trace")]
             pub trace: bool,
-            #[serde(rename = "verbose")]
+            #[convex(rename = "verbose")]
             pub verbose: bool,
         }
 
-        #[derive(Debug, Clone, Serialize, Deserialize)]
-        #[serde(crate = "::convex_typegen_runtime::serde")]
-        #[serde(deny_unknown_fields)]
+        #[derive(Debug, Clone, ConvexValue)]
         pub struct MirrorArgs {
-            #[serde(rename = "flags")]
+            #[convex(rename = "flags")]
             pub flags: MirrorArgsFlags,
         }
 

@@ -44,7 +44,7 @@ From the **repo root** you can run:
 cargo run --manifest-path examples/basic/Cargo.toml
 ```
 
-`build.rs` uses the OUT_DIR helper (`convex/schema.ts`, `convex/` discovery). Generated bindings are included from Cargo's `OUT_DIR`, so builds leave the source tree untouched.
+`build.rs` uses the OUT_DIR helper (`convex/schema.ts`, `convex/` discovery). `convex_typegen_runtime::include!()` loads the generated bindings from Cargo's `OUT_DIR`, so builds leave the source tree untouched.
 
 ## What to change
 

@@ -128,8 +128,9 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: Check and test the runtime
+      - name: Check the derive crate and test the runtime
         run: |
+          cargo +1.85.0 build --locked -p convex-typegen-macros
           cargo +1.85.0 check --locked -p convex-typegen-runtime
           cargo +1.85.0 test --locked -p convex-typegen-runtime
 

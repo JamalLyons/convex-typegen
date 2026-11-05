@@ -134,12 +134,23 @@ convex-typegen = {{ path = {:?} }}
     .unwrap();
     fs::write(
         temp.path().join("build.rs"),
-        "fn main() { convex_typegen::build::generate_out_dir().unwrap(); }",
+        r#"fn main() {
+    convex_typegen::build::generate_out_dir().unwrap();
+    let out = std::path::PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
+    std::fs::copy(out.join("convex_types.rs"), out.join("custom.rs")).unwrap();
+}"#,
     )
     .unwrap();
     fs::write(
         temp.path().join("src/lib.rs"),
-        "pub mod convex_types { include!(concat!(env!(\"OUT_DIR\"), \"/convex_types.rs\")); }",
+        r#"
+pub mod convex_types {
+    convex_typegen_runtime::include!();
+}
+pub mod custom {
+    convex_typegen_runtime::include!("custom.rs");
+}
+"#,
     )
     .unwrap();
     fs::write(temp.path().join("convex/schema.ts"), r#"import { defineSchema, defineTable } from "convex/server"; import { v } from "convex/values"; export default defineSchema({ tasks: defineTable({ text: v.string() }) });"#).unwrap();

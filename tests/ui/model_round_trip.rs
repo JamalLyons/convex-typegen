@@ -1,10 +1,13 @@
 #[path = "../../target/model-tests/models.rs"]
 mod models;
 
+use std::collections::BTreeMap;
+
 use convex::Value;
+use convex_typegen_runtime::ConvexValue;
 use convex_typegen_runtime::function::{Action, FunctionReference, Mutation, Query, RawArgs};
 use convex_typegen_runtime::model::{Doc, Id, RawValue};
-use convex_typegen_runtime::value_serde::{from_value, to_value};
+use convex_typegen_runtime::value_serde::{Bytes, from_value, to_value};
 use models::api::admin::users::EchoArgsDataNested;
 use models::api::models::*;
 use models::api::users::OptionalArgs;
@@ -166,6 +169,193 @@ fn references()
     round_trip::<RawValue>(Value::Bytes(vec![255]));
 }
 
+#[derive(ConvexValue)]
+struct HandwrittenArgs
+{
+    #[convex(rename = "userId")]
+    user_id: Id<tables::Users>,
+    #[convex(rename = "camelCase")]
+    camel_case: HandwrittenNested,
+    literal: HandwrittenLiteral,
+    buffer: HandwrittenBuffer,
+    #[convex(rename = "byKey")]
+    by_key: BTreeMap<HandwrittenKey, Bytes>,
+    #[convex(rename = "byId")]
+    by_id: BTreeMap<Id<tables::Tasks>, i64>,
+    #[convex(optional)]
+    raw: Option<RawValue>,
+}
+
+#[derive(ConvexValue)]
+struct HandwrittenNested
+{
+    #[convex(rename = "some-key", optional)]
+    some_key: Option<HandwrittenNullable>,
+    r#type: bool,
+    #[convex(rename = "9lives")]
+    lives: i64,
+    #[convex(rename = "self")]
+    name: String,
+}
+
+#[derive(ConvexValue)]
+enum HandwrittenNullable
+{
+    Text(String),
+    Null(()),
+}
+
+#[derive(ConvexValue)]
+enum HandwrittenLiteral
+{
+    Text(OneText),
+    Float(OneFloat),
+    Int(OneInt),
+    True(True),
+}
+
+#[derive(ConvexValue)]
+#[convex(literal = "1")]
+struct OneText;
+
+#[derive(ConvexValue)]
+#[convex(literal = 1.0)]
+struct OneFloat;
+
+#[derive(ConvexValue)]
+#[convex(literal = 1)]
+struct OneInt;
+
+#[derive(ConvexValue)]
+#[convex(literal = true)]
+struct True;
+
+#[derive(ConvexValue)]
+enum HandwrittenBuffer
+{
+    Bytes(Bytes),
+    Ints(Vec<i64>),
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, ConvexValue)]
+enum HandwrittenKey
+{
+    One(OneKey),
+    Two(TwoKey),
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, ConvexValue)]
+#[convex(literal = "one")]
+struct OneKey;
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, ConvexValue)]
+#[convex(literal = "two")]
+struct TwoKey;
+
+#[derive(ConvexValue)]
+#[convex(discriminator = "kind")]
+enum HandwrittenEvent
+{
+    #[convex(tag = CreatedTag)]
+    Created(Created),
+    #[convex(tag = DeletedTag)]
+    Deleted(Deleted),
+}
+
+#[derive(ConvexValue)]
+#[convex(literal = "created")]
+struct CreatedTag;
+
+#[derive(ConvexValue)]
+#[convex(literal = "deleted")]
+struct DeletedTag;
+
+#[derive(ConvexValue)]
+struct Created
+{
+    _id: Id<tables::Events>,
+    #[convex(rename = "_creationTime")]
+    creation_time: f64,
+    kind: CreatedTag,
+    id: Id<tables::Tasks>,
+}
+
+#[derive(ConvexValue)]
+struct Deleted
+{
+    _id: Id<tables::Events>,
+    #[convex(rename = "_creationTime")]
+    creation_time: f64,
+    kind: DeletedTag,
+    reason: String,
+}
+
+#[derive(ConvexValue)]
+struct RequiredNullable
+{
+    value: Option<i64>,
+}
+
+#[derive(ConvexValue)]
+#[convex(literal = -0.0)]
+struct NegativeZero;
+
+#[derive(ConvexValue)]
+#[convex(literal = -9223372036854775808_i64)]
+struct MinInt;
+
+fn handwritten_models()
+{
+    for (literal, nullable) in [
+        (Value::String("1".into()), None),
+        (Value::Float64(1.0), Some(Value::Null)),
+        (Value::Int64(1), Some(Value::String("present".into()))),
+        (Value::Boolean(true), None),
+    ] {
+        let mut nested = BTreeMap::from([
+            ("type".into(), Value::Boolean(false)),
+            ("9lives".into(), Value::Int64(9)),
+            ("self".into(), Value::String("x".into())),
+        ]);
+        if let Some(value) = nullable {
+            nested.insert("some-key".into(), value);
+        }
+        let wire = object([
+            ("userId", Value::String("user".into())),
+            ("camelCase", Value::Object(nested)),
+            ("literal", literal),
+            ("buffer", Value::Bytes(vec![42])),
+            ("byKey", object([("two", Value::Bytes(vec![0, 255]))])),
+            ("byId", object([("task", Value::Int64(i64::MAX))])),
+        ]);
+        let hand = round_trip::<HandwrittenArgs>(wire);
+        let generated = round_trip::<RoundTripArgs>(to_value(&hand).unwrap());
+        round_trip::<HandwrittenArgs>(to_value(&generated).unwrap());
+    }
+
+    let event = object([
+        ("_id", Value::String("event".into())),
+        ("_creationTime", Value::Float64(20.5)),
+        ("kind", Value::String("created".into())),
+        ("id", Value::String("task".into())),
+    ]);
+    let generated = round_trip::<EventsDoc>(event);
+    assert!(matches!(
+        round_trip::<HandwrittenEvent>(to_value(&generated).unwrap()),
+        HandwrittenEvent::Created(_)
+    ));
+    let invalid = object([("kind", Value::String("created".into())), ("reason", Value::Null)]);
+    assert!(from_value::<HandwrittenEvent>(invalid.clone()).is_err());
+    assert!(from_value::<EventsDoc>(invalid).is_err());
+    assert!(from_value::<RequiredNullable>(object([])).is_err());
+    round_trip::<RequiredNullable>(object([("value", Value::Null)]));
+    assert!(from_value::<RequiredNullable>(object([("value", Value::Float64(1.0))])).is_err());
+    assert!(from_value::<NegativeZero>(Value::Float64(0.0)).is_err());
+    let negative = round_trip::<NegativeZero>(Value::Float64(-0.0));
+    assert!(matches!(to_value(&negative).unwrap(), Value::Float64(v) if v.is_sign_negative()));
+    round_trip::<MinInt>(Value::Int64(i64::MIN));
+}
+
 fn main()
 {
     presence();
@@ -173,6 +363,7 @@ fn main()
     literals();
     kinds_and_records();
     references();
+    handwritten_models();
 }
 
 #[allow(dead_code)]

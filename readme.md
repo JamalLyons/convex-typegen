@@ -25,7 +25,7 @@ fn main() {
 }
 ```
 
-3. Include Cargo's generated file with `mod convex_types { include!(concat!(env!("OUT_DIR"), "/convex_types.rs")); }` and pull in `convex_typegen_runtime::prelude::*` where you call Convex with the generated arg types. The build helper tracks the schema, function spec, and discovered/imported source files.
+3. Include Cargo's generated file with `mod convex_types { convex_typegen_runtime::include!(); }` and pull in `convex_typegen_runtime::prelude::*` where you call Convex with the generated arg types. The build helper tracks the schema, function spec, and discovered/imported source files. See [macros](docs/macros.md) for custom output filenames and handwritten models.
 
 A full minimal setup lives in [examples/basic](https://github.com/JamalLyons/convex-typegen/tree/master/examples/basic) in this repo.
 

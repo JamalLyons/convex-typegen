@@ -4,7 +4,7 @@
 #[allow(dead_code)]
 mod convex_types
 {
-    include!(concat!(env!("OUT_DIR"), "/convex_types.rs"));
+    convex_typegen_runtime::include!();
 }
 
 use std::path::Path;

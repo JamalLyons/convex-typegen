@@ -4,7 +4,7 @@
 [![crates.io](https://img.shields.io/crates/v/convex-typegen.svg)](https://crates.io/crates/convex-typegen)
 [![docs.rs](https://docs.rs/convex-typegen/badge.svg)](https://docs.rs/convex-typegen)
 [![Runtime MSRV: 1.85](https://img.shields.io/badge/runtime_Rust-1.85-blue)](https://jamallyons.github.io/convex-typegen/docs/guide/concepts.html#versions-and-rust-versions)
-[![Generator MSRV: 1.95](https://img.shields.io/badge/generator_Rust-1.95-blue)](https://jamallyons.github.io/convex-typegen/docs/guide/concepts.html#versions-and-rust-versions)
+[![Generator MSRV: 1.97](https://img.shields.io/badge/generator_Rust-1.97-blue)](https://jamallyons.github.io/convex-typegen/docs/guide/concepts.html#versions-and-rust-versions)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/JamalLyons/convex-typegen/blob/master/LICENSE)
 
 Bring Convex's end-to-end type safety to Rust. **convex-typegen** turns your TypeScript schema and function metadata into typed function references, arguments, return values, table IDs, and documents. Generate bindings offline in `build.rs`, then query, mutate, run actions, and stream live updates through the official Convex Rust client—with the compiler checking your calls.
@@ -13,7 +13,7 @@ Bring Convex's end-to-end type safety to Rust. **convex-typegen** turns your Typ
 
 ## Quick start
 
-Use matching generator and runtime releases. The runtime supports Rust **1.85**; building the generator requires Rust **1.95**.
+Use matching generator and runtime releases. The runtime supports Rust **1.85**; building the generator requires Rust **1.97**.
 
 ```sh
 cargo add convex-typegen-runtime convex futures
@@ -60,10 +60,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 }
 ```
 
-These exact Rust snippets compile in [examples/readme](examples/readme), alongside the matching TypeScript schema and query. Set `CONVEX_URL` to your backend URL to run it. See the [tutorial](https://jamallyons.github.io/convex-typegen/getting-started.html) for setup and [local E2E testing](https://jamallyons.github.io/convex-typegen/docs/e2e.html) for `just e2e`.
+These exact Rust snippets compile in [examples/readme](https://github.com/JamalLyons/convex-typegen/tree/master/examples/readme), alongside the matching TypeScript schema and query. Set `CONVEX_URL` to your backend URL to run it. See the [tutorial](https://jamallyons.github.io/convex-typegen/getting-started.html) for setup and [local E2E testing](https://jamallyons.github.io/convex-typegen/docs/e2e.html) for `just e2e`.
 
 ## Contributing
 
-Start with [CONTRIBUTING.md](CONTRIBUTING.md). Report vulnerabilities using [SECURITY.md](SECURITY.md).
+Start with [CONTRIBUTING.md](https://github.com/JamalLyons/convex-typegen/blob/master/CONTRIBUTING.md). Report vulnerabilities using [SECURITY.md](https://github.com/JamalLyons/convex-typegen/blob/master/SECURITY.md).
 
-MIT licensed. See [LICENSE](LICENSE).
+MIT licensed. See [LICENSE](https://github.com/JamalLyons/convex-typegen/blob/master/LICENSE).

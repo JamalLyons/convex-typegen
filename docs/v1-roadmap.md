@@ -68,7 +68,7 @@ Checked against this tree (0.4.0). Items marked unverified have not been re-run 
 
 ## Open decisions
 
-- **MSRV.** The generator requires Rust **1.95** and the runtime requires Rust **1.85**. CI enforces both. Oxc 0.129.0 sets a high floor. Raising MSRV is a major bump ([semver policy](semver-policy.md)).
+- **MSRV.** The generator requires Rust **1.97** and the runtime requires Rust **1.85**. CI enforces both. Oxc 0.157 requires Rust 1.97. Raising MSRV is a major bump ([semver policy](semver-policy.md)).
 - **Output.** `$OUT_DIR` + `convex_typegen_runtime::include!()` is the default; committed output is opt-in through `Configuration::out_file` or the CLI `--output` flag.
 - **Naming scheme.** Module-nested refs that match Convex paths (`admin/users:list`) will rename today’s `{Module}{Export}Args` types. That is a breaking codegen change under [semver policy](semver-policy.md). On 0.x it may ship in a minor; from 1.0 it needs a major.
 

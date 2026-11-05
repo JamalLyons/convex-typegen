@@ -1,5 +1,8 @@
 # v1 review
 
+Historical review and probe results from the baseline below. Recorded Rust 1.95 commands are
+not current setup instructions; see [current Rust requirements](guide/concepts.md#versions-and-rust-versions).
+
 Baseline: [`cb5efa4`](https://github.com/JamalLyons/convex-typegen/tree/cb5efa46377f3ea9be35e7b4e4d1a0e6224a035a) on `master`, crate 0.4.0. The [roadmap](v1-roadmap.md) sets the goal: generate a fully typed Rust counterpart to Convex's `api.*`, over the official client. [v1 tracking issue](https://github.com/JamalLyons/convex-typegen/issues/53) · [milestone](https://github.com/JamalLyons/convex-typegen/milestone/1).
 
 ## Reproduced gaps
@@ -99,7 +102,7 @@ Unit args in this sketch encode as an empty argument map. The SDK signatures tak
 ## Decisions for Jamal
 
 - **Crate boundary.** Approve a build-only generator plus a small runtime crate with explicit version pairing and a migration path for old reexports. A single crate with feature gating gives an escape hatch today, but keeps the common default build-dependency trap and ties runtime resolution to Oxc. Set crate name and transition policy in #39.
-- **MSRV.** Keep generator MSRV 1.95 for v1. Pin or hold parser upgrades that would raise it until the release decision; CI verifies 1.95. A lower runtime floor may be useful after the split, but promise one only once a dedicated job proves it. Lowering the generator floor via Oxc downgrade would expand parser maintenance; raising it for a dependency update would spend a compatibility change without advancing the headline. Decide in #39.
+- **MSRV (historical proposal, superseded).** Jamal chose generator MSRV 1.97 for v1 because Oxc 0.157 requires it; the runtime remains on Rust 1.85. The original proposal was: keep generator MSRV 1.95 for v1. Pin or hold parser upgrades that would raise it until the release decision; CI verifies 1.95. A lower runtime floor may be useful after the split, but promise one only once a dedicated job proves it. Lowering the generator floor via Oxc downgrade would expand parser maintenance; raising it for a dependency update would spend a compatibility change without advancing the headline. Decide in #39.
 - **Output location.** Make `OUT_DIR` plus `include!` the documented default build integration. Keep explicit output paths for CLI-generated, reviewable files and snapshots. Writing into `src` on every build makes checks and workspace cleanliness depend on incidental build activity. Decide legacy default behavior in #44.
 - **Naming.** Adopt path-scoped refs and colocated types with deterministic Rust identifier spelling. Preserve exact wire spelling independently. Flat basename types cannot represent nested collisions; maintaining permanent aliases would carry that ambiguity into v1. Decide whether to offer temporary unambiguous aliases and how to handle normalization collisions in #40 and #41.
 - **Transport.** Use the official SDK directly behind a thin adapter. Keep test seams private until another transport demonstrates a real need. A public transport trait would freeze cancellation, auth, stream and error semantics early. Set the error schema opt-in and wrapper shape in #42.

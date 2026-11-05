@@ -7,12 +7,13 @@ changelog entry for user-visible changes.
 
 ## Local checks
 
-Install `just`, stable Rust (generator MSRV **1.95**), nightly rustfmt, and Rust **1.85**
+Install `just`, stable Rust (generator MSRV **1.97**), nightly rustfmt, and Rust **1.85**
 for runtime checks. From the workspace root:
 
 ```sh
 just check          # workspace clippy + tests
 just fmt            # nightly rustfmt
+just generator-msrv # generator on Rust 1.97
 just runtime-msrv   # runtime on Rust 1.85
 mdbook build docs/site
 ```

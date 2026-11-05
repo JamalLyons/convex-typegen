@@ -68,6 +68,9 @@ See the [migration guide](docs/guide/migration-v0.4.md) for the breaking changes
 
 ### Changed
 
+- **Breaking generator MSRV:** Raise the generator and Oxc-dependent build tooling from Rust
+  1.95 to **1.97**, required by Oxc 0.157. Runtime and derive MSRV remain **1.85**.
+
 - **Breaking default generated filename:** Rename `convex_types.rs` to `convex_api.rs`; the file contains generated API references and the typed client surface, and is written to `OUT_DIR` by default. There is no compatibility alias or fallback.
 
 - **Breaking runtime API:** Replace `ConvexClientExt::prepare_args` with
@@ -81,7 +84,7 @@ See the [migration guide](docs/guide/migration-v0.4.md) for the breaking changes
 
 - Build the generator, runtime, examples, and tooling in a single Cargo workspace.
 
-- **Breaking:** Use `convex-typegen` (Rust 1.95) as a build dependency and `convex-typegen-runtime` (Rust 1.85) as a normal dependency. The runtime now owns the typed client, value codecs, and generated-code Serde imports. The generator’s `client` feature and runtime re-exports were removed. Regenerate existing bindings with the matching release.
+- **Breaking:** Use `convex-typegen` (Rust 1.97) as a build dependency and `convex-typegen-runtime` (Rust 1.85) as a normal dependency. The runtime now owns the typed client, value codecs, and generated-code Serde imports. The generator’s `client` feature and runtime re-exports were removed. Regenerate existing bindings with the matching release.
 
 - **Breaking:** Generated `TryFrom<Args> for BTreeMap<String, serde_json::Value>` implementations were removed.
 - **Breaking:** Removed the lossy `IntoConvexValue` and `ConvexValueExt` APIs and the `ConvexJsonError` prelude alias. Generated `v.bytes()` fields now use `ConvexBytes` so they serialize as Convex byte strings.

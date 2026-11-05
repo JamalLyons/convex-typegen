@@ -68,12 +68,12 @@ jobs:
         run: cargo test --locked -p convex-typegen --no-default-features
 
   msrv:
-    name: MSRV (1.95)
+    name: MSRV (1.97)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
 
-      - uses: dtolnay/rust-toolchain@1.95.0
+      - uses: dtolnay/rust-toolchain@1.97.0
         with:
           components: clippy
 
@@ -98,13 +98,20 @@ jobs:
           name = "generator-smoke"
           version = "0.0.0"
           edition = "2024"
-          rust-version = "1.95"
+          rust-version = "1.97"
 
           [build-dependencies]
           convex-typegen = { path = "$PWD" }
           EOF
           echo 'fn main() {}' > "$fixture/src/main.rs"
-          echo 'fn main() { convex_typegen::generate(Default::default()).unwrap(); }' > "$fixture/build.rs"
+          cat > "$fixture/build.rs" <<'EOF'
+          fn main() {
+              let config = convex_typegen::config::Configuration::default();
+              let output = config.out_file.clone();
+              convex_typegen::generate(config).unwrap();
+              assert!(std::fs::metadata(output).unwrap().len() > 0);
+          }
+          EOF
           echo 'export default defineSchema({});' > "$fixture/convex/schema.ts"
 
           # Reuse the tested generator resolution and keep the fixture separate.
@@ -116,7 +123,6 @@ jobs:
             fi
           done
           cargo build --locked --manifest-path "$fixture/Cargo.toml"
-          test -s "$fixture/src/convex_api.rs"
 
   runtime-msrv:
     name: Runtime MSRV (1.85)

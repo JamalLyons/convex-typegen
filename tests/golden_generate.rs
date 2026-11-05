@@ -147,9 +147,7 @@ fn golden_optional_root_omits_key_during_serde()
 {
     let body = run_generate(MINIMAL_SCHEMA, &[("opts.ts", OPTIONAL_FN)]);
     assert!(body.contains("pub struct UpdateArgs"));
-    assert!(body.contains(
-        "deserialize_with = \"::convex_typegen_runtime::model::deserialize_present\")]\n            pub flag: Option<bool>"
-    ));
+    assert!(body.contains("#[convex(rename = \"flag\", optional)]\n            pub flag: Option<bool>"));
 }
 
 #[test]

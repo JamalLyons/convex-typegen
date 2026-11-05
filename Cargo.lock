@@ -319,11 +319,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "convex-typegen-macros"
+version = "0.4.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.96",
+]
+
+[[package]]
 name = "convex-typegen-runtime"
 version = "0.4.0"
 dependencies = [
  "anyhow",
  "convex",
+ "convex-typegen-macros",
  "futures",
  "serde",
  "serde_json",

@@ -66,6 +66,7 @@ fn generated_models_compile_and_preserve_wire_semantics()
 
     let cases = trybuild::TestCases::new();
     cases.pass("tests/ui/model_round_trip.rs");
+    cases.compile_fail("tests/ui/convex_value_unsupported.rs");
     cases.compile_fail("tests/ui/wrong_table_id.rs");
     cases.compile_fail("tests/ui/unescaped_identifier.rs");
     cases.compile_fail("tests/ui/wrong_function_args.rs");

@@ -3,7 +3,7 @@
 #[allow(unused_imports)]
 use ::convex_typegen_runtime::{
     model::{Id, RawValue},
-    serde::{Deserialize, Serialize},
+    ConvexValue,
     value_serde::Bytes,
 };
 
@@ -12,17 +12,15 @@ pub mod tables {
     pub struct Games;
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "::convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, ConvexValue)]
 pub struct GamesDoc {
-    #[serde(rename = "_creationTime")]
+    #[convex(rename = "_creationTime")]
     pub _creation_time: f64,
-    #[serde(rename = "_id")]
+    #[convex(rename = "_id")]
     pub _id: Id<tables::Games>,
-    #[serde(rename = "loss_count")]
+    #[convex(rename = "loss_count")]
     pub loss_count: f64,
-    #[serde(rename = "win_count")]
+    #[convex(rename = "win_count")]
     pub win_count: f64,
 }
 
@@ -35,16 +33,13 @@ pub mod api {
         #[allow(unused_imports)]
         use ::convex_typegen_runtime::{
             model::{Id, RawValue},
-            serde::{Deserialize, Serialize},
+            ConvexValue,
             value_serde::Bytes,
         };
 
-        #[derive(Debug, Clone, Serialize, Deserialize)]
-        #[serde(crate = "::convex_typegen_runtime::serde")]
-        #[serde(deny_unknown_fields)]
+        #[derive(Debug, Clone, ConvexValue)]
         pub struct GetGameArgs {
-            #[serde(rename = "logData")]
-            #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+            #[convex(rename = "logData", optional)]
             pub log_data: Option<bool>,
         }
 

@@ -3,7 +3,7 @@
 #[allow(unused_imports)]
 use ::convex_typegen_runtime::{
     model::{Id, RawValue},
-    serde::{Deserialize, Serialize},
+    ConvexValue,
     value_serde::Bytes,
 };
 
@@ -18,117 +18,46 @@ pub mod tables {
     pub struct Users;
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
+#[convex(literal = "admin")]
 pub struct UsersDocRoleBranch1;
 
-impl Serialize for UsersDocRoleBranch1 {
-    fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
-        ("admin").serialize(__serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for UsersDocRoleBranch1 {
-    fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-        let __value = String::deserialize(__deserializer)?;
-        if __value == "admin" {
-            Ok(Self)
-        } else {
-            Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for UsersDocRoleBranch1"))
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
+#[convex(literal = "member")]
 pub struct UsersDocRoleBranch2;
 
-impl Serialize for UsersDocRoleBranch2 {
-    fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
-        ("member").serialize(__serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for UsersDocRoleBranch2 {
-    fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-        let __value = String::deserialize(__deserializer)?;
-        if __value == "member" {
-            Ok(Self)
-        } else {
-            Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for UsersDocRoleBranch2"))
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
+#[convex(literal = "viewer")]
 pub struct UsersDocRoleBranch3;
 
-impl Serialize for UsersDocRoleBranch3 {
-    fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
-        ("viewer").serialize(__serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for UsersDocRoleBranch3 {
-    fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-        let __value = String::deserialize(__deserializer)?;
-        if __value == "viewer" {
-            Ok(Self)
-        } else {
-            Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for UsersDocRoleBranch3"))
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
-#[serde(crate = "::convex_typegen_runtime::serde")]
-#[serde(untagged)]
+#[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
 pub enum UsersDocRole {
     Branch1(UsersDocRoleBranch1),
     Branch2(UsersDocRoleBranch2),
     Branch3(UsersDocRoleBranch3),
 }
 
-impl<'de> Deserialize<'de> for UsersDocRole {
-    fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-        let __raw = RawValue::deserialize(__deserializer)?;
-        if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<UsersDocRoleBranch1>(__raw.0.clone()) {
-            return Ok(Self::Branch1(__value));
-        }
-        if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<UsersDocRoleBranch2>(__raw.0.clone()) {
-            return Ok(Self::Branch2(__value));
-        }
-        if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<UsersDocRoleBranch3>(__raw.0.clone()) {
-            return Ok(Self::Branch3(__value));
-        }
-        Err(::convex_typegen_runtime::serde::de::Error::custom("no matching branch of UsersDocRole"))
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "::convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, ConvexValue)]
 pub struct UsersDoc {
-    #[serde(rename = "_creationTime")]
+    #[convex(rename = "_creationTime")]
     pub _creation_time: f64,
-    #[serde(rename = "_id")]
+    #[convex(rename = "_id")]
     pub _id: Id<tables::Users>,
-    #[serde(rename = "avatarBytes")]
-    #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+    #[convex(rename = "avatarBytes", optional)]
     pub avatar_bytes: Option<Bytes>,
-    #[serde(rename = "displayName")]
+    #[convex(rename = "displayName")]
     pub display_name: String,
-    #[serde(rename = "email")]
+    #[convex(rename = "email")]
     pub email: String,
-    #[serde(rename = "externalId")]
-    #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+    #[convex(rename = "externalId", optional)]
     pub external_id: Option<String>,
-    #[serde(rename = "isActive")]
+    #[convex(rename = "isActive")]
     pub is_active: bool,
-    #[serde(rename = "metadata")]
+    #[convex(rename = "metadata")]
     pub metadata: ::std::collections::BTreeMap<String, String>,
-    #[serde(rename = "role")]
+    #[convex(rename = "role")]
     pub role: UsersDocRole,
-    #[serde(rename = "score")]
-    #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+    #[convex(rename = "score", optional)]
     pub score: Option<i64>,
 }
 
@@ -136,21 +65,19 @@ impl convex_typegen_runtime::model::Table for tables::Users {
     type Document = UsersDoc;
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "::convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, ConvexValue)]
 pub struct TeamsDoc {
-    #[serde(rename = "_creationTime")]
+    #[convex(rename = "_creationTime")]
     pub _creation_time: f64,
-    #[serde(rename = "_id")]
+    #[convex(rename = "_id")]
     pub _id: Id<tables::Teams>,
-    #[serde(rename = "createdAt")]
+    #[convex(rename = "createdAt")]
     pub created_at: f64,
-    #[serde(rename = "name")]
+    #[convex(rename = "name")]
     pub name: String,
-    #[serde(rename = "ownerUserId")]
+    #[convex(rename = "ownerUserId")]
     pub owner_user_id: Id<tables::Users>,
-    #[serde(rename = "slug")]
+    #[convex(rename = "slug")]
     pub slug: String,
 }
 
@@ -158,121 +85,50 @@ impl convex_typegen_runtime::model::Table for tables::Teams {
     type Document = TeamsDoc;
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "::convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, ConvexValue)]
 pub struct ProjectsDocSettings {
-    #[serde(rename = "notifyEmail")]
+    #[convex(rename = "notifyEmail")]
     pub notify_email: bool,
-    #[serde(rename = "theme")]
+    #[convex(rename = "theme")]
     pub theme: String,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
+#[convex(literal = "draft")]
 pub struct ProjectsDocStatusBranch1;
 
-impl Serialize for ProjectsDocStatusBranch1 {
-    fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
-        ("draft").serialize(__serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for ProjectsDocStatusBranch1 {
-    fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-        let __value = String::deserialize(__deserializer)?;
-        if __value == "draft" {
-            Ok(Self)
-        } else {
-            Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for ProjectsDocStatusBranch1"))
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
+#[convex(literal = "active")]
 pub struct ProjectsDocStatusBranch2;
 
-impl Serialize for ProjectsDocStatusBranch2 {
-    fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
-        ("active").serialize(__serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for ProjectsDocStatusBranch2 {
-    fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-        let __value = String::deserialize(__deserializer)?;
-        if __value == "active" {
-            Ok(Self)
-        } else {
-            Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for ProjectsDocStatusBranch2"))
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
+#[convex(literal = "archived")]
 pub struct ProjectsDocStatusBranch3;
 
-impl Serialize for ProjectsDocStatusBranch3 {
-    fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
-        ("archived").serialize(__serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for ProjectsDocStatusBranch3 {
-    fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-        let __value = String::deserialize(__deserializer)?;
-        if __value == "archived" {
-            Ok(Self)
-        } else {
-            Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for ProjectsDocStatusBranch3"))
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
-#[serde(crate = "::convex_typegen_runtime::serde")]
-#[serde(untagged)]
+#[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ProjectsDocStatus {
     Branch1(ProjectsDocStatusBranch1),
     Branch2(ProjectsDocStatusBranch2),
     Branch3(ProjectsDocStatusBranch3),
 }
 
-impl<'de> Deserialize<'de> for ProjectsDocStatus {
-    fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-        let __raw = RawValue::deserialize(__deserializer)?;
-        if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<ProjectsDocStatusBranch1>(__raw.0.clone()) {
-            return Ok(Self::Branch1(__value));
-        }
-        if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<ProjectsDocStatusBranch2>(__raw.0.clone()) {
-            return Ok(Self::Branch2(__value));
-        }
-        if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<ProjectsDocStatusBranch3>(__raw.0.clone()) {
-            return Ok(Self::Branch3(__value));
-        }
-        Err(::convex_typegen_runtime::serde::de::Error::custom("no matching branch of ProjectsDocStatus"))
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "::convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, ConvexValue)]
 pub struct ProjectsDoc {
-    #[serde(rename = "_creationTime")]
+    #[convex(rename = "_creationTime")]
     pub _creation_time: f64,
-    #[serde(rename = "_id")]
+    #[convex(rename = "_id")]
     pub _id: Id<tables::Projects>,
-    #[serde(rename = "budget")]
-    #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+    #[convex(rename = "budget", optional)]
     pub budget: Option<f64>,
-    #[serde(rename = "settings")]
+    #[convex(rename = "settings")]
     pub settings: ProjectsDocSettings,
-    #[serde(rename = "status")]
+    #[convex(rename = "status")]
     pub status: ProjectsDocStatus,
-    #[serde(rename = "tags")]
+    #[convex(rename = "tags")]
     pub tags: Vec<String>,
-    #[serde(rename = "teamId")]
+    #[convex(rename = "teamId")]
     pub team_id: Id<tables::Teams>,
-    #[serde(rename = "title")]
+    #[convex(rename = "title")]
     pub title: String,
 }
 
@@ -280,112 +136,42 @@ impl convex_typegen_runtime::model::Table for tables::Projects {
     type Document = ProjectsDoc;
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
+#[convex(literal = "p0")]
 pub struct TasksDocPriorityBranch1;
 
-impl Serialize for TasksDocPriorityBranch1 {
-    fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
-        ("p0").serialize(__serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for TasksDocPriorityBranch1 {
-    fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-        let __value = String::deserialize(__deserializer)?;
-        if __value == "p0" {
-            Ok(Self)
-        } else {
-            Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for TasksDocPriorityBranch1"))
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
+#[convex(literal = "p1")]
 pub struct TasksDocPriorityBranch2;
 
-impl Serialize for TasksDocPriorityBranch2 {
-    fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
-        ("p1").serialize(__serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for TasksDocPriorityBranch2 {
-    fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-        let __value = String::deserialize(__deserializer)?;
-        if __value == "p1" {
-            Ok(Self)
-        } else {
-            Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for TasksDocPriorityBranch2"))
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
+#[convex(literal = "p2")]
 pub struct TasksDocPriorityBranch3;
 
-impl Serialize for TasksDocPriorityBranch3 {
-    fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
-        ("p2").serialize(__serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for TasksDocPriorityBranch3 {
-    fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-        let __value = String::deserialize(__deserializer)?;
-        if __value == "p2" {
-            Ok(Self)
-        } else {
-            Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for TasksDocPriorityBranch3"))
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
-#[serde(crate = "::convex_typegen_runtime::serde")]
-#[serde(untagged)]
+#[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TasksDocPriority {
     Branch1(TasksDocPriorityBranch1),
     Branch2(TasksDocPriorityBranch2),
     Branch3(TasksDocPriorityBranch3),
 }
 
-impl<'de> Deserialize<'de> for TasksDocPriority {
-    fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-        let __raw = RawValue::deserialize(__deserializer)?;
-        if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<TasksDocPriorityBranch1>(__raw.0.clone()) {
-            return Ok(Self::Branch1(__value));
-        }
-        if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<TasksDocPriorityBranch2>(__raw.0.clone()) {
-            return Ok(Self::Branch2(__value));
-        }
-        if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<TasksDocPriorityBranch3>(__raw.0.clone()) {
-            return Ok(Self::Branch3(__value));
-        }
-        Err(::convex_typegen_runtime::serde::de::Error::custom("no matching branch of TasksDocPriority"))
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "::convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, ConvexValue)]
 pub struct TasksDoc {
-    #[serde(rename = "_creationTime")]
+    #[convex(rename = "_creationTime")]
     pub _creation_time: f64,
-    #[serde(rename = "_id")]
+    #[convex(rename = "_id")]
     pub _id: Id<tables::Tasks>,
-    #[serde(rename = "assigneeUserId")]
-    #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+    #[convex(rename = "assigneeUserId", optional)]
     pub assignee_user_id: Option<Id<tables::Users>>,
-    #[serde(rename = "dueAt")]
-    #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+    #[convex(rename = "dueAt", optional)]
     pub due_at: Option<f64>,
-    #[serde(rename = "payload")]
+    #[convex(rename = "payload")]
     pub payload: RawValue,
-    #[serde(rename = "priority")]
+    #[convex(rename = "priority")]
     pub priority: TasksDocPriority,
-    #[serde(rename = "projectId")]
+    #[convex(rename = "projectId")]
     pub project_id: Id<tables::Projects>,
-    #[serde(rename = "title")]
+    #[convex(rename = "title")]
     pub title: String,
 }
 
@@ -398,95 +184,43 @@ pub mod api {
         #[allow(unused_imports)]
         use ::convex_typegen_runtime::{
             model::{Id, RawValue},
-            serde::{Deserialize, Serialize},
+            ConvexValue,
             value_serde::Bytes,
         };
 
-        #[derive(Debug, Clone, Serialize, Deserialize)]
-        #[serde(crate = "::convex_typegen_runtime::serde")]
-        #[serde(deny_unknown_fields)]
+        #[derive(Debug, Clone, ConvexValue)]
         pub struct MirrorArgsFlags {
-            #[serde(rename = "trace")]
+            #[convex(rename = "trace")]
             pub trace: bool,
-            #[serde(rename = "verbose")]
+            #[convex(rename = "verbose")]
             pub verbose: bool,
         }
 
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
+        #[convex(literal = "json")]
         pub struct MirrorArgsModeBranch1;
 
-        impl Serialize for MirrorArgsModeBranch1 {
-            fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
-                ("json").serialize(__serializer)
-            }
-        }
-
-        impl<'de> Deserialize<'de> for MirrorArgsModeBranch1 {
-            fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-                let __value = String::deserialize(__deserializer)?;
-                if __value == "json" {
-                    Ok(Self)
-                } else {
-                    Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for MirrorArgsModeBranch1"))
-                }
-            }
-        }
-
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
+        #[convex(literal = "text")]
         pub struct MirrorArgsModeBranch2;
 
-        impl Serialize for MirrorArgsModeBranch2 {
-            fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
-                ("text").serialize(__serializer)
-            }
-        }
-
-        impl<'de> Deserialize<'de> for MirrorArgsModeBranch2 {
-            fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-                let __value = String::deserialize(__deserializer)?;
-                if __value == "text" {
-                    Ok(Self)
-                } else {
-                    Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for MirrorArgsModeBranch2"))
-                }
-            }
-        }
-
-        #[derive(Debug, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
-        #[serde(crate = "::convex_typegen_runtime::serde")]
-        #[serde(untagged)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
         pub enum MirrorArgsMode {
             Branch1(MirrorArgsModeBranch1),
             Branch2(MirrorArgsModeBranch2),
         }
 
-        impl<'de> Deserialize<'de> for MirrorArgsMode {
-            fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-                let __raw = RawValue::deserialize(__deserializer)?;
-                if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<MirrorArgsModeBranch1>(__raw.0.clone()) {
-                    return Ok(Self::Branch1(__value));
-                }
-                if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<MirrorArgsModeBranch2>(__raw.0.clone()) {
-                    return Ok(Self::Branch2(__value));
-                }
-                Err(::convex_typegen_runtime::serde::de::Error::custom("no matching branch of MirrorArgsMode"))
-            }
-        }
-
-        #[derive(Debug, Clone, Serialize, Deserialize)]
-        #[serde(crate = "::convex_typegen_runtime::serde")]
-        #[serde(deny_unknown_fields)]
+        #[derive(Debug, Clone, ConvexValue)]
         pub struct MirrorArgs {
-            #[serde(rename = "body")]
+            #[convex(rename = "body")]
             pub body: String,
-            #[serde(rename = "numbers")]
+            #[convex(rename = "numbers")]
             pub numbers: Vec<f64>,
-            #[serde(rename = "flags")]
+            #[convex(rename = "flags")]
             pub flags: MirrorArgsFlags,
-            #[serde(rename = "mode")]
+            #[convex(rename = "mode")]
             pub mode: MirrorArgsMode,
-            #[serde(rename = "extra")]
-            #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+            #[convex(rename = "extra", optional)]
             pub extra: Option<::std::collections::BTreeMap<String, String>>,
         }
 
@@ -498,103 +232,34 @@ pub mod api {
         #[allow(unused_imports)]
         use ::convex_typegen_runtime::{
             model::{Id, RawValue},
-            serde::{Deserialize, Serialize},
+            ConvexValue,
             value_serde::Bytes,
         };
 
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
+        #[convex(literal = "draft")]
         pub struct ListByTeamArgsStatusFilterBranch1;
 
-        impl Serialize for ListByTeamArgsStatusFilterBranch1 {
-            fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
-                ("draft").serialize(__serializer)
-            }
-        }
-
-        impl<'de> Deserialize<'de> for ListByTeamArgsStatusFilterBranch1 {
-            fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-                let __value = String::deserialize(__deserializer)?;
-                if __value == "draft" {
-                    Ok(Self)
-                } else {
-                    Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for ListByTeamArgsStatusFilterBranch1"))
-                }
-            }
-        }
-
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
+        #[convex(literal = "active")]
         pub struct ListByTeamArgsStatusFilterBranch2;
 
-        impl Serialize for ListByTeamArgsStatusFilterBranch2 {
-            fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
-                ("active").serialize(__serializer)
-            }
-        }
-
-        impl<'de> Deserialize<'de> for ListByTeamArgsStatusFilterBranch2 {
-            fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-                let __value = String::deserialize(__deserializer)?;
-                if __value == "active" {
-                    Ok(Self)
-                } else {
-                    Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for ListByTeamArgsStatusFilterBranch2"))
-                }
-            }
-        }
-
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
+        #[convex(literal = "archived")]
         pub struct ListByTeamArgsStatusFilterBranch3;
 
-        impl Serialize for ListByTeamArgsStatusFilterBranch3 {
-            fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
-                ("archived").serialize(__serializer)
-            }
-        }
-
-        impl<'de> Deserialize<'de> for ListByTeamArgsStatusFilterBranch3 {
-            fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-                let __value = String::deserialize(__deserializer)?;
-                if __value == "archived" {
-                    Ok(Self)
-                } else {
-                    Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for ListByTeamArgsStatusFilterBranch3"))
-                }
-            }
-        }
-
-        #[derive(Debug, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
-        #[serde(crate = "::convex_typegen_runtime::serde")]
-        #[serde(untagged)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
         pub enum ListByTeamArgsStatusFilter {
             Branch1(ListByTeamArgsStatusFilterBranch1),
             Branch2(ListByTeamArgsStatusFilterBranch2),
             Branch3(ListByTeamArgsStatusFilterBranch3),
         }
 
-        impl<'de> Deserialize<'de> for ListByTeamArgsStatusFilter {
-            fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-                let __raw = RawValue::deserialize(__deserializer)?;
-                if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<ListByTeamArgsStatusFilterBranch1>(__raw.0.clone()) {
-                    return Ok(Self::Branch1(__value));
-                }
-                if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<ListByTeamArgsStatusFilterBranch2>(__raw.0.clone()) {
-                    return Ok(Self::Branch2(__value));
-                }
-                if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<ListByTeamArgsStatusFilterBranch3>(__raw.0.clone()) {
-                    return Ok(Self::Branch3(__value));
-                }
-                Err(::convex_typegen_runtime::serde::de::Error::custom("no matching branch of ListByTeamArgsStatusFilter"))
-            }
-        }
-
-        #[derive(Debug, Clone, Serialize, Deserialize)]
-        #[serde(crate = "::convex_typegen_runtime::serde")]
-        #[serde(deny_unknown_fields)]
+        #[derive(Debug, Clone, ConvexValue)]
         pub struct ListByTeamArgs {
-            #[serde(rename = "teamId")]
+            #[convex(rename = "teamId")]
             pub team_id: Id<super::super::tables::Teams>,
-            #[serde(rename = "statusFilter")]
-            #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+            #[convex(rename = "statusFilter", optional)]
             pub status_filter: Option<ListByTeamArgsStatusFilter>,
         }
 
@@ -602,13 +267,11 @@ pub mod api {
         pub const list_by_team: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, ListByTeamArgs, RawValue> =
             ::convex_typegen_runtime::function::FunctionRef::new("projects:projectsListByTeam");
 
-        #[derive(Debug, Clone, Serialize, Deserialize)]
-        #[serde(crate = "::convex_typegen_runtime::serde")]
-        #[serde(deny_unknown_fields)]
+        #[derive(Debug, Clone, ConvexValue)]
         pub struct UpdateTagsArgs {
-            #[serde(rename = "projectId")]
+            #[convex(rename = "projectId")]
             pub project_id: Id<super::super::tables::Projects>,
-            #[serde(rename = "tags")]
+            #[convex(rename = "tags")]
             pub tags: Vec<String>,
         }
 
@@ -620,90 +283,37 @@ pub mod api {
         #[allow(unused_imports)]
         use ::convex_typegen_runtime::{
             model::{Id, RawValue},
-            serde::{Deserialize, Serialize},
+            ConvexValue,
             value_serde::Bytes,
         };
 
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
+        #[convex(literal = "p0")]
         pub struct SearchArgsFilterMinPriorityBranch1;
 
-        impl Serialize for SearchArgsFilterMinPriorityBranch1 {
-            fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
-                ("p0").serialize(__serializer)
-            }
-        }
-
-        impl<'de> Deserialize<'de> for SearchArgsFilterMinPriorityBranch1 {
-            fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-                let __value = String::deserialize(__deserializer)?;
-                if __value == "p0" {
-                    Ok(Self)
-                } else {
-                    Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for SearchArgsFilterMinPriorityBranch1"))
-                }
-            }
-        }
-
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
+        #[convex(literal = "p1")]
         pub struct SearchArgsFilterMinPriorityBranch2;
 
-        impl Serialize for SearchArgsFilterMinPriorityBranch2 {
-            fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
-                ("p1").serialize(__serializer)
-            }
-        }
-
-        impl<'de> Deserialize<'de> for SearchArgsFilterMinPriorityBranch2 {
-            fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-                let __value = String::deserialize(__deserializer)?;
-                if __value == "p1" {
-                    Ok(Self)
-                } else {
-                    Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for SearchArgsFilterMinPriorityBranch2"))
-                }
-            }
-        }
-
-        #[derive(Debug, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
-        #[serde(crate = "::convex_typegen_runtime::serde")]
-        #[serde(untagged)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
         pub enum SearchArgsFilterMinPriority {
             Branch1(SearchArgsFilterMinPriorityBranch1),
             Branch2(SearchArgsFilterMinPriorityBranch2),
         }
 
-        impl<'de> Deserialize<'de> for SearchArgsFilterMinPriority {
-            fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-                let __raw = RawValue::deserialize(__deserializer)?;
-                if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<SearchArgsFilterMinPriorityBranch1>(__raw.0.clone()) {
-                    return Ok(Self::Branch1(__value));
-                }
-                if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<SearchArgsFilterMinPriorityBranch2>(__raw.0.clone()) {
-                    return Ok(Self::Branch2(__value));
-                }
-                Err(::convex_typegen_runtime::serde::de::Error::custom("no matching branch of SearchArgsFilterMinPriority"))
-            }
-        }
-
-        #[derive(Debug, Clone, Serialize, Deserialize)]
-        #[serde(crate = "::convex_typegen_runtime::serde")]
-        #[serde(deny_unknown_fields)]
+        #[derive(Debug, Clone, ConvexValue)]
         pub struct SearchArgsFilter {
-            #[serde(rename = "minPriority")]
-            #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+            #[convex(rename = "minPriority", optional)]
             pub min_priority: Option<SearchArgsFilterMinPriority>,
-            #[serde(rename = "projectId")]
+            #[convex(rename = "projectId")]
             pub project_id: Id<super::super::tables::Projects>,
         }
 
-        #[derive(Debug, Clone, Serialize, Deserialize)]
-        #[serde(crate = "::convex_typegen_runtime::serde")]
-        #[serde(deny_unknown_fields)]
+        #[derive(Debug, Clone, ConvexValue)]
         pub struct SearchArgs {
-            #[serde(rename = "filter")]
+            #[convex(rename = "filter")]
             pub filter: SearchArgsFilter,
-            #[serde(rename = "limit")]
-            #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+            #[convex(rename = "limit", optional)]
             pub limit: Option<f64>,
         }
 
@@ -711,109 +321,38 @@ pub mod api {
         pub const search: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, SearchArgs, RawValue> =
             ::convex_typegen_runtime::function::FunctionRef::new("tasks:tasksSearch");
 
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
+        #[convex(literal = "p0")]
         pub struct CreateArgsPriorityBranch1;
 
-        impl Serialize for CreateArgsPriorityBranch1 {
-            fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
-                ("p0").serialize(__serializer)
-            }
-        }
-
-        impl<'de> Deserialize<'de> for CreateArgsPriorityBranch1 {
-            fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-                let __value = String::deserialize(__deserializer)?;
-                if __value == "p0" {
-                    Ok(Self)
-                } else {
-                    Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for CreateArgsPriorityBranch1"))
-                }
-            }
-        }
-
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
+        #[convex(literal = "p1")]
         pub struct CreateArgsPriorityBranch2;
 
-        impl Serialize for CreateArgsPriorityBranch2 {
-            fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
-                ("p1").serialize(__serializer)
-            }
-        }
-
-        impl<'de> Deserialize<'de> for CreateArgsPriorityBranch2 {
-            fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-                let __value = String::deserialize(__deserializer)?;
-                if __value == "p1" {
-                    Ok(Self)
-                } else {
-                    Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for CreateArgsPriorityBranch2"))
-                }
-            }
-        }
-
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
+        #[convex(literal = "p2")]
         pub struct CreateArgsPriorityBranch3;
 
-        impl Serialize for CreateArgsPriorityBranch3 {
-            fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
-                ("p2").serialize(__serializer)
-            }
-        }
-
-        impl<'de> Deserialize<'de> for CreateArgsPriorityBranch3 {
-            fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-                let __value = String::deserialize(__deserializer)?;
-                if __value == "p2" {
-                    Ok(Self)
-                } else {
-                    Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for CreateArgsPriorityBranch3"))
-                }
-            }
-        }
-
-        #[derive(Debug, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
-        #[serde(crate = "::convex_typegen_runtime::serde")]
-        #[serde(untagged)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
         pub enum CreateArgsPriority {
             Branch1(CreateArgsPriorityBranch1),
             Branch2(CreateArgsPriorityBranch2),
             Branch3(CreateArgsPriorityBranch3),
         }
 
-        impl<'de> Deserialize<'de> for CreateArgsPriority {
-            fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-                let __raw = RawValue::deserialize(__deserializer)?;
-                if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<CreateArgsPriorityBranch1>(__raw.0.clone()) {
-                    return Ok(Self::Branch1(__value));
-                }
-                if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<CreateArgsPriorityBranch2>(__raw.0.clone()) {
-                    return Ok(Self::Branch2(__value));
-                }
-                if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<CreateArgsPriorityBranch3>(__raw.0.clone()) {
-                    return Ok(Self::Branch3(__value));
-                }
-                Err(::convex_typegen_runtime::serde::de::Error::custom("no matching branch of CreateArgsPriority"))
-            }
-        }
-
-        #[derive(Debug, Clone, Serialize, Deserialize)]
-        #[serde(crate = "::convex_typegen_runtime::serde")]
-        #[serde(deny_unknown_fields)]
+        #[derive(Debug, Clone, ConvexValue)]
         pub struct CreateArgs {
-            #[serde(rename = "projectId")]
+            #[convex(rename = "projectId")]
             pub project_id: Id<super::super::tables::Projects>,
-            #[serde(rename = "title")]
+            #[convex(rename = "title")]
             pub title: String,
-            #[serde(rename = "priority")]
+            #[convex(rename = "priority")]
             pub priority: CreateArgsPriority,
-            #[serde(rename = "assigneeUserId")]
-            #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+            #[convex(rename = "assigneeUserId", optional)]
             pub assignee_user_id: Option<Id<super::super::tables::Users>>,
-            #[serde(rename = "payload")]
-            #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+            #[convex(rename = "payload", optional)]
             pub payload: Option<RawValue>,
-            #[serde(rename = "dueAt")]
-            #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+            #[convex(rename = "dueAt", optional)]
             pub due_at: Option<f64>,
         }
 
@@ -825,15 +364,13 @@ pub mod api {
         #[allow(unused_imports)]
         use ::convex_typegen_runtime::{
             model::{Id, RawValue},
-            serde::{Deserialize, Serialize},
+            ConvexValue,
             value_serde::Bytes,
         };
 
-        #[derive(Debug, Clone, Serialize, Deserialize)]
-        #[serde(crate = "::convex_typegen_runtime::serde")]
-        #[serde(deny_unknown_fields)]
+        #[derive(Debug, Clone, ConvexValue)]
         pub struct ListByOwnerArgs {
-            #[serde(rename = "ownerUserId")]
+            #[convex(rename = "ownerUserId")]
             pub owner_user_id: Id<super::super::tables::Users>,
         }
 
@@ -841,18 +378,15 @@ pub mod api {
         pub const list_by_owner: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, ListByOwnerArgs, RawValue> =
             ::convex_typegen_runtime::function::FunctionRef::new("teams:teamsListByOwner");
 
-        #[derive(Debug, Clone, Serialize, Deserialize)]
-        #[serde(crate = "::convex_typegen_runtime::serde")]
-        #[serde(deny_unknown_fields)]
+        #[derive(Debug, Clone, ConvexValue)]
         pub struct CreateArgs {
-            #[serde(rename = "name")]
+            #[convex(rename = "name")]
             pub name: String,
-            #[serde(rename = "slug")]
+            #[convex(rename = "slug")]
             pub slug: String,
-            #[serde(rename = "ownerUserId")]
+            #[convex(rename = "ownerUserId")]
             pub owner_user_id: Id<super::super::tables::Users>,
-            #[serde(rename = "createdAt")]
-            #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+            #[convex(rename = "createdAt", optional)]
             pub created_at: Option<f64>,
         }
 
@@ -864,18 +398,15 @@ pub mod api {
         #[allow(unused_imports)]
         use ::convex_typegen_runtime::{
             model::{Id, RawValue},
-            serde::{Deserialize, Serialize},
+            ConvexValue,
             value_serde::Bytes,
         };
 
-        #[derive(Debug, Clone, Serialize, Deserialize)]
-        #[serde(crate = "::convex_typegen_runtime::serde")]
-        #[serde(deny_unknown_fields)]
+        #[derive(Debug, Clone, ConvexValue)]
         pub struct GetByEmailArgs {
-            #[serde(rename = "email")]
+            #[convex(rename = "email")]
             pub email: String,
-            #[serde(rename = "includeInactive")]
-            #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+            #[convex(rename = "includeInactive", optional)]
             pub include_inactive: Option<bool>,
         }
 
@@ -883,14 +414,11 @@ pub mod api {
         pub const get_by_email: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, GetByEmailArgs, RawValue> =
             ::convex_typegen_runtime::function::FunctionRef::new("users:usersGetByEmail");
 
-        #[derive(Debug, Clone, Serialize, Deserialize)]
-        #[serde(crate = "::convex_typegen_runtime::serde")]
-        #[serde(deny_unknown_fields)]
+        #[derive(Debug, Clone, ConvexValue)]
         pub struct GetProfileArgs {
-            #[serde(rename = "userId")]
+            #[convex(rename = "userId")]
             pub user_id: Id<super::super::tables::Users>,
-            #[serde(rename = "withBytes")]
-            #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+            #[convex(rename = "withBytes", optional)]
             pub with_bytes: Option<bool>,
         }
 
@@ -898,109 +426,38 @@ pub mod api {
         pub const get_profile: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, GetProfileArgs, RawValue> =
             ::convex_typegen_runtime::function::FunctionRef::new("users:usersGetProfile");
 
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
+        #[convex(literal = "admin")]
         pub struct CreateArgsRoleBranch1;
 
-        impl Serialize for CreateArgsRoleBranch1 {
-            fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
-                ("admin").serialize(__serializer)
-            }
-        }
-
-        impl<'de> Deserialize<'de> for CreateArgsRoleBranch1 {
-            fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-                let __value = String::deserialize(__deserializer)?;
-                if __value == "admin" {
-                    Ok(Self)
-                } else {
-                    Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for CreateArgsRoleBranch1"))
-                }
-            }
-        }
-
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
+        #[convex(literal = "member")]
         pub struct CreateArgsRoleBranch2;
 
-        impl Serialize for CreateArgsRoleBranch2 {
-            fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
-                ("member").serialize(__serializer)
-            }
-        }
-
-        impl<'de> Deserialize<'de> for CreateArgsRoleBranch2 {
-            fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-                let __value = String::deserialize(__deserializer)?;
-                if __value == "member" {
-                    Ok(Self)
-                } else {
-                    Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for CreateArgsRoleBranch2"))
-                }
-            }
-        }
-
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
+        #[convex(literal = "viewer")]
         pub struct CreateArgsRoleBranch3;
 
-        impl Serialize for CreateArgsRoleBranch3 {
-            fn serialize<S: ::convex_typegen_runtime::serde::Serializer>(&self, __serializer: S) -> Result<S::Ok, S::Error> {
-                ("viewer").serialize(__serializer)
-            }
-        }
-
-        impl<'de> Deserialize<'de> for CreateArgsRoleBranch3 {
-            fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-                let __value = String::deserialize(__deserializer)?;
-                if __value == "viewer" {
-                    Ok(Self)
-                } else {
-                    Err(::convex_typegen_runtime::serde::de::Error::custom("expected literal for CreateArgsRoleBranch3"))
-                }
-            }
-        }
-
-        #[derive(Debug, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
-        #[serde(crate = "::convex_typegen_runtime::serde")]
-        #[serde(untagged)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
         pub enum CreateArgsRole {
             Branch1(CreateArgsRoleBranch1),
             Branch2(CreateArgsRoleBranch2),
             Branch3(CreateArgsRoleBranch3),
         }
 
-        impl<'de> Deserialize<'de> for CreateArgsRole {
-            fn deserialize<D: ::convex_typegen_runtime::serde::Deserializer<'de>>(__deserializer: D) -> Result<Self, D::Error> {
-                let __raw = RawValue::deserialize(__deserializer)?;
-                if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<CreateArgsRoleBranch1>(__raw.0.clone()) {
-                    return Ok(Self::Branch1(__value));
-                }
-                if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<CreateArgsRoleBranch2>(__raw.0.clone()) {
-                    return Ok(Self::Branch2(__value));
-                }
-                if let Ok(__value) = ::convex_typegen_runtime::value_serde::from_value::<CreateArgsRoleBranch3>(__raw.0.clone()) {
-                    return Ok(Self::Branch3(__value));
-                }
-                Err(::convex_typegen_runtime::serde::de::Error::custom("no matching branch of CreateArgsRole"))
-            }
-        }
-
-        #[derive(Debug, Clone, Serialize, Deserialize)]
-        #[serde(crate = "::convex_typegen_runtime::serde")]
-        #[serde(deny_unknown_fields)]
+        #[derive(Debug, Clone, ConvexValue)]
         pub struct CreateArgs {
-            #[serde(rename = "email")]
+            #[convex(rename = "email")]
             pub email: String,
-            #[serde(rename = "displayName")]
+            #[convex(rename = "displayName")]
             pub display_name: String,
-            #[serde(rename = "role")]
+            #[convex(rename = "role")]
             pub role: CreateArgsRole,
-            #[serde(rename = "metadata")]
-            #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+            #[convex(rename = "metadata", optional)]
             pub metadata: Option<::std::collections::BTreeMap<String, String>>,
-            #[serde(rename = "score")]
-            #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+            #[convex(rename = "score", optional)]
             pub score: Option<i64>,
-            #[serde(rename = "avatarBytes")]
-            #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+            #[convex(rename = "avatarBytes", optional)]
             pub avatar_bytes: Option<Bytes>,
         }
 
@@ -1012,7 +469,7 @@ pub mod api {
         #[allow(unused_imports)]
         use ::convex_typegen_runtime::{
             model::{Id, RawValue},
-            serde::{Deserialize, Serialize},
+            ConvexValue,
             value_serde::Bytes,
         };
 

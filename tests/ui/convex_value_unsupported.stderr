@@ -1,0 +1,35 @@
+error: ConvexValue requires named fields or a unit struct with a literal
+ --> tests/ui/convex_value_unsupported.rs:4:8
+  |
+4 | struct Tuple(i64);
+  |        ^^^^^
+
+error: ConvexValue requires a concrete model type
+ --> tests/ui/convex_value_unsupported.rs:7:15
+  |
+7 | struct Generic<T> {
+  |               ^^^
+
+error: a ConvexValue branch requires one unnamed field
+  --> tests/ui/convex_value_unsupported.rs:13:5
+   |
+13 |     Null,
+   |     ^^^^
+
+error: expected a string, bool, i64 or f64 literal
+  --> tests/ui/convex_value_unsupported.rs:17:20
+   |
+17 | #[convex(literal = 1_u32)]
+   |                    ^^^^^
+
+error: missing tag type for discriminated branch
+  --> tests/ui/convex_value_unsupported.rs:23:5
+   |
+23 |     First(String),
+   |     ^^^^^
+
+error: duplicate Convex wire field
+  --> tests/ui/convex_value_unsupported.rs:29:23
+   |
+29 |     #[convex(rename = "name")]
+   |                       ^^^^^^

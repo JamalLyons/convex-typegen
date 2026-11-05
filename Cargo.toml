@@ -6,7 +6,7 @@ authors.workspace = true
 license.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-exclude = ["examples/", ".github/", "runtime/", "xtask/", "benches/"]
+exclude = ["examples/", ".github/", "runtime/", "macros/", "xtask/", "benches/"]
 
 # Documentation and repository links
 documentation = "https://docs.rs/convex-typegen"
@@ -59,7 +59,7 @@ panic = "abort"    # Better optimizations and smaller binaries
 strip = true       # Remove debug symbols from the binary
 
 [workspace]
-members = ["runtime", "examples/*", "xtask", "benches"]
+members = ["runtime", "macros", "examples/*", "xtask", "benches"]
 resolver = "3"
 
 [workspace.package]

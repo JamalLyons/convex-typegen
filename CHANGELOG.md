@@ -8,6 +8,10 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Add the runtime's `ConvexValue` derive and `include!()` helper. Generated models
+  use the same derive as handwritten models while preserving their wire behavior.
+  Regenerate bindings against the matching runtime. See [macros](docs/macros.md).
+
 - **Breaking generated output:** Emit nested, typed public function references such as
   `api::admin::users::list`. Declared args and returns now live beside the reference
   (e.g. `api::admin::users::ListArgs`). References and model names omit a redundant leading

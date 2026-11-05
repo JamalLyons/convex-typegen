@@ -21,6 +21,7 @@ The generator prelude exports `Configuration`, `generate`, `rcfp`, and
 
 | Export | Role |
 | --- | --- |
+| `ConvexValue`, `include!` | Derive for Convex wire models and helper for including generated bindings |
 | `serde`, `serde_json` | Re-exports used by generated bindings |
 | `TypedClient`, `CallError`, `InvalidApplicationData` | Typed calls, subscriptions, and errors over the official SDK |
 | `function` | Typed endpoint references, kind markers, and raw args |

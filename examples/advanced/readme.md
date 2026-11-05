@@ -40,6 +40,8 @@ cargo build   # runs build.rs → generates OUT_DIR/convex_types.rs
 cargo run     # seeds demo data (if empty), runs queries/mutations/action using generated args
 ```
 
+`convex_typegen_runtime::include!()` loads the generated bindings from Cargo's `OUT_DIR`.
+
 From the repo root:
 
 ```bash

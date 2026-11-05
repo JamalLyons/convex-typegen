@@ -7,7 +7,7 @@ expression: body
 #[allow(unused_imports)]
 use ::convex_typegen_runtime::{
     model::{Id, RawValue},
-    serde::{Deserialize, Serialize},
+    ConvexValue,
     value_serde::Bytes,
 };
 
@@ -16,15 +16,13 @@ pub mod tables {
     pub struct Items;
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(crate = "::convex_typegen_runtime::serde")]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, ConvexValue)]
 pub struct ItemsDoc {
-    #[serde(rename = "_creationTime")]
+    #[convex(rename = "_creationTime")]
     pub _creation_time: f64,
-    #[serde(rename = "_id")]
+    #[convex(rename = "_id")]
     pub _id: Id<tables::Items>,
-    #[serde(rename = "name")]
+    #[convex(rename = "name")]
     pub name: String,
 }
 
@@ -38,15 +36,13 @@ pub mod api {
             #[allow(unused_imports)]
             use ::convex_typegen_runtime::{
                 model::{Id, RawValue},
-                serde::{Deserialize, Serialize},
+                ConvexValue,
                 value_serde::Bytes,
             };
 
-            #[derive(Debug, Clone, Serialize, Deserialize)]
-            #[serde(crate = "::convex_typegen_runtime::serde")]
-            #[serde(deny_unknown_fields)]
+            #[derive(Debug, Clone, ConvexValue)]
             pub struct ListArgs {
-                #[serde(rename = "b")]
+                #[convex(rename = "b")]
                 pub b: String,
             }
 
@@ -60,16 +56,13 @@ pub mod api {
             #[allow(unused_imports)]
             use ::convex_typegen_runtime::{
                 model::{Id, RawValue},
-                serde::{Deserialize, Serialize},
+                ConvexValue,
                 value_serde::Bytes,
             };
 
-            #[derive(Debug, Clone, Serialize, Deserialize)]
-            #[serde(crate = "::convex_typegen_runtime::serde")]
-            #[serde(deny_unknown_fields)]
+            #[derive(Debug, Clone, ConvexValue)]
             pub struct UpdateArgs {
-                #[serde(rename = "flag")]
-                #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "::convex_typegen_runtime::model::deserialize_present")]
+                #[convex(rename = "flag", optional)]
                 pub flag: Option<bool>,
             }
 
@@ -82,15 +75,13 @@ pub mod api {
         #[allow(unused_imports)]
         use ::convex_typegen_runtime::{
             model::{Id, RawValue},
-            serde::{Deserialize, Serialize},
+            ConvexValue,
             value_serde::Bytes,
         };
 
-        #[derive(Debug, Clone, Serialize, Deserialize)]
-        #[serde(crate = "::convex_typegen_runtime::serde")]
-        #[serde(deny_unknown_fields)]
+        #[derive(Debug, Clone, ConvexValue)]
         pub struct ListArgs {
-            #[serde(rename = "a")]
+            #[convex(rename = "a")]
             pub a: f64,
         }
 

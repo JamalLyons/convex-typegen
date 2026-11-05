@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Update the derive macro's parser dependency to syn 3.
 - **Breaking generator API.** Construct non-exhaustive `Configuration` with setters and use
   `build::generate(config)` for Cargo input tracking. The default schema follows `convex_dir`.
   Match the crate-root `ConvexTypeGeneratorError` with a fallback arm. Missing schemas report

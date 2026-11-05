@@ -22,7 +22,7 @@ fn generated_models_compile_and_preserve_wire_semantics()
     let source = fs::read_to_string(&schema).unwrap().replace(
         "export default defineSchema({",
         r#"export default defineSchema({
-            users: defineTable({ role: v.union(v.literal("admin"), v.literal("member")) }),"#,
+            users: defineTable({ role: v.union(v.literal("admin"), v.null(), v.literal("member")) }),"#,
     );
     fs::write(schema, source).unwrap();
     fs::write(
@@ -32,15 +32,17 @@ fn generated_models_compile_and_preserve_wire_semantics()
         import { v } from "convex/values";
         const roles = v.union(v.literal("admin"), v.literal("member"));
         export const role = query({
-            args: { role: roles, nested: v.optional(v.object({ selected: v.optional(roles), maybe: v.nullable(roles) })) },
+            args: { role: roles, nested: v.optional(v.object({
+                selected: v.optional(v.nullable(roles)), maybe: v.nullable(roles),
+            })) },
             returns: v.union(v.literal("member"), v.literal("admin")),
             handler: (_ctx, { role }) => role,
         });
         export const edges = query({
-            args: {},
+            args: { roles: v.array(v.nullable(v.literal("admin"))) },
             returns: v.union(v.literal(""), v.literal("!"), v.literal("9lives"),
                 v.literal("self"), v.literal("type"), v.literal("Admin"), v.literal("admin"),
-                v.literal("read-only"), v.literal("read_only"), v.literal("🦀")),
+                v.literal("read-only"), v.literal("read_only"), v.literal("🦀"), v.null()),
             handler: () => "",
         });
         export const roundTrip = query({

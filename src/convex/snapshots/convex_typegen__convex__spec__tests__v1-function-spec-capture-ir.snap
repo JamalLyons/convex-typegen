@@ -79,23 +79,26 @@ expression: shape
                         properties: Some(
                             {
                                 "bytes": Bytes,
-                                "choice": Union(
-                                    [
-                                        Literal(
-                                            Some(
-                                                String(
-                                                    "red",
+                                "choice": Optional(
+                                    Union(
+                                        [
+                                            Literal(
+                                                Some(
+                                                    String(
+                                                        "red",
+                                                    ),
                                                 ),
                                             ),
-                                        ),
-                                        Literal(
-                                            Some(
-                                                String(
-                                                    "blue",
+                                            Literal(
+                                                Some(
+                                                    String(
+                                                        "blue",
+                                                    ),
                                                 ),
                                             ),
-                                        ),
-                                    ],
+                                            Null,
+                                        ],
+                                    ),
                                 ),
                                 "count": Int64,
                                 "nested": Object {
@@ -134,23 +137,26 @@ expression: shape
                     properties: Some(
                         {
                             "bytes": Bytes,
-                            "choice": Union(
-                                [
-                                    Literal(
-                                        Some(
-                                            String(
-                                                "red",
+                            "choice": Optional(
+                                Union(
+                                    [
+                                        Literal(
+                                            Some(
+                                                String(
+                                                    "red",
+                                                ),
                                             ),
                                         ),
-                                    ),
-                                    Literal(
-                                        Some(
-                                            String(
-                                                "blue",
+                                        Literal(
+                                            Some(
+                                                String(
+                                                    "blue",
+                                                ),
                                             ),
                                         ),
-                                    ),
-                                ],
+                                        Null,
+                                    ],
+                                ),
                             ),
                             "count": Int64,
                             "nested": Object {

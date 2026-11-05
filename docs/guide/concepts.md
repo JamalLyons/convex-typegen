@@ -11,6 +11,15 @@ No v0.4 aliases are emitted. See [generated models](../generated-models.md#funct
 Tables are available from the generated `tables` module. `model::Id<tables::Tasks>` carries the
 table at compile time; `model::Doc<tables::Tasks>` is the generated document type.
 
+## Nullable string enums
+
+For a `users` table with a role field declared as
+`v.nullable(v.union(v.literal("admin"), v.literal("member")))`, the generated
+field is `Option<UsersDocRole>`. Set it to `Some(UsersDocRole::Admin)` to send
+`"admin"` or to `None` to send null. With an additional `v.optional(...)`, use
+`None` to omit the role and `Some(None)` to send null.
+See [generated models](../generated-models.md#presence-unions-and-literals).
+
 ## Generator and runtime crates
 
 Use two crates with the same release version:

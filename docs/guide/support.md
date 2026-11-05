@@ -21,7 +21,7 @@ The offline TypeScript parser accepts these Convex 1.49.0 validators:
 | `v.bytes()` | Maps to runtime `value_serde::Bytes` |
 | `v.id("table")` | Maps to table-scoped `model::Id<tables::Table>` |
 | `v.literal(value)` | String, boolean, finite number, or signed 64-bit bigint literal; use `v.null()` for null |
-| `v.optional(validator)` and `v.nullable(validator)` | Optional object fields are omitted when absent; nullable adds a null union branch |
+| `v.optional(validator)` and `v.nullable(validator)` | Optional object fields are omitted when absent. Nullable string-literal enums use `Option<Enum>`; other nullable validators retain a null union branch |
 | `v.array(validator)`, `v.object({...})`, `v.record(key, value)` | Record keys must be strings, IDs, string literals, or unions of these |
 | `v.union(a, b, ...)` | Requires at least one member |
 | `v.any()` | Preserves an arbitrary Convex value through `model::RawValue`; in args it uses the raw argument fallback |

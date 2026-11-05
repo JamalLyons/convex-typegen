@@ -13,6 +13,10 @@ All notable changes to this project will be documented in this file.
 - **Breaking generated output.** Distinct string-literal unions now use semantic unit variants
   and preserve their exact wire strings. Punctuation-only and empty literals use a separate
   deterministic naming fallback. See the [migration guide](docs/guide/migration-v0.4.md).
+- **Breaking generated output.** Unions of distinct string literals plus null generate
+  `Option<Enum>`. Optional fields use `Option<Option<Enum>>` to preserve omitted keys
+  and explicit null. Top-level nullable enum returns expose variants on `*ReturnValue`.
+  See the [migration guide](docs/guide/migration-v0.4.md).
 
 ## [1.0.0] - Unreleased
 

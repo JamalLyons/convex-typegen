@@ -23,7 +23,7 @@ fmt-check:
     cargo +nightly fmt --all --check
 
 # Clippy + tests (formatting: use `fmt-check` or `fmt` when you want rustfmt enforced).
-check: lint test
+check: lint-scripts lint test
 
 # Check and test the runtime on its minimum supported Rust version.
 runtime-msrv:
@@ -59,3 +59,15 @@ gen-project TIER SEED="":
 # Benchmark parse/discovery, IR lowering, codegen and end-to-end for generated projects.
 bench *ARGS:
     cargo bench --locked -p convex-typegen-bench --bench pipeline -- {{ ARGS }}
+
+# Remove merged worktrees and stale build output (never main/current).
+clean-worktrees *ARGS:
+    bash scripts/clean-worktrees.sh {{ ARGS }}
+
+# Preview cleanup using cached refs, without fetching or pruning.
+clean-worktrees-dry *ARGS:
+    bash scripts/clean-worktrees.sh --dry-run {{ ARGS }}
+
+# Check the cleanup script when ShellCheck is installed.
+lint-scripts:
+    @if command -v shellcheck >/dev/null 2>&1; then shellcheck scripts/clean-worktrees.sh; else echo "shellcheck not installed; skipping shell lint"; fi

@@ -59,3 +59,28 @@ Never use a Convex cloud account or anything paid. Do not create, log into, or d
 - Put user-visible changes under `[Unreleased]` in `CHANGELOG.md`. Update `docs/` when behavior or the public contract changes.
 - Flag breaking changes per [docs/semver-policy.md](docs/semver-policy.md). Library API and generated names are different surfaces. On 0.x, a breaking codegen change may ship in a minor; from 1.0, generated renames and an MSRV bump are majors.
 - Do not publish to crates.io (`cargo publish`, `just publish`). Do not merge pull requests.
+
+## Worktrees and disk space
+
+- Run `cargo clean` in your worktree once your PR is open and you are done building.
+- Preview cleanup with `just clean-worktrees-dry`; apply with `just clean-worktrees`.
+  Pass `--stale-days N` (default 3) or `--force` through either recipe. Force permits
+  discarding dirty merged worktrees; main/current and locked worktrees are always skipped.
+  Lock a worktree with `git worktree lock <path>` while it must be retained.
+- The script fetches/prunes origin and recognizes merged branches by ancestry to
+  `origin/master`, a deleted origin upstream, or a merged PR found by optional,
+  authenticated `gh`. Dry runs skip fetch/prune and use cached refs, so their
+  decisions may differ from a subsequent live run. They report zero freed space.
+- Unmerged worktrees are idle when no file or directory in the checkout (including
+  `target/`) or its Git metadata has been modified in N days. Only their untracked
+  `target/` directory is removed. Symlink targets and tracked target files are skipped.
+  Timestamps are an activity heuristic; lock worktrees used by long-running processes.
+- Dirty means tracked, untracked, or ignored changes outside root `target/`.
+  Cleanup uses only this repository's `git worktree list`, including worktrees in
+  arbitrary agent directories; no extra roots configuration is needed. It never
+  scans neighboring directories. Disk freed is measured in allocated KiB using
+  `du` before and after deletion, not estimated build sizes.
+- Optional: install `sccache` and build with `RUSTC_WRAPPER=sccache` to reuse compiler
+  outputs across worktrees. It is not required. Do not set a shared
+  `CARGO_TARGET_DIR`: parallel agents would contend on Cargo's build lock and
+  invalidate each other's outputs.

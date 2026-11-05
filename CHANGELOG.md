@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Add a local self-hosted Convex typed-client E2E gate to CI (`just e2e`).
+
 - Generate bindings in Cargo's `OUT_DIR` by default, with atomic writes and a non-writing CLI `--check` mode. Add source-aware diagnostics and migrate examples to `include!`.
 
 ### Added

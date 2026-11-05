@@ -6,7 +6,7 @@
 //! - [`config::Configuration`] — input paths, optional explicit function files, and an optional authoritative spec.
 //! - [`generate`] — end-to-end pipeline used from `build.rs`.
 //! - [`prelude`] — re-exports for `build.rs`.
-//! - [`fs::rcfp`] — resolves the same function input paths as [`generate`] (for `cargo:rerun-if-changed`).
+//! - [`build`] — offline Cargo helpers that also track generation inputs.
 //!
 //! Parsing and codegen live in the private `convex` module; the public API stays small on purpose.
 //!
@@ -26,8 +26,8 @@
 //! For custom paths or a committed function spec, configure the generator directly:
 //!
 //! ```no_run
-//! let config = convex_typegen::config::Configuration::default();
-//! convex_typegen::generate(config)?;
+//! let config = convex_typegen::config::Configuration::default().with_convex_dir("backend");
+//! convex_typegen::build::generate(config)?;
 //! # Ok::<(), convex_typegen::prelude::ConvexTypeGeneratorError>(())
 //! ```
 
@@ -40,8 +40,8 @@ use crate::convex::create_function_asts;
 use crate::convex::ir::GenerationIr;
 use crate::convex::parser::{parse_function_ast, parse_schema_ast_with_modules};
 use crate::convex::spec::parse_function_spec;
-use crate::error::ConvexTypeGeneratorError;
-use crate::fs::rcfp;
+pub use crate::error::ConvexTypeGeneratorError;
+use crate::fs::function_source_paths;
 
 pub mod build;
 pub mod config;
@@ -74,17 +74,19 @@ struct LoweredProject(GenerationIr);
 
 fn parse_project(config: &Configuration) -> Result<ParsedProject, ConvexTypeGeneratorError>
 {
-    if !config.schema_path.exists() {
-        return Err(ConvexTypeGeneratorError::MissingSchemaFile);
-    }
-
-    let schema_path = config
-        .schema_path
-        .canonicalize()
-        .map_err(|error| ConvexTypeGeneratorError::IOError {
-            file: config.schema_path.to_string_lossy().to_string(),
-            error,
-        })?;
+    let schema_input = config.resolved_schema_path();
+    let schema_path = schema_input.canonicalize().map_err(|error| {
+        if error.kind() == std::io::ErrorKind::NotFound {
+            ConvexTypeGeneratorError::MissingSchemaFile {
+                path: schema_input.clone(),
+            }
+        } else {
+            ConvexTypeGeneratorError::Io {
+                file: schema_input.clone(),
+                error,
+            }
+        }
+    })?;
     let schema_modules = create_function_asts(vec![schema_path.clone()])?;
     let schema_ast = schema_modules
         .get(schema_path.to_string_lossy().as_ref())
@@ -94,7 +96,7 @@ fn parse_project(config: &Configuration) -> Result<ParsedProject, ConvexTypeGene
         FunctionSources::Spec(spec_path.clone())
     } else {
         let convex_root = config.convex_dir.canonicalize().ok();
-        let function_paths = rcfp(config)?;
+        let function_paths = function_source_paths(config)?;
         let asts = create_function_asts(function_paths)?;
         FunctionSources::TypeScript { asts, convex_root }
     };
@@ -122,11 +124,11 @@ fn lower_project(parsed: ParsedProject) -> Result<LoweredProject, ConvexTypeGene
 /// model, then emit Rust to [`Configuration::out_file`].
 ///
 /// Pipeline: validate schema path → parse schema TS → either read the configured spec or parse
-/// [`fs::rcfp`] TypeScript inputs → structured schema + function model → write generated Rust.
+/// discovered TypeScript inputs → structured schema + function model → write generated Rust.
 ///
 /// # Errors
 ///
-/// Surfaced as [`error::ConvexTypeGeneratorError`]: missing paths, Oxc parse/semantic errors, schema
+/// Surfaced as [`ConvexTypeGeneratorError`]: missing paths, Oxc parse/semantic errors, schema
 /// shapes or spec records we do not recognize, IO, or malformed JSON.
 ///
 /// # Example
@@ -142,9 +144,14 @@ fn lower_project(parsed: ParsedProject) -> Result<LoweredProject, ConvexTypeGene
 pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError>
 {
     let parsed = parse_project(&config)?;
+    generate_parsed(&config.out_file, parsed)
+}
+
+fn generate_parsed(path: &Path, parsed: ParsedProject) -> Result<(), ConvexTypeGeneratorError>
+{
     let lowered = lower_project(parsed)?;
     let output = generate_code(&lowered.0)?;
-    write_atomic(&config.out_file, output.as_bytes())
+    write_atomic(path, output.as_bytes())
 }
 
 /// Check whether generated output matches the configured artifact without writing files.
@@ -166,8 +173,8 @@ pub fn check(config: Configuration) -> Result<bool, ConvexTypeGeneratorError>
             return Ok(false);
         }
         Err(error) => {
-            return Err(ConvexTypeGeneratorError::IOError {
-                file: config.out_file.display().to_string(),
+            return Err(ConvexTypeGeneratorError::Io {
+                file: config.out_file,
                 error,
             });
         }
@@ -198,8 +205,8 @@ fn write_atomic(path: &Path, contents: &[u8]) -> Result<(), ConvexTypeGeneratorE
     use std::sync::atomic::{AtomicU64, Ordering};
     static NEXT_TEMP: AtomicU64 = AtomicU64::new(0);
     let parent = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."));
-    std::fs::create_dir_all(parent).map_err(|error| ConvexTypeGeneratorError::IOError {
-        file: parent.display().to_string(),
+    std::fs::create_dir_all(parent).map_err(|error| ConvexTypeGeneratorError::Io {
+        file: parent.to_path_buf(),
         error,
     })?;
     let name = path.file_name().unwrap_or_default().to_string_lossy();
@@ -210,10 +217,7 @@ fn write_atomic(path: &Path, contents: &[u8]) -> Result<(), ConvexTypeGeneratorE
             Ok(file) => break (candidate, file),
             Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
             Err(error) => {
-                return Err(ConvexTypeGeneratorError::IOError {
-                    file: candidate.display().to_string(),
-                    error,
-                });
+                return Err(ConvexTypeGeneratorError::Io { file: candidate, error });
             }
         }
     };
@@ -223,8 +227,8 @@ fn write_atomic(path: &Path, contents: &[u8]) -> Result<(), ConvexTypeGeneratorE
     });
     if let Err(error) = result {
         let _ = std::fs::remove_file(&temp_path);
-        return Err(ConvexTypeGeneratorError::IOError {
-            file: path.display().to_string(),
+        return Err(ConvexTypeGeneratorError::Io {
+            file: path.to_path_buf(),
             error,
         });
     }
@@ -276,13 +280,13 @@ mod generate_tests
     fn generate_errors_when_schema_path_missing()
     {
         let tmp = tempdir().unwrap();
-        let cfg = Configuration {
-            schema_path: tmp.path().join("nope/schema.ts"),
-            out_file: tmp.path().join("out.rs"),
-            ..Default::default()
-        };
+        let cfg = Configuration::default()
+            .with_schema_path(tmp.path().join("nope/schema.ts"))
+            .with_out_file(tmp.path().join("out.rs"));
         let err = generate(cfg).unwrap_err();
-        assert!(matches!(err, crate::error::ConvexTypeGeneratorError::MissingSchemaFile));
+        assert!(
+            matches!(err, crate::ConvexTypeGeneratorError::MissingSchemaFile { path } if path == tmp.path().join("nope/schema.ts"))
+        );
     }
 
     /// Chained `.index()` / `.searchIndex()` / `.vectorIndex()` on `defineTable` is peeled before
@@ -306,13 +310,10 @@ export default defineSchema({
         fs::write(&schema, SCHEMA).unwrap();
 
         let out = tmp.path().join("out.rs");
-        let cfg = Configuration {
-            schema_path: schema.clone(),
-            out_file: out.clone(),
-            convex_dir: convex,
-            function_paths: Vec::new(),
-            function_spec_path: None,
-        };
+        let cfg = Configuration::default()
+            .with_schema_path(schema)
+            .with_out_file(out.clone())
+            .with_convex_dir(convex);
 
         generate(cfg).unwrap();
         let body = fs::read_to_string(&out).unwrap();
@@ -363,13 +364,10 @@ export const list = query({
 
         let out = tmp.path().join("out.rs");
         fs::create_dir_all(out.parent().unwrap()).unwrap();
-        let cfg = Configuration {
-            schema_path: schema,
-            out_file: out.clone(),
-            convex_dir: convex,
-            function_paths: Vec::new(),
-            function_spec_path: None,
-        };
+        let cfg = Configuration::default()
+            .with_schema_path(schema)
+            .with_out_file(out.clone())
+            .with_convex_dir(convex);
 
         generate(cfg).unwrap();
         let body = fs::read_to_string(&out).unwrap();

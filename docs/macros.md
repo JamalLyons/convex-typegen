@@ -48,14 +48,16 @@ struct Attachment {
   literal. Booleans, signed 64-bit integers, and floats also work. Write `1`
   or `1_i64` for Int64 and `1.0` for Float64. The generator can use
   `#[convex(float_bits = ...)]` to preserve an exact Float64 bit pattern.
-- Enums encode the payload of a single-field tuple variant directly. Decoding
+- For a string literal enum, annotate each unit variant with a distinct
+  `#[convex(literal = "...")]` string. The enum encodes as that exact string.
+- Tuple variants encode the payload of a single-field tuple variant directly. Decoding
   tries variants in declaration order. For a discriminated union, set
   `#[convex(discriminator = "kind")]` on the enum and `#[convex(tag = CreatedTag)]`
   on each variant, using its distinct literal type for the required `kind` field.
   The decoder selects the branch by that wire field and validates the whole payload.
 
 The derive supports concrete types. Tuple structs, Rust unions, and variants
-with zero or multiple fields produce compile-time diagnostics. For generated
+with unsupported field shapes produce compile-time diagnostics. For generated
 function calls, use the typed references under `bindings::api`.
 
 ## Why generation stays in the build script

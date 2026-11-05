@@ -214,6 +214,15 @@ fn union(name: &Ident, data: &DataEnum, attrs: &[Attribute]) -> Result<(Tokens, 
     if data.variants.is_empty() {
         return Err(Error::new(name.span(), "a ConvexValue enum requires at least one branch"));
     }
+    if data.variants.iter().all(|variant| matches!(variant.fields, Fields::Unit)) {
+        if let Some(discriminator) = discriminator {
+            return Err(Error::new(
+                discriminator.span(),
+                "a string literal enum cannot have a discriminator",
+            ));
+        }
+        return string_enum(name, data);
+    }
     let mut encode = Vec::new();
     let mut decode = Vec::new();
     for variant in &data.variants {
@@ -264,6 +273,62 @@ fn union(name: &Ident, data: &DataEnum, attrs: &[Attribute]) -> Result<(Tokens, 
                 ::convex_typegen_runtime::serde::Deserialize>::deserialize(__convex_deserializer)?;
             #(#decode)*
             ::core::result::Result::Err(::convex_typegen_runtime::serde::de::Error::custom(#expected))
+        },
+    ))
+}
+
+fn string_enum(name: &Ident, data: &DataEnum) -> Result<(Tokens, Tokens, Tokens)>
+{
+    let mut seen = std::collections::BTreeSet::new();
+    let mut encode = Vec::new();
+    let mut decode = Vec::new();
+    for variant in &data.variants {
+        let ident = &variant.ident;
+        let mut literal = None;
+        convex_attributes(&variant.attrs, |meta| {
+            if meta.path.is_ident("literal") {
+                set_once(&mut literal, meta.value()?.parse::<LitStr>()?, &meta.path)
+            } else {
+                Err(meta.error("expected a string literal on a unit variant"))
+            }
+        })?;
+        let literal = literal.ok_or_else(|| Error::new(ident.span(), "missing string literal on unit variant"))?;
+        if !seen.insert(literal.value()) {
+            return Err(Error::new(literal.span(), "duplicate string literal"));
+        }
+        encode.push(quote! { Self::#ident => #literal });
+        decode.push(quote! { #literal => ::core::result::Result::Ok(Self::Value::#ident) });
+    }
+    let mut visitor = format_ident!("__ConvexStringLiteralVisitor");
+    if name == &visitor {
+        visitor = format_ident!("__ConvexStringLiteralVisitor_");
+    }
+    let expected = format!("a string literal of {name}");
+    let unknown = format!("no matching string literal of {name}");
+    Ok((
+        quote! {},
+        quote! { __convex_serializer.serialize_str(match self { #(#encode,)* }) },
+        quote! {
+            struct #visitor;
+
+            impl<'de> ::convex_typegen_runtime::serde::de::Visitor<'de> for #visitor {
+                type Value = #name;
+
+                fn expecting(&self, formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    formatter.write_str(#expected)
+                }
+
+                fn visit_str<E: ::convex_typegen_runtime::serde::de::Error>(
+                    self, value: &str,
+                ) -> ::core::result::Result<Self::Value, E> {
+                    match value {
+                        #(#decode,)*
+                        _ => ::core::result::Result::Err(E::custom(#unknown)),
+                    }
+                }
+            }
+
+            __convex_deserializer.deserialize_str(#visitor)
         },
     ))
 }

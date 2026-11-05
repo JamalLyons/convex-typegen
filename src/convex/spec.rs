@@ -260,8 +260,8 @@ fn parse_function(entry: &Value, file: &Path, index: usize) -> Result<Option<Fun
 
 pub(crate) fn parse_function_spec(path: &Path) -> Result<Vec<Function>, ConvexTypeGeneratorError>
 {
-    let text = fs::read_to_string(path).map_err(|error| ConvexTypeGeneratorError::IOError {
-        file: path.display().to_string(),
+    let text = fs::read_to_string(path).map_err(|error| ConvexTypeGeneratorError::Io {
+        file: path.to_path_buf(),
         error,
     })?;
     let root: Value =

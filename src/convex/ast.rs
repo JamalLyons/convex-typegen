@@ -24,14 +24,13 @@ pub(crate) struct ProgramFacts
 /// Parse `path` and return program facts from a direct AST walk (spike only).
 pub(crate) fn extract_program_facts(path: &Path) -> Result<ProgramFacts, ConvexTypeGeneratorError>
 {
-    let path_str = path.to_string_lossy().to_string();
-    let source_text = std::fs::read_to_string(path).map_err(|error| ConvexTypeGeneratorError::IOError {
-        file: path_str.clone(),
+    let source_text = std::fs::read_to_string(path).map_err(|error| ConvexTypeGeneratorError::Io {
+        file: path.to_path_buf(),
         error,
     })?;
 
     let source_type = SourceType::from_path(path).map_err(|_| ConvexTypeGeneratorError::ParsingFailed {
-        file: path_str.clone(),
+        file: path.to_path_buf(),
         details: "Failed to determine source type".to_string(),
     })?;
 
@@ -39,7 +38,7 @@ pub(crate) fn extract_program_facts(path: &Path) -> Result<ProgramFacts, ConvexT
     let ret = Parser::new(&allocator, &source_text, source_type).parse();
     if ret.program.is_empty() || !ret.diagnostics.is_empty() {
         return Err(ConvexTypeGeneratorError::ParsingFailed {
-            file: path_str,
+            file: path.to_path_buf(),
             details: "Parser failed or empty program".to_string(),
         });
     }
@@ -47,7 +46,7 @@ pub(crate) fn extract_program_facts(path: &Path) -> Result<ProgramFacts, ConvexT
     let semantics = SemanticBuilder::new().with_check_syntax_error(true).build(&ret.program);
     if !semantics.diagnostics.is_empty() {
         return Err(ConvexTypeGeneratorError::ParsingFailed {
-            file: path_str,
+            file: path.to_path_buf(),
             details: "Semantic analysis failed".to_string(),
         });
     }

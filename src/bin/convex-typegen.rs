@@ -12,7 +12,7 @@ fn main()
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--check" => check_only = true,
-            "--schema" => config.schema_path = value(&mut args, "--schema"),
+            "--schema" => config = config.with_schema_path(value(&mut args, "--schema")),
             "--convex-dir" => config.convex_dir = value(&mut args, "--convex-dir"),
             "--output" => {
                 config.out_file = value(&mut args, "--output");

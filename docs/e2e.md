@@ -31,6 +31,5 @@ wait has a 20-second timeout; backend startup is bounded to 60 retries.
 
 The runner always writes sanitized Docker output to
 `target/e2e-artifacts/backend.log` (or `E2E_ARTIFACT_DIR/backend.log` when set)
-and removes the backend container. The `Local self-hosted Convex E2E` workflow
-runs on pull requests and pushes to `master`; it uploads that log even when the
-job fails.
+and removes the backend container. CI compiles `convex-typegen-e2e` with the
+committed function spec. Run backend tests on your local machine with `just e2e`.

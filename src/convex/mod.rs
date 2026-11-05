@@ -38,7 +38,7 @@ pub(crate) fn create_schema_ast(path: &Path) -> Result<JsonValue, ConvexTypeGene
 {
     // Validate path exists before processing
     if !path.exists() {
-        return Err(ConvexTypeGeneratorError::MissingSchemaFile);
+        return Err(ConvexTypeGeneratorError::MissingSchemaFile { path: path.into() });
     }
 
     generate_javascript_ast(path)
@@ -54,9 +54,8 @@ pub(crate) fn create_function_asts(paths: Vec<PathBuf>) -> Result<BTreeMap<Strin
     let mut function_asts = BTreeMap::new();
     let mut pending = paths;
     while let Some(path) = pending.pop() {
-        let path_str = path.to_string_lossy().to_string();
-        let canonical = path.canonicalize().map_err(|error| ConvexTypeGeneratorError::IOError {
-            file: path_str.clone(),
+        let canonical = path.canonicalize().map_err(|error| ConvexTypeGeneratorError::Io {
+            file: path.clone(),
             error,
         })?;
 
@@ -120,7 +119,7 @@ mod create_schema_ast_tests
         let p = PathBuf::from("/nonexistent/convex-typegen/schema-xyz.ts");
         assert!(matches!(
             create_schema_ast(&p).unwrap_err(),
-            crate::error::ConvexTypeGeneratorError::MissingSchemaFile
+            crate::error::ConvexTypeGeneratorError::MissingSchemaFile { path } if path == p
         ));
     }
 
@@ -181,6 +180,6 @@ mod create_function_asts_tests
     {
         let p = PathBuf::from("/nonexistent/convex-typegen/missing.ts");
         let err = create_function_asts(vec![p]).unwrap_err();
-        assert!(matches!(err, crate::error::ConvexTypeGeneratorError::IOError { .. }));
+        assert!(matches!(err, crate::error::ConvexTypeGeneratorError::Io { .. }));
     }
 }

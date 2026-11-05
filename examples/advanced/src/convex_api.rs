@@ -18,23 +18,14 @@ pub mod tables {
     pub struct Users;
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-#[convex(literal = "admin")]
-pub struct UsersDocRoleBranch1;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-#[convex(literal = "member")]
-pub struct UsersDocRoleBranch2;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-#[convex(literal = "viewer")]
-pub struct UsersDocRoleBranch3;
-
 #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
 pub enum UsersDocRole {
-    Branch1(UsersDocRoleBranch1),
-    Branch2(UsersDocRoleBranch2),
-    Branch3(UsersDocRoleBranch3),
+    #[convex(literal = "admin")]
+    Admin,
+    #[convex(literal = "member")]
+    Member,
+    #[convex(literal = "viewer")]
+    Viewer,
 }
 
 #[derive(Debug, Clone, ConvexValue)]
@@ -93,23 +84,14 @@ pub struct ProjectsDocSettings {
     pub theme: String,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-#[convex(literal = "draft")]
-pub struct ProjectsDocStatusBranch1;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-#[convex(literal = "active")]
-pub struct ProjectsDocStatusBranch2;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-#[convex(literal = "archived")]
-pub struct ProjectsDocStatusBranch3;
-
 #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ProjectsDocStatus {
-    Branch1(ProjectsDocStatusBranch1),
-    Branch2(ProjectsDocStatusBranch2),
-    Branch3(ProjectsDocStatusBranch3),
+    #[convex(literal = "draft")]
+    Draft,
+    #[convex(literal = "active")]
+    Active,
+    #[convex(literal = "archived")]
+    Archived,
 }
 
 #[derive(Debug, Clone, ConvexValue)]
@@ -136,23 +118,14 @@ impl convex_typegen_runtime::model::Table for tables::Projects {
     type Document = ProjectsDoc;
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-#[convex(literal = "p0")]
-pub struct TasksDocPriorityBranch1;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-#[convex(literal = "p1")]
-pub struct TasksDocPriorityBranch2;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-#[convex(literal = "p2")]
-pub struct TasksDocPriorityBranch3;
-
 #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TasksDocPriority {
-    Branch1(TasksDocPriorityBranch1),
-    Branch2(TasksDocPriorityBranch2),
-    Branch3(TasksDocPriorityBranch3),
+    #[convex(literal = "p0")]
+    P0,
+    #[convex(literal = "p1")]
+    P1,
+    #[convex(literal = "p2")]
+    P2,
 }
 
 #[derive(Debug, Clone, ConvexValue)]
@@ -196,18 +169,12 @@ pub mod api {
             pub verbose: bool,
         }
 
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-        #[convex(literal = "json")]
-        pub struct MirrorArgsModeBranch1;
-
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-        #[convex(literal = "text")]
-        pub struct MirrorArgsModeBranch2;
-
         #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
         pub enum MirrorArgsMode {
-            Branch1(MirrorArgsModeBranch1),
-            Branch2(MirrorArgsModeBranch2),
+            #[convex(literal = "json")]
+            Json,
+            #[convex(literal = "text")]
+            Text,
         }
 
         #[derive(Debug, Clone, ConvexValue)]
@@ -236,23 +203,14 @@ pub mod api {
             value_serde::Bytes,
         };
 
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-        #[convex(literal = "draft")]
-        pub struct ListByTeamArgsStatusFilterBranch1;
-
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-        #[convex(literal = "active")]
-        pub struct ListByTeamArgsStatusFilterBranch2;
-
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-        #[convex(literal = "archived")]
-        pub struct ListByTeamArgsStatusFilterBranch3;
-
         #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
         pub enum ListByTeamArgsStatusFilter {
-            Branch1(ListByTeamArgsStatusFilterBranch1),
-            Branch2(ListByTeamArgsStatusFilterBranch2),
-            Branch3(ListByTeamArgsStatusFilterBranch3),
+            #[convex(literal = "draft")]
+            Draft,
+            #[convex(literal = "active")]
+            Active,
+            #[convex(literal = "archived")]
+            Archived,
         }
 
         #[derive(Debug, Clone, ConvexValue)]
@@ -287,18 +245,12 @@ pub mod api {
             value_serde::Bytes,
         };
 
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-        #[convex(literal = "p0")]
-        pub struct SearchArgsFilterMinPriorityBranch1;
-
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-        #[convex(literal = "p1")]
-        pub struct SearchArgsFilterMinPriorityBranch2;
-
         #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
         pub enum SearchArgsFilterMinPriority {
-            Branch1(SearchArgsFilterMinPriorityBranch1),
-            Branch2(SearchArgsFilterMinPriorityBranch2),
+            #[convex(literal = "p0")]
+            P0,
+            #[convex(literal = "p1")]
+            P1,
         }
 
         #[derive(Debug, Clone, ConvexValue)]
@@ -321,23 +273,14 @@ pub mod api {
         pub const search: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, SearchArgs, RawValue> =
             ::convex_typegen_runtime::function::FunctionRef::new("tasks:tasksSearch");
 
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-        #[convex(literal = "p0")]
-        pub struct CreateArgsPriorityBranch1;
-
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-        #[convex(literal = "p1")]
-        pub struct CreateArgsPriorityBranch2;
-
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-        #[convex(literal = "p2")]
-        pub struct CreateArgsPriorityBranch3;
-
         #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
         pub enum CreateArgsPriority {
-            Branch1(CreateArgsPriorityBranch1),
-            Branch2(CreateArgsPriorityBranch2),
-            Branch3(CreateArgsPriorityBranch3),
+            #[convex(literal = "p0")]
+            P0,
+            #[convex(literal = "p1")]
+            P1,
+            #[convex(literal = "p2")]
+            P2,
         }
 
         #[derive(Debug, Clone, ConvexValue)]
@@ -426,23 +369,14 @@ pub mod api {
         pub const get_profile: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, GetProfileArgs, RawValue> =
             ::convex_typegen_runtime::function::FunctionRef::new("users:usersGetProfile");
 
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-        #[convex(literal = "admin")]
-        pub struct CreateArgsRoleBranch1;
-
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-        #[convex(literal = "member")]
-        pub struct CreateArgsRoleBranch2;
-
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ConvexValue)]
-        #[convex(literal = "viewer")]
-        pub struct CreateArgsRoleBranch3;
-
         #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
         pub enum CreateArgsRole {
-            Branch1(CreateArgsRoleBranch1),
-            Branch2(CreateArgsRoleBranch2),
-            Branch3(CreateArgsRoleBranch3),
+            #[convex(literal = "admin")]
+            Admin,
+            #[convex(literal = "member")]
+            Member,
+            #[convex(literal = "viewer")]
+            Viewer,
         }
 
         #[derive(Debug, Clone, ConvexValue)]

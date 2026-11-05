@@ -37,7 +37,7 @@ jobs:
 
       - name: Upload sanitized backend logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: convex-self-hosted-e2e-backend-logs
           path: ${{ runner.temp }}/convex-typegen-e2e-artifacts/backend.log

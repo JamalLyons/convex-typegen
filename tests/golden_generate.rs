@@ -137,7 +137,7 @@ fn golden_named_nested_object_structs()
     assert!(body.contains("pub settings: ProjectsDocSettings"));
     assert!(body.contains("pub struct MirrorArgsFlags"));
     assert!(body.contains("pub flags: MirrorArgsFlags"));
-    assert!(body.contains("pub const integrations_mirror:"));
+    assert!(body.contains("pub const mirror:"));
     assert!(body.contains("\"integrations:integrationsMirror\""));
     insta::assert_snapshot!("scoped_function_model_names", body);
 }

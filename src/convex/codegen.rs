@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
 use super::ir::{Declared, Function, FunctionKind, GenerationIr, TableDocument, TableShape, Visibility};
-use super::utils::{field_ident, function_model_stem, type_ident};
+use super::utils::{field_ident, function_idents, type_ident};
 use super::validator::{ConvexValidator as Validator, Literal};
 use crate::error::ConvexTypeGeneratorError;
 
@@ -184,9 +184,8 @@ impl Emitter
     {
         let export = &function.identity.export;
         let path = format!("{}:{export}", module.join("/"));
-        let stem = function_model_stem(module.last().map_or("", String::as_str), export);
+        let (reference, stem) = function_idents(module.last().map_or("", String::as_str), export);
         let context = provenance_context(&format!("function {path:?}"), &function.provenance);
-        let reference = field_ident(export);
         claim(&mut self.names, &reference, &context)?;
 
         let args = match &function.args {

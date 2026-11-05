@@ -10,8 +10,8 @@ All notable changes to this project will be documented in this file.
 
 - **Breaking generated output:** Emit nested, typed public function references such as
   `api::admin::users::list`. Declared args and returns now live beside the reference
-  (e.g. `api::admin::users::ListArgs`). Model names omit a redundant leading module
-  name, and `path()` replaces `FUNCTION_PATH`.
+  (e.g. `api::admin::users::ListArgs`). References and model names omit a redundant leading
+  module name, and `path()` replaces `FUNCTION_PATH`.
   Undeclared validators use explicit `RawArgs` and `RawValue` fallbacks. See
   [generated models](docs/generated-models.md) for migration.
 

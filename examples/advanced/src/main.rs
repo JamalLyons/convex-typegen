@@ -23,20 +23,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     let Ok(url) = std::env::var("CONVEX_URL") else {
         eprintln!("CONVEX_URL is not set. Add it to .env.local next to this crate’s Cargo.toml.");
         eprintln!("Example paths from codegen:");
-        eprintln!("  {}", integrations::integrations_mirror.path());
-        eprintln!("  {}", projects::projects_list_by_team.path());
-        eprintln!("  {}", tasks::tasks_search.path());
-        eprintln!("  {}", workspace::workspace_summary.path());
+        eprintln!("  {}", integrations::mirror.path());
+        eprintln!("  {}", projects::list_by_team.path());
+        eprintln!("  {}", tasks::search.path());
+        eprintln!("  {}", workspace::summary.path());
         return Ok(());
     };
 
     let mut sdk = ConvexClient::new(&url).await?;
     let mut client = TypedClient::new(&mut sdk);
 
-    let seed = client.mutation(workspace::workspace_seed_if_empty, RawArgs::new()).await?;
+    let seed = client.mutation(workspace::seed_if_empty, RawArgs::new()).await?;
     println!("workspaceSeedIfEmpty → {:?}", seed);
 
-    let summary = client.query(workspace::workspace_summary, RawArgs::new()).await?;
+    let summary = client.query(workspace::summary, RawArgs::new()).await?;
     println!("workspaceSummary → {:?}", summary);
 
     let (team_id, project_id, user_id) = extract_ids(&summary);
@@ -47,7 +47,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let teams = client
         .query(
-            teams::teams_list_by_owner,
+            teams::list_by_owner,
             teams::ListByOwnerArgs {
                 owner_user_id: user_id.clone().into(),
             },
@@ -57,7 +57,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let projects = client
         .query(
-            projects::projects_list_by_team,
+            projects::list_by_team,
             projects::ListByTeamArgs {
                 team_id: team_id.into(),
                 status_filter: Some(projects::ListByTeamArgsStatusFilter::Branch2(
@@ -70,7 +70,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let tasks = client
         .query(
-            tasks::tasks_search,
+            tasks::search,
             tasks::SearchArgs {
                 filter: tasks::SearchArgsFilter {
                     project_id: project_id.clone().into(),
@@ -86,7 +86,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let mirror = client
         .action(
-            integrations::integrations_mirror,
+            integrations::mirror,
             integrations::MirrorArgs {
                 body: "hello from Rust".to_string(),
                 numbers: vec![1.0, 2.0, 3.0],
@@ -103,7 +103,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let profile = client
         .query(
-            users::users_get_profile,
+            users::get_profile,
             users::GetProfileArgs {
                 user_id: user_id.clone().into(),
                 with_bytes: None,
@@ -114,7 +114,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let by_email = client
         .query(
-            users::users_get_by_email,
+            users::get_by_email,
             users::GetByEmailArgs {
                 email: "demo@example.com".to_string(),
                 include_inactive: None,
@@ -125,7 +125,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let _tag_update = client
         .mutation(
-            projects::projects_update_tags,
+            projects::update_tags,
             projects::UpdateTagsArgs {
                 project_id: project_id.clone().into(),
                 tags: vec!["rust".to_string(), "convex".to_string(), "typegen".to_string()],
@@ -136,7 +136,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 
     let _task = client
         .mutation(
-            tasks::tasks_create,
+            tasks::create,
             tasks::CreateArgs {
                 project_id: project_id.clone().into(),
                 title: "From Rust client".to_string(),
@@ -155,7 +155,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     let ts = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_secs();
     let _alt_user = client
         .mutation(
-            users::users_create,
+            users::create,
             users::CreateArgs {
                 email: format!("rust-{ts}@example.com"),
                 display_name: "Rust-created".to_string(),

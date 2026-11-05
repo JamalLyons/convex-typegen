@@ -70,7 +70,7 @@ pub mod api {
         }
 
         #[allow(non_upper_case_globals)]
-        pub const integrations_mirror: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Action, MirrorArgs, RawValue> =
+        pub const mirror: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Action, MirrorArgs, RawValue> =
             ::convex_typegen_runtime::function::FunctionRef::new("integrations:integrationsMirror");
     }
 }

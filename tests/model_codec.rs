@@ -71,4 +71,5 @@ fn generated_models_compile_and_preserve_wire_semantics()
     cases.compile_fail("tests/ui/wrong_function_args.rs");
     cases.compile_fail("tests/ui/internal_function.rs");
     cases.compile_fail("tests/ui/wrong_function_kind.rs");
+    cases.compile_fail("tests/ui/subscribe_non_query.rs");
 }

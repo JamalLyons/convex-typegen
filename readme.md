@@ -43,6 +43,8 @@ module. A `Doc<tables::Tasks>` contains `_id: Id<tables::Tasks>` and `_creation_
 Use `convex_typegen_runtime::value_serde::{to_value, from_value}` to convert models and SDK values.
 
 See [generated models](docs/generated-models.md) for unions, field presence, and raw values.
+Use the [typed client](docs/typed-client.md) to call generated references, subscribe to queries,
+and decode application errors.
 
 ## Defaults
 

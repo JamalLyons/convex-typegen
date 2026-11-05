@@ -181,7 +181,7 @@ using the runtime codec so branch selection preserves wire kinds.
 Generated Rust uses runtime model types, the direct value codec, and the runtime’s Serde re-export. The generator and runtime share a workspace lockfile. The runtime owns the Convex client
 dependency, and its Rust 1.85 check selects only the runtime package.
 
-- **`ConvexClientExt::prepare_args`** — Serde args struct → `BTreeMap<String, convex::Value>` through `value_serde`; conversion errors carry the failing value path.
+- **`TypedClient`** borrows the official client, encodes arguments into a Convex object, and decodes call results and subscription updates. See [typed client](typed-client.md).
 
 ### Direct Convex value Serde (`runtime/src/value_serde.rs`)
 
@@ -193,8 +193,8 @@ return errors that include the failing value path. The generated field presence 
 present value in `Some` after decoding it. Omitted optional fields default to `None` and are
 skipped during serialization. `model::RawValue` provides Serde support for the SDK value.
 
-`generate` itself does **not** use the Convex network client; `ConvexClientExt` bridges generated
-args to the official **`convex`** crate at runtime.
+Generated references carry type information for use with the official **`convex`** crate at runtime.
+Generation remains offline.
 
 ---
 
@@ -211,7 +211,7 @@ to check the runtime at its own MSRV.
 - **Unit tests** live next to modules under `#[cfg(test)]` and cover:
   - Synthetic ESTree input and an Oxc-backed fixture that verifies spans and function metadata.
   - Lexer edge cases (empty file, invalid TS).
-  - Codegen output (`prepare_args`-ready serde models, `convex_type_to_rust_type` cases).
+  - Codegen output (Serde models, `convex_type_to_rust_type` cases).
 - **Integration tests** in `tests/golden_generate.rs` and `tests/build_script_smoke.rs` run the full pipeline in `tempfile` directories with inline TypeScript fixtures.
 - **SDK parity** compares the v1 review fixture's inline validators against
   `tests/fixtures/v1-review/inline-function-spec.json`. Refresh it from an explicit local

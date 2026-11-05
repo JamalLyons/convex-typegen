@@ -10,7 +10,9 @@ Public queries, mutations, and actions generate constants under `api`. For examp
 `convex/admin/users.ts` exporting `list` emits `api::admin::users::list`, whose
 `path()` returns `"admin/users:list"`. Each reference implements
 `convex_typegen_runtime::function::FunctionReference` with associated `Args`,
-`Returns`, and `Kind` types. The kind markers are `Query`, `Mutation`, and `Action`.
+`Returns`, `Kind`, and application `Error` types. The kind markers are `Query`,
+`Mutation`, and `Action`. See [typed client](typed-client.md) for calls and
+application error declarations.
 
 Module segments and exports use snake_case, escape Rust keywords where possible,
 and normalize punctuation and leading digits. The generator reports both origins

@@ -10,13 +10,13 @@ Rust is a client language. Backend functions stay TypeScript. The official [`con
 
 convex-typegen runs in `build.rs` and emits argument structs, table structs, and typed
 public function references. The reference's `path()` works with the official client.
-Typed client methods and subscriptions complete the v1 client surface.
+The [typed client](typed-client.md) provides calls and subscriptions over those references.
 
 ## v1 headline
 
 **A generated, fully typed function client — the Rust equivalent of `api.*`.** This is decided.
 
-It is an extension over the official client. Auth, the builder, and the rest of `convex::ConvexClient` stay available. `ConvexClient` methods take `&mut self` and the client is `Clone`; the wrapper has to respect that. Today’s `ConvexClientExt` in `runtime/src/client.rs` only prepares arguments.
+The adapter borrows the official client mutably for SDK operations. Auth and the SDK builder remain available.
 
 The generated surface:
 
@@ -60,8 +60,8 @@ Checked against this tree (0.4.0). Items marked unverified have not been re-run 
 - [x] Function discovery accepts recognized Convex server builder imports and distinguishes public and internal visibility. Relative imports and static spreads are resolved through a bounded offline source graph with file/span diagnostics.
 - [x] The function IR records canonical root-relative module identity and declared args/returns metadata. Generated model names and function paths use that identity.
 - [x] Generated args and returns, typed table IDs and documents, literal and union models, and explicit field presence are available. See [generated models](generated-models.md).
-- [ ] Typed function references, client methods and subscriptions are pending.
-- [x] Direct Serde conversion against `convex::Value` is available under `value_serde::{to_value, from_value}` and used by `ConvexClientExt::prepare_args`. It preserves int64/float64 wire kinds, non-finite floats, signed zero, bytes (`ConvexBytes`), and recursive values, with path-aware errors for unsupported values and overflow. The lossy JSON bridge was removed.
+- [x] Typed function references, client methods, query subscriptions, and application error decoding are available.
+- [x] Direct Serde conversion against `convex::Value` is available under `value_serde::{to_value, from_value}` and used by `TypedClient`. It preserves int64/float64 wire kinds, non-finite floats, signed zero, bytes (`ConvexBytes`), and recursive values, with path-aware errors for unsupported values and overflow. The lossy JSON bridge was removed.
 - [x] `convex-typegen` is build-only and has no Convex client or TLS dependency. `convex-typegen-runtime` owns the codecs, Serde re-exports, and extension over the official client.
 - [ ] Tests are unit tests plus `tests/golden_generate.rs` and `tests/build_script_smoke.rs`. `.github/workflows/rust.yml` does not start a Convex backend. The examples call whatever `CONVEX_URL` points at.
 - [x] Default build output is `$OUT_DIR/convex_types.rs`, included with `include!`; generation is atomic and the CLI supports non-writing drift checks.

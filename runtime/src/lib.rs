@@ -8,7 +8,7 @@ pub mod function;
 pub mod model;
 pub mod value_serde;
 
-pub use client::ConvexClientExt;
+pub use client::{CallError, InvalidApplicationData, TypedClient};
 /// Serde derives in generated Rust resolve through this re-export.
 pub use serde;
 /// JSON utilities for applications working with JSON separately from the Convex codec.
@@ -20,6 +20,6 @@ pub mod prelude
     pub use serde::{Deserialize, Serialize};
     pub use serde_json::Value as ConvexJsonValue;
 
-    pub use crate::ConvexClientExt;
     pub use crate::value_serde::{Bytes as ConvexBytes, Error as ConvexValueSerdeError, from_value, to_value};
+    pub use crate::{CallError, TypedClient};
 }

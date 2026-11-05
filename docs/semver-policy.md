@@ -21,7 +21,7 @@ These items are covered by semver once we tag **1.0.0**:
 - `convex_typegen::error::ConvexTypeGeneratorError` (new variants = minor; removed/renamed variants = major)
 - `convex_typegen::prelude` re-exports
 - Generator Cargo feature `verbose`
-- Runtime `ConvexClientExt`, `function`, `value_serde`, and `prelude`
+- Runtime `TypedClient`, `CallError`, `InvalidApplicationData`, `function`, `value_serde`, and `prelude`
 - Runtime crate-root `serde` / `serde_json` re-exports used by generated code
 
 See [api-stability.md](api-stability.md) for a per-item table.

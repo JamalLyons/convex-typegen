@@ -1,13 +1,46 @@
 error[E0271]: type mismatch resolving `<FunctionRef<Mutation, AddArgs, Id<Tasks>> as FunctionReference>::Kind == Query`
-  --> tests/ui/wrong_function_kind.rs:11:18
-   |
-11 |     accept_query(users::add);
-   |     ------------ ^^^^^^^^^^ expected `Query`, found `Mutation`
-   |     |
-   |     required by a bound introduced by this call
-   |
-note: required by a bound in `accept_query`
-  --> tests/ui/wrong_function_kind.rs:7:43
-   |
- 7 | fn accept_query(_: impl FunctionReference<Kind = Query>) {}
-   |                                           ^^^^^^^^^^^^ required by this bound in `accept_query`
+ --> tests/ui/wrong_function_kind.rs:9:26
+  |
+9 |     let _ = client.query(users::add, args).await;
+  |                    ----- ^^^^^^^^^^ expected `Query`, found `Mutation`
+  |                    |
+  |                    required by a bound introduced by this call
+  |
+note: required by a bound in `TypedClient::<'a>::query`
+ --> runtime/src/client.rs
+  |
+  |     pub async fn query<F>(&mut self, function: F, args: F::Args) -> Result<F::Returns, CallError<F::Error>>
+  |                  ----- required by a bound in this associated function
+  |     where
+  |         F: FunctionReference<Kind = Query>,
+  |                              ^^^^^^^^^^^^ required by this bound in `TypedClient::<'a>::query`
+
+error[E0271]: type mismatch resolving `<FunctionRef<Mutation, AddArgs, Id<Tasks>> as FunctionReference>::Kind == Query`
+ --> tests/ui/wrong_function_kind.rs:9:13
+  |
+9 |     let _ = client.query(users::add, args).await;
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Query`, found `Mutation`
+  |
+note: required by a bound in `TypedClient::<'a>::query`
+ --> runtime/src/client.rs
+  |
+  |     pub async fn query<F>(&mut self, function: F, args: F::Args) -> Result<F::Returns, CallError<F::Error>>
+  |                  ----- required by a bound in this associated function
+  |     where
+  |         F: FunctionReference<Kind = Query>,
+  |                              ^^^^^^^^^^^^ required by this bound in `TypedClient::<'a>::query`
+
+error[E0271]: type mismatch resolving `<FunctionRef<Mutation, AddArgs, Id<Tasks>> as FunctionReference>::Kind == Query`
+ --> tests/ui/wrong_function_kind.rs:9:44
+  |
+9 |     let _ = client.query(users::add, args).await;
+  |                                            ^^^^^ expected `Query`, found `Mutation`
+  |
+note: required by a bound in `TypedClient::<'a>::query`
+ --> runtime/src/client.rs
+  |
+  |     pub async fn query<F>(&mut self, function: F, args: F::Args) -> Result<F::Returns, CallError<F::Error>>
+  |                  ----- required by a bound in this associated function
+  |     where
+  |         F: FunctionReference<Kind = Query>,
+  |                              ^^^^^^^^^^^^ required by this bound in `TypedClient::<'a>::query`

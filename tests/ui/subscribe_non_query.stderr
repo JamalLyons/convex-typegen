@@ -1,0 +1,46 @@
+error[E0271]: type mismatch resolving `<FunctionRef<Mutation, AddArgs, Id<Tasks>> as FunctionReference>::Kind == Query`
+ --> tests/ui/subscribe_non_query.rs:9:30
+  |
+9 |     let _ = client.subscribe(users::add, args).await;
+  |                    --------- ^^^^^^^^^^ expected `Query`, found `Mutation`
+  |                    |
+  |                    required by a bound introduced by this call
+  |
+note: required by a bound in `TypedClient::<'a>::subscribe`
+ --> runtime/src/client.rs
+  |
+  |     pub async fn subscribe<F>(
+  |                  --------- required by a bound in this associated function
+...
+  |         F: FunctionReference<Kind = Query>,
+  |                              ^^^^^^^^^^^^ required by this bound in `TypedClient::<'a>::subscribe`
+
+error[E0271]: type mismatch resolving `<FunctionRef<Mutation, AddArgs, Id<Tasks>> as FunctionReference>::Kind == Query`
+ --> tests/ui/subscribe_non_query.rs:9:13
+  |
+9 |     let _ = client.subscribe(users::add, args).await;
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Query`, found `Mutation`
+  |
+note: required by a bound in `TypedClient::<'a>::subscribe`
+ --> runtime/src/client.rs
+  |
+  |     pub async fn subscribe<F>(
+  |                  --------- required by a bound in this associated function
+...
+  |         F: FunctionReference<Kind = Query>,
+  |                              ^^^^^^^^^^^^ required by this bound in `TypedClient::<'a>::subscribe`
+
+error[E0271]: type mismatch resolving `<FunctionRef<Mutation, AddArgs, Id<Tasks>> as FunctionReference>::Kind == Query`
+ --> tests/ui/subscribe_non_query.rs:9:48
+  |
+9 |     let _ = client.subscribe(users::add, args).await;
+  |                                                ^^^^^ expected `Query`, found `Mutation`
+  |
+note: required by a bound in `TypedClient::<'a>::subscribe`
+ --> runtime/src/client.rs
+  |
+  |     pub async fn subscribe<F>(
+  |                  --------- required by a bound in this associated function
+...
+  |         F: FunctionReference<Kind = Query>,
+  |                              ^^^^^^^^^^^^ required by this bound in `TypedClient::<'a>::subscribe`

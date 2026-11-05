@@ -12,7 +12,9 @@ From the workspace root, run:
 just e2e
 ```
 
-Prerequisites are Docker, Node.js/npm, `jq`, Rust 1.95, and `just`. The local
+Prerequisites are Docker, Node.js/npm, `jq`, Rust 1.95, network access to the
+locked package registries, and `just`. The script fetches locked Rust
+dependencies first, then runs the consumer build offline. The local
 backend uses `127.0.0.1:13210` (API) and `127.0.0.1:13211` (HTTP actions); keep
 those ports free. The command installs the fixture's locked npm dependencies,
 deploys it with the self-hosted CLI, captures a fresh function spec, then runs

@@ -52,6 +52,9 @@ for required in docker curl npm jq cargo; do
     command -v "$required" >/dev/null || { echo "required command not found: $required" >&2; exit 2; }
 done
 
+# Populate Cargo's cache first so the E2E consumer build itself can run offline.
+cargo fetch --locked
+
 docker run --detach --name "$backend_name" \
     --publish 127.0.0.1:13210:3210 \
     --publish 127.0.0.1:13211:3211 \

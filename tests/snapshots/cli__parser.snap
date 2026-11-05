@@ -1,0 +1,5 @@
+---
+source: tests/cli.rs
+expression: stderr
+---
+convex-typegen: Failed to parse file '<PROJECT>/schema.ts': Parser panicked: Expected `}` but found `EOF` at bytes 16..16

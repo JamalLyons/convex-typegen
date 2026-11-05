@@ -1,7 +1,11 @@
 //! Smoke test: seeds demo data (if needed), then calls queries, mutations, and an action
 //! using every generated `*Args` struct from this example’s Convex modules.
 
-mod convex_types;
+#[allow(dead_code)]
+mod convex_types
+{
+    include!(concat!(env!("OUT_DIR"), "/convex_types.rs"));
+}
 
 use std::path::Path;
 

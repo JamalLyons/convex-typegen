@@ -1,6 +1,10 @@
 //! CLI demo: reads/writes game stats through generated arg structs and [`ConvexClientExt`].
 
-mod convex_types;
+#[allow(dead_code)]
+mod convex_types
+{
+    include!(concat!(env!("OUT_DIR"), "/convex_types.rs"));
+}
 
 use std::io::{self, Write};
 use std::path::Path;

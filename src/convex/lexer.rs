@@ -107,7 +107,14 @@ fn join_oxc_diagnostic_messages(errors: &[OxcDiagnostic]) -> String
 {
     errors
         .iter()
-        .map(ToString::to_string)
+        .map(|error| {
+            let location = error
+                .labels
+                .first()
+                .map(|label| format!(" at bytes {}..{}", label.offset(), label.offset() + label.len()))
+                .unwrap_or_default();
+            format!("{error}{location}")
+        })
         .filter(|s| !s.is_empty())
         .collect::<Vec<_>>()
         .join("; ")

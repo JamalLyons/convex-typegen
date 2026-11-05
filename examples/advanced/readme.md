@@ -46,4 +46,4 @@ From the repo root:
 cargo run --manifest-path examples/advanced/Cargo.toml
 ```
 
-The binary calls `workspaceSeedIfEmpty`, prints `workspaceSummary`, then exercises several generated `*Args` types via `ConvexClient::prepare_args` and the Convex client.
+The binary calls `workspaceSeedIfEmpty`, prints `workspaceSummary`, then exercises several generated `*Args` types via the runtime’s `TypedClient`.

@@ -10,8 +10,8 @@ All notable changes to this project will be documented in this file.
 
 - **Breaking generated output:** Emit nested, typed public function references such as
   `api::admin::users::list`. Declared args and returns now live beside the reference
-  (e.g. `api::admin::users::ListArgs`). Model names omit a redundant leading module
-  name, and `path()` replaces `FUNCTION_PATH`.
+  (e.g. `api::admin::users::ListArgs`). References and model names omit a redundant leading
+  module name, and `path()` replaces `FUNCTION_PATH`.
   Undeclared validators use explicit `RawArgs` and `RawValue` fallbacks. See
   [generated models](docs/generated-models.md) for migration.
 
@@ -47,15 +47,20 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **Breaking runtime API:** Replace `ConvexClientExt::prepare_args` with
+  [`TypedClient`](docs/typed-client.md) for typed queries, mutations, actions,
+  and query subscriptions. Function references can declare typed application
+  errors, and malformed payloads retain their original Convex value.
+
 - **Breaking generated output:** Regenerate bindings for canonical path-scoped names, snake_case
   fields, typed IDs and union values. Optional nullable fields use an outer `Option` for presence
   and a union member for null. Unknown shapes and `v.any()` use `model::RawValue`.
 
 - Build the generator, runtime, examples, and tooling in a single Cargo workspace.
 
-- **Breaking:** Use `convex-typegen` (Rust 1.95) as a build dependency and `convex-typegen-runtime` (Rust 1.85) as a normal dependency. The runtime now owns the client extension, value codecs, and generated-code Serde imports. The generator’s `client` feature and runtime re-exports were removed. Regenerate existing bindings with the matching release.
+- **Breaking:** Use `convex-typegen` (Rust 1.95) as a build dependency and `convex-typegen-runtime` (Rust 1.85) as a normal dependency. The runtime now owns the typed client, value codecs, and generated-code Serde imports. The generator’s `client` feature and runtime re-exports were removed. Regenerate existing bindings with the matching release.
 
-- **Breaking:** `ConvexClientExt::prepare_args` serializes generated args directly to `convex::Value` and returns `ConvexValueSerdeError`. Generated `TryFrom<Args> for BTreeMap<String, serde_json::Value>` implementations were removed.
+- **Breaking:** Generated `TryFrom<Args> for BTreeMap<String, serde_json::Value>` implementations were removed.
 - **Breaking:** Removed the lossy `IntoConvexValue` and `ConvexValueExt` APIs and the `ConvexJsonError` prelude alias. Generated `v.bytes()` fields now use `ConvexBytes` so they serialize as Convex byte strings.
 
 - Route offline generation through a single typed model for schemas, validators, and functions.

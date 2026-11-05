@@ -174,3 +174,18 @@ fn main()
     kinds_and_records();
     references();
 }
+
+#[allow(dead_code)]
+async fn typed_calls(
+    sdk: &mut convex::ConvexClient,
+    args: admin::users::ListArgs,
+) -> Result<(), convex_typegen_runtime::CallError<String>>
+{
+    use convex_typegen_runtime::TypedClient;
+
+    let reference = admin::users::list.with_error::<String>();
+    let updates = TypedClient::new(sdk).subscribe(reference, args.clone()).await?;
+    let _: admin::users::ListReturn = TypedClient::new(sdk).query(reference, args).await?;
+    drop(updates);
+    Ok(())
+}

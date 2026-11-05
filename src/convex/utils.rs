@@ -29,15 +29,16 @@ pub(super) fn type_ident(name: &str) -> String
     pascal_ident(&words(name))
 }
 
-pub(super) fn function_model_stem(module: &str, export: &str) -> String
+pub(super) fn function_idents(module: &str, export: &str) -> (String, String)
 {
     let module = words(module);
-    let export = words(export);
-    let stem = export
+    let export_words = words(export);
+    let shortened = export_words
         .strip_prefix(module.as_slice())
-        .filter(|suffix| !suffix.is_empty())
-        .unwrap_or(&export);
-    pascal_ident(stem)
+        .filter(|suffix| !suffix.is_empty());
+    let stem = shortened.unwrap_or(&export_words);
+    let reference = snake_ident(stem.join("_"), shortened.is_none() && export.starts_with('_'));
+    (reference, pascal_ident(stem))
 }
 
 fn pascal_ident(words: &[String]) -> String
@@ -55,8 +56,12 @@ fn pascal_ident(words: &[String]) -> String
 
 pub(super) fn field_ident(name: &str) -> String
 {
-    let mut ident = words(name).join("_");
-    if name.starts_with('_') || ident.starts_with(|c: char| c.is_ascii_digit()) {
+    snake_ident(words(name).join("_"), name.starts_with('_'))
+}
+
+fn snake_ident(mut ident: String, leading_underscore: bool) -> String
+{
+    if leading_underscore || ident.starts_with(|c: char| c.is_ascii_digit()) {
         ident.insert(0, '_');
     }
     match ident.as_str() {
@@ -74,14 +79,21 @@ pub(super) fn field_ident(name: &str) -> String
 #[cfg(test)]
 mod tests
 {
-    use super::function_model_stem;
+    use super::function_idents;
 
     #[test]
     fn elides_only_a_complete_module_prefix_with_a_nonempty_suffix()
     {
-        assert_eq!(function_model_stem("integrations", "integrationsMirror"), "Mirror");
-        assert_eq!(function_model_stem("user-tools", "userToolsFind"), "Find");
-        assert_eq!(function_model_stem("user", "usersList"), "UsersList");
-        assert_eq!(function_model_stem("users", "users"), "Users");
+        assert_eq!(
+            function_idents("integrations", "integrationsMirror"),
+            ("mirror".into(), "Mirror".into())
+        );
+        assert_eq!(function_idents("user-tools", "userToolsFind"), ("find".into(), "Find".into()));
+        assert_eq!(
+            function_idents("user", "usersList"),
+            ("users_list".into(), "UsersList".into())
+        );
+        assert_eq!(function_idents("users", "usersType"), ("r#type".into(), "Type".into()));
+        assert_eq!(function_idents("users", "users"), ("users".into(), "Users".into()));
     }
 }

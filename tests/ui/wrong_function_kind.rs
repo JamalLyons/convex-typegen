@@ -1,12 +1,12 @@
 #[path = "../../target/model-tests/models.rs"]
 mod models;
 
-use convex_typegen_runtime::function::{FunctionReference, Query};
+use convex_typegen_runtime::TypedClient;
 use models::api::admin::users;
 
-fn accept_query(_: impl FunctionReference<Kind = Query>) {}
-
-fn main()
+async fn wrong_kind(client: &mut TypedClient<'_>, args: users::AddArgs)
 {
-    accept_query(users::add);
+    let _ = client.query(users::add, args).await;
 }
+
+fn main() {}

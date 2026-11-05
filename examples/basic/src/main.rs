@@ -1,4 +1,4 @@
-//! CLI demo: reads/writes game stats through generated arg structs and [`ConvexClientExt`].
+//! CLI demo: reads/writes game stats through generated arg structs and the typed client.
 
 #[allow(dead_code)]
 mod convex_types
@@ -11,7 +11,8 @@ use std::path::Path;
 
 use convex::{ConvexClient, Value as ConvexValue};
 use convex_typegen_runtime::function::RawArgs;
-use convex_typegen_runtime::prelude::*;
+use convex_typegen_runtime::model::RawValue;
+use convex_typegen_runtime::TypedClient;
 use convex_types::api::games;
 use rand::Rng;
 
@@ -20,20 +21,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
 {
     dotenvy::from_filename(Path::new(env!("CARGO_MANIFEST_DIR")).join(".env.local"))?;
 
-    let mut client = ConvexClient::new(&std::env::var("CONVEX_URL")?).await?;
+    let mut sdk = ConvexClient::new(&std::env::var("CONVEX_URL")?).await?;
+    let mut client = TypedClient::new(&mut sdk);
 
-    // Get current game stats using the extension trait
-    let game_stats = client
-        .query(
-            games::get_game.path(),
-            ConvexClient::prepare_args(games::GetGameArgs { log_data: None })?,
-        )
-        .await?;
+    // Get current game stats using the typed client
+    let game_stats = client.query(games::get_game, games::GetGameArgs { log_data: None }).await?;
 
     println!("Initial game stats response: {:?}", game_stats);
 
-    let (wins, losses) = match game_stats {
-        convex::FunctionResult::Value(ConvexValue::Object(obj)) => {
+    let (wins, losses) = match game_stats.0 {
+        ConvexValue::Object(obj) => {
             let win_count = obj.get("win_count").map(extract_float_value).unwrap_or(0.0);
             let loss_count = obj.get("loss_count").map(extract_float_value).unwrap_or(0.0);
             (win_count as i32, loss_count as i32)
@@ -72,10 +69,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
             std::cmp::Ordering::Equal => {
                 println!("Congratulations! You won in {} attempts!", attempts);
                 // Save win to Convex using winGame mutation
-                match client
-                    .mutation(games::win_game.path(), ConvexClient::prepare_args(RawArgs::new())?)
-                    .await
-                {
+                match client.mutation(games::win_game, RawArgs::new()).await {
                     Ok(result) => println!("Save win result: {:?}", result),
                     Err(e) => println!("Error saving win: {:?}", e),
                 }
@@ -86,10 +80,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
         if attempts >= MAX_ATTEMPTS {
             println!("Sorry, you've run out of attempts! The number was {}", secret_number);
             // Save loss to Convex using lossGame mutation
-            match client
-                .mutation(games::loss_game.path(), ConvexClient::prepare_args(RawArgs::new())?)
-                .await
-            {
+            match client.mutation(games::loss_game, RawArgs::new()).await {
                 Ok(_) => (),
                 Err(e) => println!("Error saving loss: {:?}", e),
             }
@@ -103,14 +94,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
     // Get and display updated stats
-    match client
-        .query(
-            games::get_game.path(),
-            ConvexClient::prepare_args(games::GetGameArgs { log_data: None })?,
-        )
-        .await
-    {
-        Ok(convex::FunctionResult::Value(ConvexValue::Object(obj))) => {
+    match client.query(games::get_game, games::GetGameArgs { log_data: None }).await {
+        Ok(RawValue(ConvexValue::Object(obj))) => {
             let win_count = obj.get("win_count").map(extract_float_value).unwrap_or(0.0);
             let loss_count = obj.get("loss_count").map(extract_float_value).unwrap_or(0.0);
             println!("\nUpdated record - Wins: {}, Losses: {}", win_count as i32, loss_count as i32);

@@ -6,13 +6,26 @@
 use std::path::PathBuf;
 
 /// Paths and overrides for one codegen run (typically built in `build.rs`).
+///
+/// Defaults match the standard Convex project layout and write output to Cargo's `OUT_DIR` when
+/// available.
+///
+/// # Example
+///
+/// ```
+/// let config = convex_typegen::config::Configuration {
+///     function_spec_path: Some("convex/function-spec.json".into()),
+///     ..Default::default()
+/// };
+/// assert_eq!(config.schema_path, std::path::Path::new("convex/schema.ts"));
+/// ```
 #[derive(Debug, Clone)]
 pub struct Configuration
 {
     /// Path to the Convex schema file (default: "convex/schema.ts")
     pub schema_path: PathBuf,
 
-    /// Output file path for generated Rust types (defaults to `$OUT_DIR/convex_types.rs`).
+    /// Output file path for generated Rust bindings (defaults to `$OUT_DIR/convex_api.rs`).
     pub out_file: PathBuf,
 
     /// Convex backend directory (default: `"convex"`, i.e. next to `Cargo.toml` when the build
@@ -43,7 +56,7 @@ impl Default for Configuration
             out_file: std::env::var_os("OUT_DIR")
                 .map(PathBuf::from)
                 .unwrap_or_else(|| PathBuf::from("OUT_DIR"))
-                .join("convex_types.rs"),
+                .join("convex_api.rs"),
             convex_dir: PathBuf::from("convex"),
             function_paths: Vec::new(),
             function_spec_path: None,
@@ -61,7 +74,7 @@ mod default_tests
     {
         let c = Configuration::default();
         assert_eq!(c.schema_path, PathBuf::from("convex/schema.ts"));
-        assert!(c.out_file.ends_with("convex_types.rs"));
+        assert!(c.out_file.ends_with("convex_api.rs"));
         assert!(!c.out_file.starts_with("src"));
         assert_eq!(c.convex_dir, PathBuf::from("convex"));
         assert!(c.function_paths.is_empty());

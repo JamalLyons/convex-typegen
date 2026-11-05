@@ -64,7 +64,7 @@ Checked against this tree (0.4.0). Items marked unverified have not been re-run 
 - [x] Direct Serde conversion against `convex::Value` is available under `value_serde::{to_value, from_value}` and used by `TypedClient`. It preserves int64/float64 wire kinds, non-finite floats, signed zero, bytes (`ConvexBytes`), and recursive values, with path-aware errors for unsupported values and overflow. The lossy JSON bridge was removed.
 - [x] `convex-typegen` is build-only and has no Convex client or TLS dependency. `convex-typegen-runtime` owns the codecs, Serde re-exports, and extension over the official client.
 - [ ] Tests are unit tests plus `tests/golden_generate.rs` and `tests/build_script_smoke.rs`. `.github/workflows/rust.yml` does not start a Convex backend. The examples call whatever `CONVEX_URL` points at.
-- [x] Default build output is `$OUT_DIR/convex_types.rs`, included with `convex_typegen_runtime::include!()`; generation is atomic and the CLI supports non-writing drift checks.
+- [x] Default build output is `$OUT_DIR/convex_api.rs`, included with `convex_typegen_runtime::include!()`; generation is atomic and the CLI supports non-writing drift checks.
 
 ## Open decisions
 

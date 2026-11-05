@@ -1,0 +1,21 @@
+:root {
+  --content-max-width: 900px;
+  --sidebar-width: 270px;
+}
+
+.content main {
+  line-height: 1.7;
+}
+
+.content main h1 {
+  letter-spacing: -0.025em;
+}
+
+.content main table {
+  display: table;
+  width: 100%;
+}
+
+.content main pre {
+  border-radius: 8px;
+}

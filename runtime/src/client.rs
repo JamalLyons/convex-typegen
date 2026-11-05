@@ -54,6 +54,15 @@ pub struct InvalidApplicationData
 /// The adapter borrows the client mutably for the same operations as the SDK.
 /// Build and authenticate the SDK client directly or use [`Self::client_mut`]
 /// while the adapter is in scope.
+///
+/// ```no_run
+/// use convex_typegen_runtime::TypedClient;
+///
+/// fn adapter<'a>(client: &'a mut convex::ConvexClient) -> TypedClient<'a>
+/// {
+///     TypedClient::new(client)
+/// }
+/// ```
 pub struct TypedClient<'a>
 {
     client: &'a mut ConvexClient,

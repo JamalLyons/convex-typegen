@@ -2,7 +2,7 @@
 //! using every generated `*Args` struct from this example’s Convex modules.
 
 #[allow(dead_code)]
-mod convex_types
+mod convex_api
 {
     convex_typegen_runtime::include!();
 }
@@ -10,10 +10,10 @@ mod convex_types
 use std::path::Path;
 
 use convex::{ConvexClient, Value as ConvexValue};
+use convex_api::api::{integrations, projects, tasks, teams, users, workspace};
 use convex_typegen_runtime::function::RawArgs;
 use convex_typegen_runtime::model::RawValue;
 use convex_typegen_runtime::TypedClient;
-use convex_types::api::{integrations, projects, tasks, teams, users, workspace};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>>

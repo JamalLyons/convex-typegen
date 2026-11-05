@@ -10,7 +10,7 @@ fn main()
         .unwrap_or_else(|| fixture_root.join("function-spec.json"));
     let convex_dir = fixture_root.join("convex");
     let schema_path = convex_dir.join("schema.ts");
-    let out_file = PathBuf::from(env::var_os("OUT_DIR").expect("Cargo sets OUT_DIR")).join("convex_types.rs");
+    let out_file = PathBuf::from(env::var_os("OUT_DIR").expect("Cargo sets OUT_DIR")).join("convex_api.rs");
 
     let config = convex_typegen::config::Configuration {
         schema_path,

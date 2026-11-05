@@ -32,7 +32,7 @@ The generator prelude exports `Configuration`, `generate`, `rcfp`, and
 
 | Item | Notes |
 | --- | --- |
-| **Generated `convex_types.rs`** | Type names and fields can change on major crate bumps |
+| **Generated `convex_api.rs`** | Type names and fields can change on major crate bumps |
 | **Internal modules** | `convex::*` is private; do not depend on it |
 | **Exact error `Display` strings** | May improve in patches; match on variants, not text |
 | **Oxc / Convex dependency versions** | May affect MSRV or build time; tracked in CHANGELOG |

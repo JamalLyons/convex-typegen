@@ -12,7 +12,7 @@ mod bindings {
 }
 ```
 
-The default filename is `convex_types.rs`. If your build script writes another
+The default filename is `convex_api.rs`. If your build script writes another
 file under Cargo's `OUT_DIR`, use a relative filename such as
 `convex_typegen_runtime::include!("bindings.rs")`.
 

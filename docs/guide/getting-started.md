@@ -35,14 +35,14 @@ fn main() {
 Then include the generated file in the Rust module where you want the bindings:
 
 ```rust,ignore
-// This module is compiled after the build script has generated OUT_DIR/convex_types.rs.
+// This module is compiled after the build script has generated OUT_DIR/convex_api.rs.
 mod generated {
     convex_typegen_runtime::include!();
 }
 use generated::api;
 ```
 
-`generate_out_dir()` writes `$OUT_DIR/convex_types.rs`, emits Cargo rebuild directives for its
+`generate_out_dir()` writes `$OUT_DIR/convex_api.rs`, emits Cargo rebuild directives for its
 inputs, and does not invoke the Convex CLI or access the network. If your paths or output filename
 differ, use `Configuration` and `generate` directly; see [macros](../macros.md).
 

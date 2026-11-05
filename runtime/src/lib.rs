@@ -2,6 +2,24 @@
 //!
 //! Use this crate as a normal dependency and the matching generator release as a
 //! build dependency. The runtime supports Rust 1.85.
+//!
+//! # Typed calls
+//!
+//! Generated references connect the official SDK to their generated argument and return types.
+//! Keep the SDK client alive for the adapter and any subscription streams.
+//!
+//! ```no_run
+//! use convex_typegen_runtime::TypedClient;
+//!
+//! fn adapter<'a>(client: &'a mut convex::ConvexClient) -> TypedClient<'a>
+//! {
+//!     TypedClient::new(client)
+//! }
+//! ```
+//!
+//! For direct value conversion, use [`value_serde::to_value`] and
+//! [`value_serde::from_value`]. These operate on the official SDK's `convex::Value` without a
+//! JSON round trip.
 
 mod client;
 pub mod function;
@@ -28,12 +46,12 @@ pub mod prelude
 
 /// Include Rust bindings from this package's Cargo output directory.
 ///
-/// Defaults to `convex_types.rs`. Pass a string literal relative to `OUT_DIR`
+/// Defaults to `convex_api.rs`. Pass a string literal relative to `OUT_DIR`
 /// when the build script uses a custom output filename.
 #[macro_export]
 macro_rules! include {
     () => {
-        $crate::include!("convex_types.rs");
+        $crate::include!("convex_api.rs");
     };
     ($file:literal $(,)?) => {
         ::core::include!(::core::concat!(::core::env!("OUT_DIR"), "/", $file));

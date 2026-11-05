@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Add an mdBook documentation website with a docs.rs API reference and GitHub Pages deployment.
 - Add the local self-hosted Convex typed-client E2E gate (`just e2e`) and user guides for getting
   started, supported validators and source limits, v1 concepts, and migration from v0.4.
 - Generate bindings in Cargo's `OUT_DIR` by default, with atomic writes and a non-writing CLI
@@ -58,6 +59,8 @@ All notable changes to this project will be documented in this file.
   contract.
 
 ### Changed
+
+- **Breaking default generated filename:** Rename `convex_types.rs` to `convex_api.rs`; the file contains generated API references and the typed client surface, and is written to `OUT_DIR` by default. There is no compatibility alias or fallback.
 
 - **Breaking runtime API:** Replace `ConvexClientExt::prepare_args` with
   [`TypedClient`](docs/typed-client.md) for typed queries, mutations, actions,

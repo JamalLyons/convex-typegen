@@ -1,0 +1,21 @@
+[book]
+title = "convex-typegen"
+authors = ["Jamal Lyons"]
+description = "Typed Convex clients for Rust"
+src = "src"
+language = "en"
+
+[build]
+build-dir = "book"
+
+[output.html]
+site-url = "/convex-typegen/"
+default-theme = "navy"
+preferred-dark-theme = "navy"
+git-repository-url = "https://github.com/JamalLyons/convex-typegen"
+edit-url-template = "https://github.com/JamalLyons/convex-typegen/edit/master/docs/site/{path}"
+additional-css = ["theme/custom.css"]
+
+[output.html.fold]
+enable = true
+level = 1

@@ -1,6 +1,6 @@
 ## convex-typegen v0.4.0
 
-This release emits **named Rust structs for nested `v.object` validators** and publishes the library vs codegen [semver policy](semver-policy.md) (target for 1.0). The `convex_typegen` crate API is unchanged; **generated `convex_types.rs` is a breaking change**.
+This release emits **named Rust structs for nested `v.object` validators** and publishes the library vs codegen [semver policy](semver-policy.md) (target for 1.0). The `convex_typegen` crate API is unchanged; **generated `convex_api.rs` is a breaking change**.
 
 ### Highlights
 
@@ -56,7 +56,7 @@ convex-typegen = { version = "0.4", default-features = false }
 ### Upgrade checklist
 
 1. Bump `convex-typegen` to `0.4` in `[dependencies]` and `[build-dependencies]`.
-2. `cargo build` to regenerate `convex_types.rs`.
+2. `cargo build` to regenerate `convex_api.rs`.
 3. Replace nested-object `ConvexJsonValue` / `BTreeMap` fields with the new struct types (see compiler errors).
 4. Keep using `ConvexClient::prepare_args(...)?` — that path did not change in this release.
 

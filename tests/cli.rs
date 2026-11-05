@@ -90,7 +90,7 @@ fn committed_example_bindings_match_the_generator()
     for example in ["basic", "advanced"] {
         let result = cli()
             .current_dir(root.join("examples").join(example))
-            .args(["--check", "--output", "src/convex_types.rs"])
+            .args(["--check", "--output", "src/convex_api.rs"])
             .output()
             .unwrap();
         assert!(

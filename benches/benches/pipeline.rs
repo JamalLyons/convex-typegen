@@ -152,7 +152,7 @@ fn pipeline(c: &mut Criterion)
         project::write_project(&generated_root, files, seed).expect("generate seeded Convex project");
         let config = Configuration {
             schema_path: generated_root.join("convex/schema.ts"),
-            out_file: generated_root.join("convex_types.rs"),
+            out_file: generated_root.join("convex_api.rs"),
             convex_dir: generated_root.join("convex"),
             function_paths: Vec::new(),
             function_spec_path: None,

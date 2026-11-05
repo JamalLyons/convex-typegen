@@ -9,6 +9,27 @@
 //! - [`fs::rcfp`] — resolves the same function input paths as [`generate`] (for `cargo:rerun-if-changed`).
 //!
 //! Parsing and codegen live in the private `convex` module; the public API stays small on purpose.
+//!
+//! # Example
+//!
+//! In a consumer's `build.rs`, generate the default `OUT_DIR/convex_api.rs` file:
+//!
+//! ```no_run
+//! fn main()
+//! {
+//!     if let Err(error) = convex_typegen::build::generate_out_dir() {
+//!         panic!("convex-typegen failed: {error}");
+//!     }
+//! }
+//! ```
+//!
+//! For custom paths or a committed function spec, configure the generator directly:
+//!
+//! ```no_run
+//! let config = convex_typegen::config::Configuration::default();
+//! convex_typegen::generate(config)?;
+//! # Ok::<(), convex_typegen::prelude::ConvexTypeGeneratorError>(())
+//! ```
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -107,6 +128,17 @@ fn lower_project(parsed: ParsedProject) -> Result<LoweredProject, ConvexTypeGene
 ///
 /// Surfaced as [`error::ConvexTypeGeneratorError`]: missing paths, Oxc parse/semantic errors, schema
 /// shapes or spec records we do not recognize, IO, or malformed JSON.
+///
+/// # Example
+///
+/// This is typically called from a Cargo build script. The example compiles without requiring a
+/// Convex project to be present while rustdoc runs.
+///
+/// ```no_run
+/// let config = convex_typegen::config::Configuration::default();
+/// convex_typegen::generate(config)?;
+/// # Ok::<(), convex_typegen::prelude::ConvexTypeGeneratorError>(())
+/// ```
 pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError>
 {
     let parsed = parse_project(&config)?;
@@ -116,6 +148,12 @@ pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError>
 }
 
 /// Check whether generated output matches the configured artifact without writing files.
+///
+/// ```no_run
+/// let config = convex_typegen::config::Configuration::default();
+/// let is_current = convex_typegen::check(config)?;
+/// # Ok::<(), convex_typegen::prelude::ConvexTypeGeneratorError>(())
+/// ```
 pub fn check(config: Configuration) -> Result<bool, ConvexTypeGeneratorError>
 {
     let parsed = parse_project(&config)?;

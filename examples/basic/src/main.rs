@@ -1,7 +1,7 @@
 //! CLI demo: reads/writes game stats through generated arg structs and the typed client.
 
 #[allow(dead_code)]
-mod convex_types
+mod convex_api
 {
     convex_typegen_runtime::include!();
 }
@@ -10,10 +10,10 @@ use std::io::{self, Write};
 use std::path::Path;
 
 use convex::{ConvexClient, Value as ConvexValue};
+use convex_api::api::games;
 use convex_typegen_runtime::function::RawArgs;
 use convex_typegen_runtime::model::RawValue;
 use convex_typegen_runtime::TypedClient;
-use convex_types::api::games;
 use rand::Rng;
 
 #[tokio::main]

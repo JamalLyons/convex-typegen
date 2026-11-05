@@ -1,6 +1,7 @@
 //! Smoke test mirroring a consumer `build.rs` without compiling a nested crate.
 
 use std::fs;
+use std::process::Command;
 
 use convex_typegen::prelude::*;
 use tempfile::tempdir;
@@ -105,4 +106,51 @@ fn configured_spec_is_authoritative_and_tracked()
         !body.contains("PingArgs") && !body.contains("tasks:ping"),
         "empty spec must produce no functions: {body}"
     );
+}
+
+#[test]
+fn consumer_builds_offline_and_keeps_source_tree_clean()
+{
+    let temp = tempdir().unwrap();
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    fs::create_dir_all(temp.path().join("src")).unwrap();
+    fs::create_dir_all(temp.path().join("convex")).unwrap();
+    fs::write(
+        temp.path().join("Cargo.toml"),
+        format!(
+            r#"[package]
+name = "out-dir-smoke"
+version = "0.1.0"
+edition = "2024"
+[dependencies]
+convex-typegen-runtime = {{ path = {:?} }}
+[build-dependencies]
+convex-typegen = {{ path = {:?} }}
+"#,
+            root.join("runtime").display().to_string(),
+            root.display().to_string()
+        ),
+    )
+    .unwrap();
+    fs::write(
+        temp.path().join("build.rs"),
+        "fn main() { convex_typegen::build::generate_out_dir().unwrap(); }",
+    )
+    .unwrap();
+    fs::write(
+        temp.path().join("src/lib.rs"),
+        "pub mod convex_types { include!(concat!(env!(\"OUT_DIR\"), \"/convex_types.rs\")); }",
+    )
+    .unwrap();
+    fs::write(temp.path().join("convex/schema.ts"), r#"import { defineSchema, defineTable } from "convex/server"; import { v } from "convex/values"; export default defineSchema({ tasks: defineTable({ text: v.string() }) });"#).unwrap();
+    let status = Command::new(env!("CARGO"))
+        .args(["check", "--offline", "--manifest-path"])
+        .arg(temp.path().join("Cargo.toml"))
+        .env("CARGO_NET_OFFLINE", "true")
+        .env("CARGO_TARGET_DIR", root.join("target"))
+        .status()
+        .unwrap();
+    assert!(status.success());
+    assert!(!temp.path().join("src/convex_types.rs").exists());
+    assert!(fs::read_dir(temp.path().join("target")).is_err());
 }

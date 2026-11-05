@@ -1,20 +1,8 @@
-//! Minimal `build.rs`: rerun-if-changed for schema, convex dir, and every discovered TS function,
-//! then run [`convex_typegen::generate`] with defaults (`convex/schema.ts` → `src/convex_types.rs`).
-
-use convex_typegen::prelude::*;
+//! Offline Cargo build script using generated output in OUT_DIR.
 
 fn main()
 {
-    let config = Configuration::default();
-
-    println!("cargo:rerun-if-changed={}", config.schema_path.display());
-    println!("cargo:rerun-if-changed={}", config.convex_dir.display());
-
-    for path in rcfp(&config).expect("resolve convex function sources") {
-        println!("cargo:rerun-if-changed={}", path.display());
-    }
-
-    if let Err(e) = generate(config) {
+    if let Err(e) = convex_typegen::build::generate_out_dir() {
         panic!("convex-typegen failed: {e}");
     }
 }

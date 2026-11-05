@@ -64,12 +64,12 @@ Checked against this tree (0.4.0). Items marked unverified have not been re-run 
 - [x] Direct Serde conversion against `convex::Value` is available under `value_serde::{to_value, from_value}` and used by `ConvexClientExt::prepare_args`. It preserves int64/float64 wire kinds, non-finite floats, signed zero, bytes (`ConvexBytes`), and recursive values, with path-aware errors for unsupported values and overflow. The lossy JSON bridge was removed.
 - [x] `convex-typegen` is build-only and has no Convex client or TLS dependency. `convex-typegen-runtime` owns the codecs, Serde re-exports, and extension over the official client.
 - [ ] Tests are unit tests plus `tests/golden_generate.rs` and `tests/build_script_smoke.rs`. `.github/workflows/rust.yml` does not start a Convex backend. The examples call whatever `CONVEX_URL` points at.
-- [ ] Default `Configuration::out_file` is `src/convex_types.rs`, rewritten on `cargo build`.
+- [x] Default build output is `$OUT_DIR/convex_types.rs`, included with `include!`; generation is atomic and the CLI supports non-writing drift checks.
 
 ## Open decisions
 
 - **MSRV.** The generator requires Rust **1.95** and the runtime requires Rust **1.85**. CI enforces both. Oxc 0.129.0 sets a high floor. Raising MSRV is a major bump ([semver policy](semver-policy.md)).
-- **`OUT_DIR` vs a committed file.** Keep writing `src/convex_types.rs`, or emit into `OUT_DIR` and `include!` it.
+- **Output.** `$OUT_DIR` + `include!` is the default; committed output is opt-in through `Configuration::out_file` or the CLI `--output` flag.
 - **Naming scheme.** Module-nested refs that match Convex paths (`admin/users:list`) will rename today’s `{Module}{Export}Args` types. That is a breaking codegen change under [semver policy](semver-policy.md). On 0.x it may ship in a minor; from 1.0 it needs a major.
 
 Also unresolved: whether table schemas can be read from an official API (function-spec does not include them), and which ideas to reuse from the [nickcomua fork](https://github.com/nickcomua/convex-typegen) and [rustex](https://github.com/LucaLeukert/rustex).

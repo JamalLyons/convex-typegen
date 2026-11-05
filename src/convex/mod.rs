@@ -11,7 +11,7 @@
 //! - **Source-neutral IR** ([`ir`]) — typed validators, canonical function identity, metadata,
 //!   optional field presence, and source provenance shared by adapters and codegen.
 //! - **Validator model** ([`validator`]) — typed `v.*` tree used by the source-neutral IR.
-//! - **Codegen** ([`codegen`]) — stringify that model as `src/convex_types.rs`-style output.
+//! - **Codegen** ([`codegen`]) — stringify that model as a Rust source artifact.
 //! - **AST spike** ([`ast`]) — direct Oxc `Program` walks; not used by [`crate::generate`] yet.
 
 use std::collections::BTreeMap;

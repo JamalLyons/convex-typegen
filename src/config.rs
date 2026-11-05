@@ -12,7 +12,7 @@ pub struct Configuration
     /// Path to the Convex schema file (default: "convex/schema.ts")
     pub schema_path: PathBuf,
 
-    /// Output file path for generated Rust types (default: "src/convex_types.rs")
+    /// Output file path for generated Rust types (defaults to `$OUT_DIR/convex_types.rs`).
     pub out_file: PathBuf,
 
     /// Convex backend directory (default: `"convex"`, i.e. next to `Cargo.toml` when the build
@@ -40,7 +40,10 @@ impl Default for Configuration
     {
         Self {
             schema_path: PathBuf::from("convex/schema.ts"),
-            out_file: PathBuf::from("src/convex_types.rs"),
+            out_file: std::env::var_os("OUT_DIR")
+                .map(PathBuf::from)
+                .unwrap_or_else(|| PathBuf::from("OUT_DIR"))
+                .join("convex_types.rs"),
             convex_dir: PathBuf::from("convex"),
             function_paths: Vec::new(),
             function_spec_path: None,
@@ -58,7 +61,8 @@ mod default_tests
     {
         let c = Configuration::default();
         assert_eq!(c.schema_path, PathBuf::from("convex/schema.ts"));
-        assert_eq!(c.out_file, PathBuf::from("src/convex_types.rs"));
+        assert!(c.out_file.ends_with("convex_types.rs"));
+        assert!(!c.out_file.starts_with("src"));
         assert_eq!(c.convex_dir, PathBuf::from("convex"));
         assert!(c.function_paths.is_empty());
         assert!(c.function_spec_path.is_none());

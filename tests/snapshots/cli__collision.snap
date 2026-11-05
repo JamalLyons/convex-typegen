@@ -1,0 +1,5 @@
+---
+source: tests/cli.rs
+expression: stderr
+---
+convex-typegen: Invalid schema at table "foo-bar" at <PROJECT>/schema.ts bytes 150..176: Rust identifier collision for `FooBar` between table "foo_bar" at <PROJECT>/schema.ts bytes 124..148 and table "foo-bar" at <PROJECT>/schema.ts bytes 150..176

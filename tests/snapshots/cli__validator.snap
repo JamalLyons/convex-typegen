@@ -1,0 +1,5 @@
+---
+source: tests/cli.rs
+expression: stderr
+---
+convex-typegen: Invalid schema at <PROJECT>/schema.ts bytes 152..162: v.symbol: unsupported validator; use a Convex 1.49.0 validator

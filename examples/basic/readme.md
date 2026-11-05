@@ -34,7 +34,7 @@ Use the deployment URL from the Convex dashboard or the `convex dev` output.
 Still in `examples/basic/`:
 
 ```bash
-cargo build   # runs build.rs → regenerates src/convex_types.rs
+cargo build   # runs build.rs → generates OUT_DIR/convex_types.rs
 cargo run     # number-guessing demo; reads .env.local via CARGO_MANIFEST_DIR
 ```
 
@@ -44,9 +44,9 @@ From the **repo root** you can run:
 cargo run --manifest-path examples/basic/Cargo.toml
 ```
 
-`build.rs` uses `Configuration::default()` (`convex/schema.ts`, `convex/` discovery, output `src/convex_types.rs`). Change `Configuration` in `build.rs` if your layout differs.
+`build.rs` uses the OUT_DIR helper (`convex/schema.ts`, `convex/` discovery). Generated bindings are included from Cargo's `OUT_DIR`, so builds leave the source tree untouched.
 
 ## What to change
 
 - **Schema / functions:** edit `convex/schema.ts` and the `*.ts` files under `convex/` (except `_generated/`). Rebuild the Rust crate to refresh types.
-- **Game logic:** see `convex/games.ts` and the queries/mutations the CLI calls via `convex_types.rs`.
+- **Game logic:** see `convex/games.ts` and the queries/mutations the CLI calls via generated `convex_types`.

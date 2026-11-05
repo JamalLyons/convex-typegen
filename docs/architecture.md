@@ -4,7 +4,7 @@ This document is for **contributors** who want to understand how the crate works
 
 ## Goals and constraints
 
-- **Run at build time** (`build.rs`): read Convex TypeScript (`schema.ts` + function modules), emit a single Rust file (default `src/convex_types.rs`).
+- **Run at build time** (`build.rs`): read Convex TypeScript (`schema.ts` + function modules), emit a single Rust file to `$OUT_DIR/convex_types.rs` by default.
 - **Stay dependency-light on the codegen path**: no `syn` / `quote` for output; Rust text is built with string formatting.
 - **Stable public API**: small generator surface (`generate`, `Configuration`, `prelude`) and a separate runtime crate. Almost everything interesting lives under the private `convex` module.
 
@@ -44,7 +44,7 @@ flowchart LR
 3. **`convex::create_function_asts`** — Canonicalizes each input and follows named relative imports; schema and function inputs share this loader. ASTs are stored in a **`BTreeMap<String, JsonValue>`** keyed by canonical path string (stable iteration order, no basename collisions between `convex/a/foo.ts` and `convex/b/foo.ts`).
 4. **Function adapters** — The TypeScript parser uses Oxc/ESTree and the bounded static binding/spread resolver; the committed function-spec adapter validates JSON and lowers it directly to the same IR.
 5. **`ir::GenerationIr`** — Source-neutral typed model: validator trees, canonical module path + export identity, function kind/visibility, explicit declared/unknown metadata, field presence, and source provenance with optional offsets.
-6. **`codegen::run_codegen`** — Matches on `GenerationIr` directly and writes generated Rust.
+6. **`codegen::generate_code`** — Matches on `GenerationIr` directly and builds generated Rust in memory; the writer validates first and then atomically renames a same-directory temporary file.
 
 Errors are unified as **`error::ConvexTypeGeneratorError`** (IO, Oxc parse/semantic failures, invalid schema shape, invalid `v.*` names, etc.).
 

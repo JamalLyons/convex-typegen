@@ -1,17 +1,6 @@
-use convex_typegen::prelude::*;
-
 fn main()
 {
-    let config = Configuration::default();
-
-    println!("cargo:rerun-if-changed={}", config.schema_path.display());
-    println!("cargo:rerun-if-changed={}", config.convex_dir.display());
-
-    for path in rcfp(&config).expect("resolve convex function sources") {
-        println!("cargo:rerun-if-changed={}", path.display());
-    }
-
-    if let Err(e) = generate(config) {
+    if let Err(e) = convex_typegen::build::generate_out_dir() {
         panic!("convex-typegen failed: {e}");
     }
 }

@@ -4,7 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.0] - Unreleased
+
+Release notes prepared for v1.0.0; tagging and publishing are separate release steps.
+See the [migration guide](docs/guide/migration-v0.4.md) for the breaking changes.
+
 ### Added
+
+- Polish the launch README with a compiled typed query/subscription example, project badges,
+  and documentation links. Add issue forms, a PR checklist, and contributor label conventions.
 
 - Add an mdBook documentation website with a docs.rs API reference and GitHub Pages deployment.
 - Add the local self-hosted Convex typed-client E2E gate (`just e2e`) and user guides for getting

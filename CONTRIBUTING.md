@@ -1,57 +1,39 @@
-# Contributing to convex-typegen
+# Contributing
 
-Thank you for your interest in contributing.
+Start with [AGENTS.md](AGENTS.md), the [architecture](docs/architecture.md), and the
+[semver policy](docs/semver-policy.md). Use a dedicated worktree and branch for each issue;
+open focused PRs against `master` with tests for behavior changes and an `[Unreleased]`
+changelog entry for user-visible changes.
 
-The v1 target — a generated, fully typed function client — is [docs/v1-roadmap.md](docs/v1-roadmap.md). Coding agents should follow [AGENTS.md](AGENTS.md): read the roadmap, architecture, and semver policy first; test only against a local self-hosted Convex backend; keep `build.rs` offline; do not publish or merge.
+## Local checks
 
-## Development setup
+Install `just`, stable Rust (generator MSRV **1.95**), nightly rustfmt, and Rust **1.85**
+for runtime checks. From the workspace root:
 
-1. Install current stable Rust and nightly for `rustfmt`. Install Rust 1.85 for the runtime MSRV check.
-2. Clone the repo and run from the workspace root:
-
-```bash
-just check          # clippy + tests
-just fmt-check      # requires nightly rustfmt
-just runtime-msrv   # requires Rust 1.85
+```sh
+just check          # workspace clippy + tests
+just fmt            # nightly rustfmt
+just runtime-msrv   # runtime on Rust 1.85
+mdbook build docs/site
 ```
 
-Or manually:
+Run `just e2e` for codegen, runtime, or client changes. It needs Docker, Node.js/npm, and
+`jq`, and uses only a local self-hosted Convex backend; see the [E2E guide](docs/e2e.md).
+Build scripts must stay offline. After intentional codegen changes, refresh snapshots with
+`cargo insta test --accept --all-features` and review the diff.
 
-```bash
-cargo +nightly fmt --all --check
-cargo clippy --workspace --locked --all-targets --all-features -- -D warnings
-cargo test --workspace --locked --all-features
-cargo build --workspace --locked --all-features
-cargo +1.85 check --locked -p convex-typegen-runtime
-cargo +1.85 test --locked -p convex-typegen-runtime
-```
+## Review and cleanup
 
-## Pull requests
+Describe the problem, resulting behavior, and validation in your PR. Follow the
+[label conventions](.github/labels.md). Do not publish crates or merge PRs as part of
+contribution work; version bumps, tags, and publishing are separate maintainer steps
+under the [release policy](docs/semver-policy.md#releases).
 
-- Keep changes focused; include tests for behavior changes.
-- Run `just fmt` before pushing if you changed Rust sources.
-- Update `CHANGELOG.md` under `[Unreleased]` for user-visible changes.
-- Follow [docs/semver-policy.md](docs/semver-policy.md) when choosing version bumps (library API vs generated output).
-- The generator MSRV is **1.95** and the runtime MSRV is **1.85**. CI enforces both. Use **nightly** rustfmt (`just fmt` / `just fmt-check`) for unstable options in `rustfmt.toml`.
+Once your PR is open and builds are done, run `cargo clean` in its worktree. Preview
+old-worktree cleanup with `just clean-worktrees-dry`; see
+[the cleanup script](scripts/clean-worktrees.sh) and [AGENTS.md](AGENTS.md#worktrees-and-disk-space)
+before applying it.
 
-## Golden tests
-
-Integration snapshots live in `tests/golden_generate.rs`. After intentional codegen output changes:
-
-```bash
-cargo insta test --accept --all-features
-```
-
-## Publishing (maintainers)
-
-Default branch is **`master`**. Land work on `dev`, then open a PR into `master`.
-
-**CI (`.github/workflows/rust.yml`)** runs rustfmt, clippy, tests, MSRV, `cargo audit`, and `cargo deny` on pushes to `master`/`dev` and on pull requests. It is not triggered by version tags and does **not** publish to crates.io. There is no separate release or publish workflow in this repository.
-
-**Release steps** (see also [docs/semver-policy.md](docs/semver-policy.md#releases)):
-
-1. Set `workspace.package.version` in `Cargo.toml` (update `Cargo.lock` with `cargo check` or your usual flow) and move `[Unreleased]` notes into a dated `CHANGELOG.md` heading.
-2. Add GitHub Release notes as `docs/release-vX.Y.Z.md` (see existing `docs/release-v0.3.0.md` and `docs/release-v0.4.0.md`).
-3. Merge to `master`, tag `vX.Y.Z` on that commit, and push the tag (tags are for GitHub Release metadata only—they do not trigger an automated crates.io publish).
-4. Create the GitHub Release on GitHub, pasting or linking content from `docs/release-vX.Y.Z.md`.
-5. Publish manually: `cargo publish --locked` or `just publish` (optional dry run: `just publish-test`). Requires a [crates.io](https://crates.io) API token in your local Cargo credentials.
+For usage questions, start with the [documentation](https://jamallyons.github.io/convex-typegen/).
+Report vulnerabilities privately using [SECURITY.md](SECURITY.md), and follow the
+[code of conduct](CODE_OF_CONDUCT.md).

@@ -1,0 +1,37 @@
+name: Bug report
+description: Report incorrect generation, runtime behavior, or documentation.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check the [support matrix](https://jamallyons.github.io/convex-typegen/docs/guide/support.html) first.
+        Report vulnerabilities privately via [SECURITY.md](https://github.com/JamalLyons/convex-typegen/blob/master/SECURITY.md).
+        Remove credentials and private data from reproductions and logs.
+  - type: input
+    id: versions
+    attributes:
+      label: Versions and environment
+      description: Generator, runtime, Convex SDK, rustc version, and OS.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include schema/function validators, build configuration, Rust call, and commands to reproduce. Backend reproductions should use local self-hosted Convex.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and diagnostics
+      description: Include relevant errors or generated output, with secrets removed.
+    validations:
+      required: true

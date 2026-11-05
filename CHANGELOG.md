@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Add an mdBook documentation website with a docs.rs API reference and GitHub Pages deployment.
 - Add the local self-hosted Convex typed-client E2E gate (`just e2e`) and user guides for getting
   started, supported validators and source limits, v1 concepts, and migration from v0.4.
 - Generate bindings in Cargo's `OUT_DIR` by default, with atomic writes and a non-writing CLI

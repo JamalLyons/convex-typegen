@@ -50,6 +50,11 @@ example-advanced *ARGS:
 doc:
     cargo doc -p convex-typegen --all-features --no-deps --open
 
+# Build and serve the mdBook documentation site locally.
+docs:
+    mdbook build docs/site
+    mdbook serve docs/site
+
 publish:
     cargo publish
 

@@ -76,6 +76,14 @@ impl de::Error for Error
 }
 
 /// Serialize a Rust value directly into Convex's value representation.
+///
+/// ```
+/// use convex_typegen_runtime::value_serde;
+///
+/// let value = value_serde::to_value(&42_i64).unwrap();
+/// let decoded: i64 = value_serde::from_value(value).unwrap();
+/// assert_eq!(decoded, 42);
+/// ```
 pub fn to_value<T: Serialize + ?Sized>(value: &T) -> Result<Value, Error>
 {
     value.serialize(ValueSerializer { path: "$".into() })

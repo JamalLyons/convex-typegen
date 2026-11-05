@@ -4,6 +4,17 @@ use std::path::PathBuf;
 use crate::{Configuration, ConvexTypeGeneratorError, generate, rcfp};
 
 /// Generate `$OUT_DIR/convex_types.rs` and emit Cargo invalidation directives for each input.
+///
+/// This helper emits Cargo rebuild directives for the schema and discovered function sources.
+/// It reads only local files; it does not run the Convex CLI or contact a backend.
+///
+/// # Example
+///
+/// Add this to the consumer crate's `build.rs`:
+///
+/// ```no_run
+/// convex_typegen::build::generate_out_dir().expect("generate Convex bindings");
+/// ```
 pub fn generate_out_dir() -> Result<(), ConvexTypeGeneratorError>
 {
     let out_dir = std::env::var_os("OUT_DIR")

@@ -6,6 +6,19 @@
 use std::path::PathBuf;
 
 /// Paths and overrides for one codegen run (typically built in `build.rs`).
+///
+/// Defaults match the standard Convex project layout and write output to Cargo's `OUT_DIR` when
+/// available.
+///
+/// # Example
+///
+/// ```
+/// let config = convex_typegen::config::Configuration {
+///     function_spec_path: Some("convex/function-spec.json".into()),
+///     ..Default::default()
+/// };
+/// assert_eq!(config.schema_path, std::path::Path::new("convex/schema.ts"));
+/// ```
 #[derive(Debug, Clone)]
 pub struct Configuration
 {

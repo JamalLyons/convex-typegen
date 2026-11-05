@@ -40,6 +40,16 @@ pub trait FunctionReference
 type ErrorDecoder<E> = fn(Value) -> Result<E, InvalidApplicationData>;
 
 /// A public endpoint's canonical identifier and compile-time signature.
+///
+/// Generated code normally declares these references for you. They can also be constructed
+/// directly when integrating a handwritten endpoint.
+///
+/// ```
+/// use convex_typegen_runtime::function::{FunctionRef, Query};
+///
+/// let list = FunctionRef::<Query, (), Vec<String>>::new("tasks:list");
+/// assert_eq!(list.path(), "tasks:list");
+/// ```
 pub struct FunctionRef<Kind, Args, Returns, Error = Value>
 {
     path: &'static str,

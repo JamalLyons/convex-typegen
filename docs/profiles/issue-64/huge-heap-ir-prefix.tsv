@@ -1,0 +1,13 @@
+DHAT capture duration (µs)	360008958
+Category	Cumulative bytes	Cumulative blocks	Live bytes at global heap peak
+Total	11889265633	56582985	1633280194
+IR provenance index	7912410936	27031545	428529864
+ESTree JSON conversion (caller unspecified)	2170308967	24910735	1083037257
+Oxc parse, semantics and arenas	790509908	197364	0
+ESTree JSON conversion in source loading	451921531	1893974	118249915
+ESTree JSON conversion in discovery	451685663	1893704	0
+Other parse and discovery	85983205	535838	2692170
+Source filesystem	25466808	108584	254
+JSON AST clone	726216	8834	726216
+Other IR lowering	251991	2400	44198
+Unattributed or outside pipeline	408	7	320

@@ -1,0 +1,12 @@
+Main-thread sample count	11868
+First sample from recording start (ms)	108.18275
+Last sample from recording start (ms)	119993.115708
+Recorded thread CPU deltas (µs)	118990333
+Category	Samples	Thread CPU delta (µs)	Most sampled leaf	Leaf samples
+IR provenance index	10650	106885703	convex_typegen::convex::parser::index_node_files	8813
+Other IR lowering	955	9546202	core::ptr::drop_glue::<convex_typegen::convex::parser::ValidatorSource>	679
+Source filesystem	92	886481	__getattrlist	45
+ESTree JSON conversion in source loading	55	531070	<serde_json::value::Value as serde_core::de::Deserialize>::deserialize::<&mut serde_json::de::Deserializer<serde_json::read::StrRead>>	8
+Other parse and discovery	55	535717	__open_nocancel	31
+ESTree JSON conversion in discovery	47	470714	<serde_json::read::StrRead as serde_json::read::Read>::parse_str	8
+Oxc parse, semantics and arenas	14	134446	<oxc_parser::module_record::ModuleRecordBuilder>::add_module_request	1

@@ -1,0 +1,13 @@
+Main-thread sample count	6486
+First sample from recording start (ms)	103.921959
+Last sample from recording start (ms)	65620.096375
+Recorded thread CPU deltas (µs)	65135089
+Category	Samples	Thread CPU delta (µs)	Most sampled leaf	Leaf samples
+IR provenance index	5882	58796006	convex_typegen::convex::parser::index_node_files	4854
+Other IR lowering	575	6053390	core::ptr::drop_glue::<convex_typegen::convex::parser::ValidatorSource>	384
+Source filesystem	9	87550	__getattrlist	6
+Other parse and discovery	7	74840	__open_nocancel	4
+ESTree JSON conversion in source loading	7	70525	<alloc::collections::btree::map::BTreeMap<alloc::string::String, serde_json::value::Value>>::insert	2
+Oxc parse, semantics and arenas	2	16477	<<oxc_parser::ParserImpl<oxc_parser::config::NoTokensParserConfig>>::parse_lhs_expression_or_higher_impl as core::ops::function::FnOnce<(&mut oxc_parser::ParserImpl<oxc_parser::config::NoTokensParserConfig>,)>>::call_once	1
+ESTree JSON conversion in discovery	2	19413	0x33be0	1
+Rust codegen	2	16888	core::fmt::write	1

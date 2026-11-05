@@ -1,0 +1,11 @@
+DHAT capture duration (µs)	180005416
+Category	Cumulative bytes	Cumulative blocks	Live bytes at global heap peak
+Total	3197160389	23756007	732801288
+ESTree JSON conversion (caller unspecified)	1744459403	20023876	658164544
+Oxc parse, semantics and arenas	635638672	158541	33932
+ESTree JSON conversion in discovery	451685663	1893704	0
+ESTree JSON conversion in source loading	274661530	1148254	71728906
+Other parse and discovery	68942240	426302	1879608
+Source filesystem	21046257	96489	267698
+JSON AST clone	726216	8834	726216
+Unattributed or outside pipeline	408	7	384

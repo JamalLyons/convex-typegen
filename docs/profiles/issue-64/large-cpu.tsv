@@ -1,0 +1,15 @@
+Main-thread sample count	16115
+First sample from recording start (ms)	58.000375
+Last sample from recording start (ms)	172157.909167
+Recorded thread CPU deltas (µs)	89092108
+Category	Samples	Thread CPU delta (µs)	Most sampled leaf	Leaf samples
+IR provenance index	14712	81259549	convex_typegen::convex::parser::index_node_files	12347
+Other IR lowering	1326	7419798	core::ptr::drop_glue::<convex_typegen::convex::parser::ValidatorSource>	740
+Source filesystem	29	157538	__getattrlist	11
+ESTree JSON conversion in source loading	18	82906	0x352b4	5
+Oxc parse, semantics and arenas	10	43512	oxc_ast_visit::generated::visit::walk::walk_expression::<oxc_semantic::builder::SemanticBuilder>	2
+Other parse and discovery	9	39822	__open_nocancel	3
+ESTree JSON conversion in discovery	8	66475	0x33bd8	1
+Unattributed or outside pipeline	1	3738	main	1
+Rust codegen	1	7403	<u32 as core::fmt::Display>::fmt	1
+Atomic output write	1	11367	<std::sys::fs::unix::DirBuilder>::mkdir	1

@@ -8,9 +8,13 @@ license.workspace = true
 repository.workspace = true
 publish = false
 
+[features]
+profile-heap = ["dep:dhat"]
+
 [dependencies]
 convex-typegen = { path = "..", features = ["bench-internals"] }
 criterion = "0.8"
+dhat = { version = "0.3.3", optional = true }
 getrandom = "0.4"
 tempfile = "3"
 xtask = { path = "../xtask" }

@@ -27,6 +27,9 @@ All notable changes to this project will be documented in this file.
   Validated literals and unions preserve the Convex wire kinds. See
   [generated models](docs/generated-models.md).
 
+- Document pipeline CPU and heap hot spots and add a replayable profiling runner for
+  synthetic projects. See [performance profiling](docs/performance.md#pipeline-profiling-findings-64).
+
 - Generate seed-replayable synthetic Convex projects with `just gen-project`. See
   [performance tooling](docs/performance.md).
 

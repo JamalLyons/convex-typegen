@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Add safe agent-worktree cleanup and stale Rust build-output cleanup with `just clean-worktrees` and a side-effect-free dry run.
+
 - Add the runtime's `ConvexValue` derive and `include!()` helper. Generated models
   use the same derive as handwritten models while preserving their wire behavior.
   Regenerate bindings against the matching runtime. See [macros](docs/macros.md).

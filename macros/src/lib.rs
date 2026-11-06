@@ -1,3 +1,4 @@
+#![warn(missing_docs)]
 //! Implementation of the derive exposed by `convex-typegen-runtime`.
 
 use proc_macro::TokenStream;
@@ -10,6 +11,13 @@ use syn::{
     Result, Type, UnOp, parse_macro_input,
 };
 
+/// Derive Serde implementations for a concrete Convex model, such as a named-field
+/// struct or an enum that models a Convex union.
+///
+/// Import this derive from `convex_typegen_runtime::ConvexValue`. Use the runtime's
+/// `value_serde::to_value` and `value_serde::from_value` to encode and decode the model.
+/// The [derive guide](https://jamallyons.github.io/convex-typegen/docs/macros.html)
+/// shows how to customize wire names, optional fields, and literal values.
 #[proc_macro_derive(ConvexValue, attributes(convex))]
 pub fn derive_convex_value(input: TokenStream) -> TokenStream
 {

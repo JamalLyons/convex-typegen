@@ -24,7 +24,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build crate docs with warnings denied
-        run: RUSTDOCFLAGS="-D warnings" cargo doc --locked -p convex-typegen -p convex-typegen-runtime --no-deps
+        run: RUSTDOCFLAGS="-D warnings -D missing_docs" cargo doc --locked -p convex-typegen -p convex-typegen-runtime -p convex-typegen-macros --all-features --no-deps
 
   build:
     name: Build site and check links

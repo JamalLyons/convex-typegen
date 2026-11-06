@@ -6,7 +6,7 @@ authors.workspace = true
 license.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-exclude = ["examples/", ".github/", "runtime/", "macros/", "xtask/", "benches/"]
+include = ["src/**", "Cargo.toml", "Cargo.lock", "readme.md", "LICENSE"]
 
 # Documentation and repository links
 documentation = "https://docs.rs/convex-typegen"

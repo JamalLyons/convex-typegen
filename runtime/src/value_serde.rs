@@ -353,6 +353,10 @@ impl ser::Serializer for ValueSerializer
     }
 }
 
+/// Collects sequence and tuple elements into a Convex array.
+///
+/// Used through Serde's serializer interface. Call [`to_value`] or [`from_value`]
+/// to convert between Rust models and Convex values.
 pub struct SeqSerializer
 {
     path: String,
@@ -401,6 +405,10 @@ impl ser::SerializeTupleStruct for SeqSerializer
     }
 }
 
+/// Encodes a tuple variant as an array under the variant name.
+///
+/// Used through Serde's serializer interface. Call [`to_value`] or [`from_value`]
+/// to convert between Rust models and Convex values.
 pub struct TupleVariantSerializer
 {
     variant: String,
@@ -423,6 +431,10 @@ impl ser::SerializeTupleVariant for TupleVariantSerializer
     }
 }
 
+/// Collects map entries and struct fields into a Convex object with string keys.
+///
+/// Used through Serde's serializer interface. Call [`to_value`] or [`from_value`]
+/// to convert between Rust models and Convex values.
 pub struct MapSerializer
 {
     path: String,
@@ -481,6 +493,10 @@ impl ser::SerializeStruct for MapSerializer
         Ok(Value::Object(self.values))
     }
 }
+/// Encodes a struct variant as an object under the variant name.
+///
+/// Used through Serde's serializer interface. Call [`to_value`] or [`from_value`]
+/// to convert between Rust models and Convex values.
 pub struct StructVariantSerializer
 {
     variant: String,

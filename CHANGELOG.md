@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Ship a smaller generator crate archive and add package metadata and READMEs for
+  the runtime and derive crates.
+- Document the public Rust API and show how to use the full Convex SDK alongside
+  the typed client.
+
 - Fix `cargo deny` license check for the readme example crate (`license.workspace = true`).
 
 - Make the documentation site the home for v1 usage, with a verified first-project

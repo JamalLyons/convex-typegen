@@ -34,9 +34,13 @@ mod private
 /// This trait is sealed. Use [`FunctionRef::new`] to describe a handwritten endpoint.
 pub trait FunctionReference: private::Sealed
 {
+    /// Argument model passed to the typed client for this endpoint.
     type Args;
+    /// Rust model decoded from a successful function result.
     type Returns;
+    /// Marker that selects the typed client operation, such as [`Query`].
     type Kind;
+    /// Application error payload decoded from a Convex function error.
     type Error;
 
     /// Decode the application payload, preserving the original value on failure.

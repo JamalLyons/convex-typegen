@@ -1,3 +1,4 @@
+#![warn(missing_docs)]
 //! Runtime support for Rust bindings emitted by `convex-typegen`.
 //!
 //! Use this crate as a normal dependency and the matching generator release as a

@@ -27,11 +27,13 @@ impl<Table> From<String> for Id<Table>
 
 impl<Table> Id<Table>
 {
+    /// Borrow the wire ID for display or for an SDK call that takes a string.
     pub fn as_str(&self) -> &str
     {
         &self.0
     }
 
+    /// Consume the typed ID to recover its owned wire string.
     pub fn into_string(self) -> String
     {
         self.0
@@ -41,6 +43,8 @@ impl<Table> Id<Table>
 /// Associates a generated table marker with its full document model.
 pub trait Table
 {
+    /// The table's full document model, including Convex's system fields.
+    /// Use [`Doc<T>`] to name it from a table marker.
     type Document;
 }
 

@@ -1,8 +1,12 @@
 # Typed client API
 
-The runtime wraps the official Convex Rust client with generated function references. These
-references constrain calls to the matching argument and return models, expose query subscriptions
-as streams, and can declare a Rust type for application error payloads.
+The runtime wraps the official [Convex Rust client](https://docs.rs/convex/latest/convex/) with
+generated function references. These references constrain
+[queries](https://docs.convex.dev/functions/query-functions),
+[mutations](https://docs.convex.dev/functions/mutation-functions), and
+[actions](https://docs.convex.dev/functions/actions) to the matching argument and return models,
+expose query subscriptions as streams, and can declare a Rust type for
+[application error](https://docs.convex.dev/functions/error-handling/application-errors) payloads.
 
 ## Function references
 

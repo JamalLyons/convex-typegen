@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Editorial pass on the mdBook site: staged getting-started tutorial, generated-models and support
+  rewrites, semver policy from 1.0.0 onward, and Convex docs.rs links.
 - Update the derive macro's parser dependency to syn 3.
 - **Breaking generator API.** Construct non-exhaustive `Configuration` with setters and use
   `build::generate(config)` for Cargo input tracking. The default schema follows `convex_dir`.

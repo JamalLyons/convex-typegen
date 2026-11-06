@@ -1,19 +1,23 @@
 # Semantic versioning policy
 
-This document defines how [convex-typegen](https://github.com/JamalLyons/convex-typegen) versions releases. It applies from **0.4.0** onward and is the target policy for **1.0.0**.
+From **1.0.0** onward, [convex-typegen](https://github.com/JamalLyons/convex-typegen) follows
+[SemVer 2.0](https://semver.org/) on the crate version. Earlier 0.x releases shipped breaking
+changes in minor versions; that history lives in the [CHANGELOG](../CHANGELOG.md).
 
 ## Two surfaces, two semver stories
 
 | Surface | What it is | Semver |
 | --- | --- | --- |
-| **Library API** | Rust items you import from `convex_typegen` (`generate`, `Configuration`, errors, prelude, features) or `convex_typegen_runtime` (client helpers, codecs, generated-code support) | Standard [SemVer 2.0](https://semver.org/) on the crate version |
-| **Generated output** | `convex_api.rs` (or your `out_file`) emitted at build time | **Not** the crate’s public API, but changes are **breaking for your app** — we bump the **crate major** when we intentionally change generated shapes |
+| **Library API** | Rust items you import from `convex_typegen` (`generate`, `Configuration`, errors, prelude, features) or `convex_typegen_runtime` (client helpers, codecs, generated-code support) | Standard semver on the crate version |
+| **Generated output** | `convex_api.rs` (or your `out_file`) emitted at build time | **Not** the published Rust API, but intentional shape changes are **breaking for your app** and bump the **crate major** |
 
-Matching release versions of `convex-typegen` and `convex-typegen-runtime` are supported. Declare the generator in `[build-dependencies]` and the runtime in `[dependencies]`. After upgrading, regenerate the bindings against the matching runtime.
+Use matching release versions of `convex-typegen` and `convex-typegen-runtime`. Put the generator
+in `[build-dependencies]` and the runtime in `[dependencies]`. Regenerate bindings whenever you
+upgrade so generated code and runtime stay in sync.
 
-## Library API (stable at 1.0)
+## Library API
 
-These items are covered by semver once we tag **1.0.0**:
+These items are semver-stable from 1.0.0:
 
 - `convex_typegen::{generate, check}`
 - `convex_typegen::config::Configuration`, its fields, and its setters
@@ -31,7 +35,8 @@ See [api-stability.md](api-stability.md) for a per-item table.
 
 ## Generated output (codegen semver)
 
-Treat **any intentional change** to generated Rust that breaks consumer code as requiring a **major** crate bump:
+Treat **any intentional change** to generated Rust that breaks consumer code as requiring a **major**
+crate bump:
 
 - Renaming or removing `pub struct` / `pub enum` types
 - Changing field types on generated structs
@@ -65,21 +70,9 @@ When in doubt, bump **major**.
 - Raising MSRV is a **major** version change.
 - CI verifies each crate at its declared MSRV.
 
-## Pre-1.0 history
+## Maintainer releases
 
-Versions **0.x** may ship breaking changes in **minor** releases when needed for rapid improvement. From **1.0.0** onward, this policy applies strictly.
-
-## 1.0.0 readiness checklist
-
-- [x] Semver and API stability documents published
-- [x] Oxc AST path evaluated ([oxc-ast-evaluation.md](oxc-ast-evaluation.md))
-- [x] Named nested object structs implemented (see CHANGELOG)
-- [x] CHANGELOG and release notes reference this policy
-- [ ] Tag `v1.0.0` after codegen behavior is stable enough to avoid an immediate follow-up major
-
-## Releases
-
-Maintainers (default branch is **`master`**):
+Default branch is **`master`**.
 
 1. Update `CHANGELOG.md` and `workspace.package.version` in `Cargo.toml`.
 2. Add `docs/release-vX.Y.Z.md`, merge to `master`, tag `vX.Y.Z`, and create a GitHub Release.

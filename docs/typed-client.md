@@ -1,9 +1,10 @@
 # Typed Convex client
 
-Wrap a client from `convex::ConvexClient::new` or `convex::ConvexClientBuilder`.
-The adapter borrows it mutably because the SDK takes `&mut self` for calls and
-subscription setup. Use `client.client_mut()` to access SDK methods such as
-`set_auth` or `set_admin_auth` while the adapter is in scope.
+Wrap a client from [`convex::ConvexClient::new`](https://docs.rs/convex/latest/convex/) or
+`convex::ConvexClientBuilder`. The adapter borrows it mutably because the SDK takes `&mut self`
+for calls and subscription setup. Use `client.client_mut()` to reach SDK methods such as
+[`set_auth`](https://docs.rs/convex/latest/convex/) or `set_admin_auth` while the adapter is in
+scope.
 
 ```rust,ignore
 use convex_typegen_runtime::TypedClient;

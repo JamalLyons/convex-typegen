@@ -10,7 +10,11 @@ From the workspace root, run:
 
 ```sh
 just e2e
+just e2e tutorial
 ```
+
+The second command deploys and type-checks the first-project tutorial on a fresh
+local backend, then runs the Rust example with offline Cargo.
 
 Prerequisites are Docker, Node.js/npm, `jq`, current stable Rust, network access to the
 locked package registries, and `just`. The script fetches locked Rust

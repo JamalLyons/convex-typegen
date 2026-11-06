@@ -1,4 +1,5 @@
 //! Serde building blocks for generated Convex models.
+//! See [generated model names and wire behavior](https://jamallyons.github.io/convex-typegen/docs/generated-models.html).
 
 use std::collections::BTreeMap;
 use std::fmt;

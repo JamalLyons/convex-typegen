@@ -37,7 +37,16 @@ jobs:
           tool: mdbook
 
       - name: Build mdBook site
-        run: mdbook build docs/site
+        run: |
+          mdbook build docs/site 2>&1 | tee "$RUNNER_TEMP/mdbook.log"
+          if rg -q '\bWARN\b' "$RUNNER_TEMP/mdbook.log"; then
+            exit 1
+          fi
+
+      - name: Check internal anchors
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --config docs/site/lychee.toml --offline --include-fragments=anchor-only --extensions html --no-progress docs/site/book
 
       - name: Check links
         uses: lycheeverse/lychee-action@v2

@@ -1,7 +1,7 @@
 # v1 review
 
 Historical review and probe results from the baseline below. Recorded Rust 1.95 commands are
-not current setup instructions; see [current Rust requirements](guide/concepts.md#versions-and-rust-versions).
+not current setup instructions; see [current Rust requirements](https://jamallyons.github.io/convex-typegen/docs/guide/concepts.html#versions-and-rust-versions).
 
 Baseline: [`cb5efa4`](https://github.com/JamalLyons/convex-typegen/tree/cb5efa46377f3ea9be35e7b4e4d1a0e6224a035a) on `master`, crate 0.4.0. The [roadmap](v1-roadmap.md) sets the goal: generate a fully typed Rust counterpart to Convex's `api.*`, over the official client. [v1 tracking issue](https://github.com/JamalLyons/convex-typegen/issues/53) · [milestone](https://github.com/JamalLyons/convex-typegen/milestone/1).
 
@@ -46,7 +46,7 @@ Set `Configuration::function_spec_path` to use a committed spec as the complete 
 
 The adapter preserves canonical nested module identity in the IR. The emitter uses it for
 nested API references and scoped models, so both `users.js:list` and `admin/users.js:list` are covered
-by the full capture snapshot. See [generated models](generated-models.md).
+by the full capture snapshot. See [generated models](https://jamallyons.github.io/convex-typegen/docs/generated-models.html).
 
 ## Proposed v1 architecture
 

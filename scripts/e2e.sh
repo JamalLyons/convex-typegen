@@ -10,6 +10,11 @@ backend_url="http://127.0.0.1:13210"
 backend_key=""
 spec_file=""
 
+case "${1:-fixture}" in
+    fixture|tutorial) scenario="${1:-fixture}" ;;
+    *) echo "usage: just e2e [fixture|tutorial]" >&2; exit 2 ;;
+esac
+
 mkdir -p "$artifact_dir"
 
 sanitize_logs() {
@@ -69,6 +74,16 @@ backend_key="$(docker exec "$backend_name" ./generate_admin_key.sh | tail -n 1)"
 
 export CONVEX_SELF_HOSTED_URL="$backend_url"
 export CONVEX_SELF_HOSTED_ADMIN_KEY="$backend_key"
+if [[ "$scenario" == tutorial ]]; then
+    cd "$repo_root/examples/readme"
+    npm ci --no-audit --no-fund
+    npx --no-install convex dev --once --typecheck enable
+    npx --no-install tsc --project convex/tsconfig.json
+    cd "$repo_root"
+    CONVEX_URL="$backend_url" cargo run --offline --locked -p convex-typegen-readme --bin convex-typegen-readme
+    exit
+fi
+
 cd "$fixture_dir"
 npm ci --no-audit --no-fund
 npx --no-install convex dev --once --typecheck enable

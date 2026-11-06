@@ -16,7 +16,7 @@ pub mod tables {
     pub struct Users;
 }
 
-#[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, ConvexValue, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum UsersDocRole {
     #[convex(literal = "admin")]
     Admin,
@@ -24,7 +24,7 @@ pub enum UsersDocRole {
     Member,
 }
 
-#[derive(Debug, Clone, ConvexValue)]
+#[derive(Debug, Clone, ConvexValue, PartialEq)]
 pub struct UsersDoc {
     #[convex(rename = "_creationTime")]
     pub _creation_time: f64,
@@ -47,7 +47,7 @@ pub mod api {
             value_serde::Bytes,
         };
 
-        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
+        #[derive(Debug, Clone, Copy, ConvexValue, PartialEq, Eq, PartialOrd, Ord, Hash)]
         pub enum RoleNameArgsRole {
             #[convex(literal = "member")]
             Member,
@@ -55,7 +55,7 @@ pub mod api {
             Admin,
         }
 
-        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
+        #[derive(Debug, Clone, Copy, ConvexValue, PartialEq, Eq, PartialOrd, Ord, Hash)]
         pub enum RoleNameArgsNestedRole {
             #[convex(literal = "member")]
             Member,
@@ -63,7 +63,7 @@ pub mod api {
             Admin,
         }
 
-        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
+        #[derive(Debug, Clone, Copy, ConvexValue, PartialEq, Eq, PartialOrd, Ord, Hash)]
         pub enum RoleNameArgsNestedSelected {
             #[convex(literal = "member")]
             Member,
@@ -71,7 +71,7 @@ pub mod api {
             Admin,
         }
 
-        #[derive(Debug, Clone, ConvexValue)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
         pub struct RoleNameArgsNested {
             #[convex(rename = "role")]
             pub role: Option<RoleNameArgsNestedRole>,
@@ -79,7 +79,7 @@ pub mod api {
             pub selected: Option<Option<RoleNameArgsNestedSelected>>,
         }
 
-        #[derive(Debug, Clone, ConvexValue)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
         pub struct RoleNameArgs {
             #[convex(rename = "role")]
             pub role: RoleNameArgsRole,
@@ -87,7 +87,7 @@ pub mod api {
             pub nested: Option<RoleNameArgsNested>,
         }
 
-        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
+        #[derive(Debug, Clone, Copy, ConvexValue, PartialEq, Eq, PartialOrd, Ord, Hash)]
         pub enum RoleNameReturnValue {
             #[convex(literal = "")]
             _Wire,

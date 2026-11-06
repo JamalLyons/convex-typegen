@@ -16,7 +16,7 @@ pub mod tables {
     pub struct Items;
 }
 
-#[derive(Debug, Clone, ConvexValue)]
+#[derive(Debug, Clone, ConvexValue, PartialEq)]
 pub struct ItemsDoc {
     #[convex(rename = "_creationTime")]
     pub _creation_time: f64,
@@ -40,7 +40,7 @@ pub mod api {
                 value_serde::Bytes,
             };
 
-            #[derive(Debug, Clone, ConvexValue)]
+            #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
             pub struct ListArgs {
                 #[convex(rename = "b")]
                 pub b: String,
@@ -60,7 +60,7 @@ pub mod api {
                 value_serde::Bytes,
             };
 
-            #[derive(Debug, Clone, ConvexValue)]
+            #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
             pub struct UpdateArgs {
                 #[convex(rename = "flag", optional)]
                 pub flag: Option<bool>,
@@ -79,7 +79,7 @@ pub mod api {
             value_serde::Bytes,
         };
 
-        #[derive(Debug, Clone, ConvexValue)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq)]
         pub struct ListArgs {
             #[convex(rename = "a")]
             pub a: f64,

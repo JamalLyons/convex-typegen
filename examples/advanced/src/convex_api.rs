@@ -18,7 +18,7 @@ pub mod tables {
     pub struct Users;
 }
 
-#[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, ConvexValue, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum UsersDocRole {
     #[convex(literal = "admin")]
     Admin,
@@ -28,7 +28,7 @@ pub enum UsersDocRole {
     Viewer,
 }
 
-#[derive(Debug, Clone, ConvexValue)]
+#[derive(Debug, Clone, ConvexValue, PartialEq)]
 pub struct UsersDoc {
     #[convex(rename = "_creationTime")]
     pub _creation_time: f64,
@@ -56,7 +56,7 @@ impl convex_typegen_runtime::model::Table for tables::Users {
     type Document = UsersDoc;
 }
 
-#[derive(Debug, Clone, ConvexValue)]
+#[derive(Debug, Clone, ConvexValue, PartialEq)]
 pub struct TeamsDoc {
     #[convex(rename = "_creationTime")]
     pub _creation_time: f64,
@@ -76,7 +76,7 @@ impl convex_typegen_runtime::model::Table for tables::Teams {
     type Document = TeamsDoc;
 }
 
-#[derive(Debug, Clone, ConvexValue)]
+#[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
 pub struct ProjectsDocSettings {
     #[convex(rename = "notifyEmail")]
     pub notify_email: bool,
@@ -84,7 +84,7 @@ pub struct ProjectsDocSettings {
     pub theme: String,
 }
 
-#[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, ConvexValue, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ProjectsDocStatus {
     #[convex(literal = "draft")]
     Draft,
@@ -94,7 +94,7 @@ pub enum ProjectsDocStatus {
     Archived,
 }
 
-#[derive(Debug, Clone, ConvexValue)]
+#[derive(Debug, Clone, ConvexValue, PartialEq)]
 pub struct ProjectsDoc {
     #[convex(rename = "_creationTime")]
     pub _creation_time: f64,
@@ -118,7 +118,7 @@ impl convex_typegen_runtime::model::Table for tables::Projects {
     type Document = ProjectsDoc;
 }
 
-#[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, ConvexValue, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TasksDocPriority {
     #[convex(literal = "p0")]
     P0,
@@ -128,7 +128,7 @@ pub enum TasksDocPriority {
     P2,
 }
 
-#[derive(Debug, Clone, ConvexValue)]
+#[derive(Debug, Clone, ConvexValue, PartialEq)]
 pub struct TasksDoc {
     #[convex(rename = "_creationTime")]
     pub _creation_time: f64,
@@ -161,7 +161,7 @@ pub mod api {
             value_serde::Bytes,
         };
 
-        #[derive(Debug, Clone, ConvexValue)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
         pub struct MirrorArgsFlags {
             #[convex(rename = "trace")]
             pub trace: bool,
@@ -169,7 +169,7 @@ pub mod api {
             pub verbose: bool,
         }
 
-        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
+        #[derive(Debug, Clone, Copy, ConvexValue, PartialEq, Eq, PartialOrd, Ord, Hash)]
         pub enum MirrorArgsMode {
             #[convex(literal = "json")]
             Json,
@@ -177,7 +177,7 @@ pub mod api {
             Text,
         }
 
-        #[derive(Debug, Clone, ConvexValue)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq)]
         pub struct MirrorArgs {
             #[convex(rename = "body")]
             pub body: String,
@@ -203,7 +203,7 @@ pub mod api {
             value_serde::Bytes,
         };
 
-        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
+        #[derive(Debug, Clone, Copy, ConvexValue, PartialEq, Eq, PartialOrd, Ord, Hash)]
         pub enum ListByTeamArgsStatusFilter {
             #[convex(literal = "draft")]
             Draft,
@@ -213,7 +213,7 @@ pub mod api {
             Archived,
         }
 
-        #[derive(Debug, Clone, ConvexValue)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
         pub struct ListByTeamArgs {
             #[convex(rename = "teamId")]
             pub team_id: Id<super::super::tables::Teams>,
@@ -225,7 +225,7 @@ pub mod api {
         pub const list_by_team: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, ListByTeamArgs, RawValue> =
             ::convex_typegen_runtime::function::FunctionRef::new("projects:projectsListByTeam");
 
-        #[derive(Debug, Clone, ConvexValue)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
         pub struct UpdateTagsArgs {
             #[convex(rename = "projectId")]
             pub project_id: Id<super::super::tables::Projects>,
@@ -245,7 +245,7 @@ pub mod api {
             value_serde::Bytes,
         };
 
-        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
+        #[derive(Debug, Clone, Copy, ConvexValue, PartialEq, Eq, PartialOrd, Ord, Hash)]
         pub enum SearchArgsFilterMinPriority {
             #[convex(literal = "p0")]
             P0,
@@ -253,7 +253,7 @@ pub mod api {
             P1,
         }
 
-        #[derive(Debug, Clone, ConvexValue)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
         pub struct SearchArgsFilter {
             #[convex(rename = "minPriority", optional)]
             pub min_priority: Option<SearchArgsFilterMinPriority>,
@@ -261,7 +261,7 @@ pub mod api {
             pub project_id: Id<super::super::tables::Projects>,
         }
 
-        #[derive(Debug, Clone, ConvexValue)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq)]
         pub struct SearchArgs {
             #[convex(rename = "filter")]
             pub filter: SearchArgsFilter,
@@ -273,7 +273,7 @@ pub mod api {
         pub const search: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, SearchArgs, RawValue> =
             ::convex_typegen_runtime::function::FunctionRef::new("tasks:tasksSearch");
 
-        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
+        #[derive(Debug, Clone, Copy, ConvexValue, PartialEq, Eq, PartialOrd, Ord, Hash)]
         pub enum CreateArgsPriority {
             #[convex(literal = "p0")]
             P0,
@@ -283,7 +283,7 @@ pub mod api {
             P2,
         }
 
-        #[derive(Debug, Clone, ConvexValue)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq)]
         pub struct CreateArgs {
             #[convex(rename = "projectId")]
             pub project_id: Id<super::super::tables::Projects>,
@@ -311,7 +311,7 @@ pub mod api {
             value_serde::Bytes,
         };
 
-        #[derive(Debug, Clone, ConvexValue)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
         pub struct ListByOwnerArgs {
             #[convex(rename = "ownerUserId")]
             pub owner_user_id: Id<super::super::tables::Users>,
@@ -321,7 +321,7 @@ pub mod api {
         pub const list_by_owner: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, ListByOwnerArgs, RawValue> =
             ::convex_typegen_runtime::function::FunctionRef::new("teams:teamsListByOwner");
 
-        #[derive(Debug, Clone, ConvexValue)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq)]
         pub struct CreateArgs {
             #[convex(rename = "name")]
             pub name: String,
@@ -345,7 +345,7 @@ pub mod api {
             value_serde::Bytes,
         };
 
-        #[derive(Debug, Clone, ConvexValue)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
         pub struct GetByEmailArgs {
             #[convex(rename = "email")]
             pub email: String,
@@ -357,7 +357,7 @@ pub mod api {
         pub const get_by_email: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, GetByEmailArgs, RawValue> =
             ::convex_typegen_runtime::function::FunctionRef::new("users:usersGetByEmail");
 
-        #[derive(Debug, Clone, ConvexValue)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
         pub struct GetProfileArgs {
             #[convex(rename = "userId")]
             pub user_id: Id<super::super::tables::Users>,
@@ -369,7 +369,7 @@ pub mod api {
         pub const get_profile: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, GetProfileArgs, RawValue> =
             ::convex_typegen_runtime::function::FunctionRef::new("users:usersGetProfile");
 
-        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
+        #[derive(Debug, Clone, Copy, ConvexValue, PartialEq, Eq, PartialOrd, Ord, Hash)]
         pub enum CreateArgsRole {
             #[convex(literal = "admin")]
             Admin,
@@ -379,7 +379,7 @@ pub mod api {
             Viewer,
         }
 
-        #[derive(Debug, Clone, ConvexValue)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
         pub struct CreateArgs {
             #[convex(rename = "email")]
             pub email: String,

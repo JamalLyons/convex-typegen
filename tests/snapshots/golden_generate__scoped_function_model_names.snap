@@ -16,7 +16,7 @@ pub mod tables {
     pub struct Projects;
 }
 
-#[derive(Debug, Clone, ConvexValue)]
+#[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
 pub struct ProjectsDocSettings {
     #[convex(rename = "notifyEmail")]
     pub notify_email: bool,
@@ -24,7 +24,7 @@ pub struct ProjectsDocSettings {
     pub theme: String,
 }
 
-#[derive(Debug, Clone, ConvexValue)]
+#[derive(Debug, Clone, ConvexValue, PartialEq)]
 pub struct ProjectsDoc {
     #[convex(rename = "_creationTime")]
     pub _creation_time: f64,
@@ -47,7 +47,7 @@ pub mod api {
             value_serde::Bytes,
         };
 
-        #[derive(Debug, Clone, ConvexValue)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
         pub struct MirrorArgsFlags {
             #[convex(rename = "trace")]
             pub trace: bool,
@@ -55,7 +55,7 @@ pub mod api {
             pub verbose: bool,
         }
 
-        #[derive(Debug, Clone, ConvexValue)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
         pub struct MirrorArgs {
             #[convex(rename = "flags")]
             pub flags: MirrorArgsFlags,

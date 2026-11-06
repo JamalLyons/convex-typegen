@@ -26,7 +26,13 @@ fields. IDs use `model::Id<tables::Tasks>`; full rows use `model::Doc<tables::Ta
 
 A union of string literals becomes a Rust enum with one variant per string. Validator
 `v.union(v.literal("low"), v.literal("high"))` becomes `AddArgsPriority` with `Low` and `High`
-variants that encode as `"low"` and `"high"` on the wire.
+variants that encode as `"low"` and `"high"` on the wire. String-literal enums implement
+`Copy`, `PartialEq`, `Eq`, and `Hash`, including when wrapped in `Option`.
+
+Generated structs and other union enums implement `PartialEq`. They also implement `Eq`
+when all fields or variant payloads implement it. An `f64` or `RawValue` anywhere in a
+nested field prevents `Eq`. For example, document models have an `f64` creation time,
+while an `Id<T>` still implements `Eq`.
 
 ## Function references
 

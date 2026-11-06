@@ -18,7 +18,7 @@ pub mod tables {
     pub struct Tasks;
 }
 
-#[derive(Debug, Clone, ConvexValue)]
+#[derive(Debug, Clone, ConvexValue, PartialEq)]
 pub struct TasksDoc {
     #[convex(rename = "_creationTime")]
     pub _creation_time: f64,
@@ -36,7 +36,7 @@ impl convex_typegen_runtime::model::Table for tables::Tasks {
 #[convex(literal = "created")]
 pub struct EventsDocBranch1Kind;
 
-#[derive(Debug, Clone, ConvexValue)]
+#[derive(Debug, Clone, ConvexValue, PartialEq)]
 pub struct EventsDocBranch1 {
     #[convex(rename = "_creationTime")]
     pub _creation_time: f64,
@@ -52,7 +52,7 @@ pub struct EventsDocBranch1 {
 #[convex(literal = "deleted")]
 pub struct EventsDocBranch2Kind;
 
-#[derive(Debug, Clone, ConvexValue)]
+#[derive(Debug, Clone, ConvexValue, PartialEq)]
 pub struct EventsDocBranch2 {
     #[convex(rename = "_creationTime")]
     pub _creation_time: f64,
@@ -64,7 +64,7 @@ pub struct EventsDocBranch2 {
     pub reason: String,
 }
 
-#[derive(Debug, Clone, ConvexValue)]
+#[derive(Debug, Clone, ConvexValue, PartialEq)]
 #[convex(discriminator = "kind")]
 pub enum EventsDoc {
     #[convex(tag = EventsDocBranch1Kind)]
@@ -87,7 +87,7 @@ pub mod api {
                 value_serde::Bytes,
             };
 
-            #[derive(Debug, Clone, ConvexValue)]
+            #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
             pub struct ListArgs {
             }
 
@@ -97,7 +97,7 @@ pub mod api {
             pub const list: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, ListArgs, ListReturn> =
                 ::convex_typegen_runtime::function::FunctionRef::new("admin/users:list");
 
-            #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
+            #[derive(Debug, Clone, Copy, ConvexValue, PartialEq, Eq, PartialOrd, Ord, Hash)]
             pub enum EchoArgsDataChoice {
                 #[convex(literal = "red")]
                 Red,
@@ -105,13 +105,13 @@ pub mod api {
                 Blue,
             }
 
-            #[derive(Debug, Clone, ConvexValue)]
+            #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
             pub enum EchoArgsDataNestedNullable {
                 Branch1(String),
                 Branch2(()),
             }
 
-            #[derive(Debug, Clone, ConvexValue)]
+            #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
             pub struct EchoArgsDataNested {
                 #[convex(rename = "note", optional)]
                 pub note: Option<String>,
@@ -119,7 +119,7 @@ pub mod api {
                 pub nullable: EchoArgsDataNestedNullable,
             }
 
-            #[derive(Debug, Clone, ConvexValue)]
+            #[derive(Debug, Clone, ConvexValue, PartialEq)]
             pub struct EchoArgsData {
                 #[convex(rename = "bytes")]
                 pub bytes: Bytes,
@@ -135,13 +135,13 @@ pub mod api {
                 pub record: ::std::collections::BTreeMap<String, i64>,
             }
 
-            #[derive(Debug, Clone, ConvexValue)]
+            #[derive(Debug, Clone, ConvexValue, PartialEq)]
             pub struct EchoArgs {
                 #[convex(rename = "data")]
                 pub data: EchoArgsData,
             }
 
-            #[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]
+            #[derive(Debug, Clone, Copy, ConvexValue, PartialEq, Eq, PartialOrd, Ord, Hash)]
             pub enum EchoReturnChoice {
                 #[convex(literal = "red")]
                 Red,
@@ -149,13 +149,13 @@ pub mod api {
                 Blue,
             }
 
-            #[derive(Debug, Clone, ConvexValue)]
+            #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
             pub enum EchoReturnNestedNullable {
                 Branch1(String),
                 Branch2(()),
             }
 
-            #[derive(Debug, Clone, ConvexValue)]
+            #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
             pub struct EchoReturnNested {
                 #[convex(rename = "note", optional)]
                 pub note: Option<String>,
@@ -163,7 +163,7 @@ pub mod api {
                 pub nullable: EchoReturnNestedNullable,
             }
 
-            #[derive(Debug, Clone, ConvexValue)]
+            #[derive(Debug, Clone, ConvexValue, PartialEq)]
             pub struct EchoReturn {
                 #[convex(rename = "bytes")]
                 pub bytes: Bytes,
@@ -183,7 +183,7 @@ pub mod api {
             pub const echo: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, EchoArgs, EchoReturn> =
                 ::convex_typegen_runtime::function::FunctionRef::new("admin/users:echo");
 
-            #[derive(Debug, Clone, ConvexValue)]
+            #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
             pub struct AddArgs {
                 #[convex(rename = "text")]
                 pub text: String,
@@ -195,7 +195,7 @@ pub mod api {
             pub const add: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Mutation, AddArgs, AddReturn> =
                 ::convex_typegen_runtime::function::FunctionRef::new("admin/users:add");
 
-            #[derive(Debug, Clone, ConvexValue)]
+            #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
             pub struct DocsArgs {
             }
 
@@ -205,7 +205,7 @@ pub mod api {
             pub const docs: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, DocsArgs, DocsReturn> =
                 ::convex_typegen_runtime::function::FunctionRef::new("admin/users:docs");
 
-            #[derive(Debug, Clone, ConvexValue)]
+            #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
             pub struct FailArgs {
             }
 
@@ -215,7 +215,7 @@ pub mod api {
             pub const fail: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Action, FailArgs, FailReturn> =
                 ::convex_typegen_runtime::function::FunctionRef::new("admin/users:fail");
 
-            #[derive(Debug, Clone, ConvexValue)]
+            #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
             pub struct PingArgs {
             }
 
@@ -240,13 +240,13 @@ pub mod api {
         pub const list: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, ::convex_typegen_runtime::function::RawArgs, RawValue> =
             ::convex_typegen_runtime::function::FunctionRef::new("users:list");
 
-        #[derive(Debug, Clone, ConvexValue)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
         pub struct OptionalArgsNested {
             #[convex(rename = "note", optional)]
             pub note: Option<String>,
         }
 
-        #[derive(Debug, Clone, ConvexValue)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
         pub struct OptionalArgs {
             #[convex(rename = "root", optional)]
             pub root: Option<String>,
@@ -260,7 +260,7 @@ pub mod api {
         pub const optional: ::convex_typegen_runtime::function::FunctionRef<::convex_typegen_runtime::function::Query, OptionalArgs, OptionalReturn> =
             ::convex_typegen_runtime::function::FunctionRef::new("users:optional");
 
-        #[derive(Debug, Clone, ConvexValue)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq)]
         pub struct NumberArgs {
             #[convex(rename = "value")]
             pub value: f64,

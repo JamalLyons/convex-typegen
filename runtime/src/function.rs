@@ -92,6 +92,7 @@ impl<Kind, Args, Returns, Error> FunctionRef<Kind, Args, Returns, Error>
     }
 
     /// Declare the payload type used automatically by typed calls and subscriptions.
+    #[must_use]
     pub const fn with_error<E: DeserializeOwned>(self) -> FunctionRef<Kind, Args, Returns, E>
     {
         FunctionRef {
@@ -102,6 +103,7 @@ impl<Kind, Args, Returns, Error> FunctionRef<Kind, Args, Returns, Error>
     }
 
     /// Use the SDK's raw application error payload for this reference.
+    #[must_use]
     pub const fn raw_errors(self) -> FunctionRef<Kind, Args, Returns>
     {
         FunctionRef::new(self.path)

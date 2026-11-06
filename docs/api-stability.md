@@ -22,6 +22,7 @@ The generator prelude exports `Configuration`, `generate`, `check`, and `ConvexT
 | Export | Role |
 | --- | --- |
 | `ConvexValue`, `include!` | Derive for Convex wire models and helper for including generated bindings |
+| `convex` | Re-export of the SDK used by the runtime |
 | `serde`, `serde_json` | Re-exports used by generated bindings |
 | `TypedClient`, `CallError`, `TransportError`, `InvalidApplicationData` | Typed calls, subscriptions, and errors over the official SDK |
 | `function` | Typed endpoint references, kind markers, raw args, and the sealed `FunctionReference` trait |
@@ -39,7 +40,7 @@ exposed `convex` 0.x type requires a runtime major release.
 | Item | Notes |
 | --- | --- |
 | **Generated `convex_api.rs`** | Type names and fields can change on major crate bumps |
-| **Internal modules** | `convex::*` is private; do not depend on it |
+| **Internal modules** | `convex_typegen::convex` is private; do not depend on it |
 | **Exact error `Display` strings** | May improve in patches; match on variants, not text |
 | **Dependency versions** | Private dependency updates can affect build time. Public SDK type and MSRV changes follow the semver policy. |
 

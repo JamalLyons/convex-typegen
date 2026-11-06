@@ -1,9 +1,9 @@
 #[path = "../../target/model-tests/models.rs"]
 mod models;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 
-use convex::Value;
+use convex_typegen_runtime::convex::{self, Value};
 use convex_typegen_runtime::ConvexValue;
 use convex_typegen_runtime::function::{Action, FunctionRef, FunctionReference, Mutation, Query, RawArgs};
 use convex_typegen_runtime::model::{Doc, Id, RawValue};
@@ -161,6 +161,32 @@ fn kinds_and_records()
     let Value::Object(ref mut fields) = wire else { unreachable!() };
     fields.insert("byKey".into(), object([("three", Value::Bytes(vec![]))]));
     assert!(from_value::<RoundTripArgs>(wire).is_err());
+}
+
+fn comparison_traits()
+{
+    fn require_eq<T: Eq>() {}
+    fn require_copy<T: Copy>() {}
+
+    require_eq::<RoleArgs>();
+    require_eq::<RoundTripArgsBuffer>();
+    require_eq::<Id<tables::Users>>();
+
+    require_copy::<RoleArgsRole>();
+    require_copy::<EdgesReturn>();
+    assert!(HashSet::from([RoleArgsRole::Admin]).contains(&RoleArgsRole::Admin));
+    assert!(HashSet::from([Some(EdgesReturnValue::Type)]).contains(&Some(EdgesReturnValue::Type)));
+
+    let args = RoleArgs { role: RoleArgsRole::Admin, nested: None };
+    assert_eq!(args, args.clone());
+    assert_ne!(args, RoleArgs { role: RoleArgsRole::Member, nested: None });
+
+    let readings = |value| MeasurementsArgs {
+        readings: Some(vec![BTreeMap::from([("sample".into(), MeasurementsArgsReadingsElementValue { value })])]),
+    };
+    assert_eq!(readings(1.0), readings(1.0));
+    assert_ne!(readings(1.0), readings(2.0));
+    assert_ne!(readings(f64::NAN), readings(f64::NAN));
 }
 
 fn string_enums()
@@ -438,6 +464,7 @@ fn main()
     documents();
     literals();
     kinds_and_records();
+    comparison_traits();
     string_enums();
     references();
     handwritten_models();

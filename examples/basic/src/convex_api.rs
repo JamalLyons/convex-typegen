@@ -12,7 +12,7 @@ pub mod tables {
     pub struct Games;
 }
 
-#[derive(Debug, Clone, ConvexValue)]
+#[derive(Debug, Clone, ConvexValue, PartialEq)]
 pub struct GamesDoc {
     #[convex(rename = "_creationTime")]
     pub _creation_time: f64,
@@ -37,7 +37,7 @@ pub mod api {
             value_serde::Bytes,
         };
 
-        #[derive(Debug, Clone, ConvexValue)]
+        #[derive(Debug, Clone, ConvexValue, PartialEq, Eq)]
         pub struct GetGameArgs {
             #[convex(rename = "logData", optional)]
             pub log_data: Option<bool>,

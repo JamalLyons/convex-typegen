@@ -1,79 +1,97 @@
 # Generated models
 
-The generator emits Serde models from schema and function validators using the
-[runtime’s `ConvexValue` derive](macros.md). Use them with
-`convex_typegen_runtime::value_serde::{to_value, from_value}` to preserve Convex wire kinds.
+Codegen turns your [Convex schema](https://docs.convex.dev/database/schemas) and function
+[validators](https://docs.convex.dev/database/types) into Rust structs and enums. Each model derives
+[`ConvexValue`](macros.md) and round-trips through
+`convex_typegen_runtime::value_serde::{to_value, from_value}` so Int64, Float64, bytes, and nested
+objects keep their wire kinds.
 
-## Function references and model names
+## Args, documents, and string enums
 
-Public queries, mutations, and actions generate constants under `api`. For example,
-`convex/admin/users.ts` exporting `list` emits `api::admin::users::list`, whose
-`path()` returns `"admin/users:list"`. Each reference implements
-`convex_typegen_runtime::function::FunctionReference` with associated `Args`,
-`Returns`, `Kind`, and application `Error` types. The kind markers are `Query`,
-`Mutation`, and `Action`. See [typed client](../typed-client.md) for calls and
-application error declarations.
+When `convex/tasks.ts` exports an `add` mutation with `{ text: v.string(), … }`, you get a typed
+args struct next to the function reference:
 
-Module segments and exports use snake_case, escape Rust keywords where possible,
-and normalize punctuation and leading digits. The generator reports both origins
-when distinct names collide in the same Rust namespace. Internal functions, HTTP
-actions, crons, and explicitly configured functions outside the Convex root are
-omitted from the generated API.
+```rust,ignore
+client.mutation(
+    tasks::add,
+    tasks::AddArgs {
+        text: "Ship it".into(),
+        priority: None,
+    },
+);
+```
 
-Nested models extend the enclosing model's name with
-their field or container role. References and model names drop a repeated prefix at a word boundary
-when it matches the final module segment and leaves a nonempty name. For example,
-`integrations:integrationsMirror` emits `api::integrations::MirrorArgs` while its
-reference is `api::integrations::mirror`. Its wire path is still
-`integrations:integrationsMirror`. Struct fields use snake_case and Serde preserves
-the original wire names, including camelCase and quoted keys.
+A query that returns table rows yields document structs with `_id`, `_creation_time`, and your
+fields. IDs use `model::Id<tables::Tasks>`; full rows use `model::Doc<tables::Tasks>`.
 
-`model::Id<tables::Tasks>` is a string on the wire with a distinct Rust type for each
-table. The backend checks the underlying ID string and table against the deployment.
-`model::Doc<tables::Tasks>` is the associated generated document model. Each union
-document branch has its own `_id` and `_creation_time` fields. The latter uses the
-`_creationTime` wire name and the float64 wire kind.
+A union of string literals becomes a Rust enum with one variant per string. Validator
+`v.union(v.literal("low"), v.literal("high"))` becomes `AddArgsPriority` with `Low` and `High`
+variants that encode as `"low"` and `"high"` on the wire.
 
-## Presence, unions, and literals
+## Function references
 
-- `v.optional(T)` uses `Option<T>`. `None` omits the key. A present key must decode as
-  `T`, including inside arrays of objects or records of objects.
-- A union of distinct string literals uses unit variants such as `Admin` and `Member`.
-  Each encodes and decodes the exact original string. Variant names are PascalCase
-  from ASCII letters and digits, with punctuation and other characters treated as
-  separators. Leading digits and `Self` receive a `Type` prefix. Literals with no
-  ASCII letters or digits use `_Wire` followed by the lowercase UTF-8 hex bytes,
-  such as `_Wire21` for `"!"`. The leading underscore keeps those variants separate
-  from semantic names such as `Type`.
-  If names collide, each receives a `Wire` suffix followed by the original string's
-  lowercase UTF-8 hex bytes, with trailing `X` characters added if needed to avoid a
-  base name. Reordering the literals preserves their names.
-- A union with null and distinct string literals uses `Option<Enum>` with the same
-  naming and exact wire strings. This includes `v.nullable` around a string literal
-  or a union of string literals. A required field must be present and uses `None`
-  for null and `Some(Enum::Variant)` for a string. An optional field uses
-  `Option<Option<Enum>>`. The outer `None` omits the key, `Some(None)` encodes
-  explicit null, and `Some(Some(Enum::Variant))` encodes the string. Unknown
-  strings and other wire kinds are errors. A top-level nullable enum return uses
-  `FooReturn = Option<FooReturnValue>`, with variants on `FooReturnValue`.
-- For other nullable validators, `v.nullable(T)` emits a union of `T` and the
-  unit value `()` for Convex null. An optional field uses `None` for absence
-  and wraps the union's null branch in `Some` for explicit null.
-- Other union enums carry each branch's model. When every branch has a common required
-  field with a distinct literal, the decoder selects the branch by that field.
-  Other unions decode as the first matching branch in declaration order. Some branches
-  share the same wire representation, such as IDs from different tables. The runtime
-  codec has no deployment table mapping, so the backend validates the ID's table.
-- Literal models are unit structs that serialize to one exact wire value and reject
-  other values during decoding. A number literal uses float64 and a bigint literal
-  uses int64. Records retain their string-shaped key validators and typed values.
-  Byte buffers use the runtime's `Bytes` wrapper.
+Public queries, mutations, and actions become constants under `api`. The `list` export in
+`convex/tasks.ts` is `tasks::list`; its `path()` returns `"tasks:list"`. Each reference implements
+`FunctionReference` with associated `Args`, `Returns`, `Kind`, and application `Error` types. See
+[typed calls](../typed-client.md) and
+[application errors](https://docs.convex.dev/functions/error-handling/application-errors).
+
+Module segments and exports use snake_case. Internal functions, HTTP actions, crons, and modules
+outside your configured Convex root are omitted from `api`.
+
+## Shorter Rust names, same Convex paths
+
+Rust types drop a repeated prefix when it matches the enclosing module name. The action
+`integrations:integrationsMirror` still uses that Convex path, but the generated args struct is
+`api::integrations::MirrorArgs` and the reference is `api::integrations::mirror`. Struct fields
+stay snake_case in Rust; Serde keeps the original wire names (`camelCase`, quoted keys, and
+`_creationTime` on documents).
+
+Nested validator shapes become nested Rust types named after their field or container role.
+
+## IDs, documents, and unions
+
+`model::Id<tables::Tasks>` is a string on the wire with a distinct Rust type per table. The
+backend still validates the ID string against the table you used at compile time.
+
+`model::Doc<tables::Tasks>` is the generated row type. Union tables emit a Rust enum with one
+variant per branch; each branch carries its own `_id` and `_creation_time` fields.
+
+## Optional and null fields
+
+`v.optional(T)` maps to `Option<T>`. `None` omits the key on encode. When the key is present, the
+value must decode as `T`.
+
+For a nullable union of string literals (including `v.nullable` around literals), use a plain enum
+for the strings and `Option<Enum>` on a required field:
+
+- `Some(AddArgsPriority::High)` sends `"high"`.
+- `None` on a **required** nullable field sends JSON `null`.
+
+When the validator is both optional and nullable, the outer `Option` tracks whether the field was
+sent:
+
+- `None` — key omitted.
+- `Some(None)` — key present with JSON `null`.
+- `Some(Some(AddArgsPriority::High))` — key present with a string literal.
+
+For other nullable validators, `v.nullable(T)` becomes a union of `T` and `()` for Convex null.
+Optional fields use `None` for absence and `Some(...)` when the key is present, wrapping the inner
+null branch when the value is explicitly null.
+
+Other union enums carry each branch’s model. When every branch shares a required field with a
+distinct literal tag, decoding picks the branch from that field. Otherwise branches are tried in
+declaration order. Some branches share wire shapes (for example IDs from different tables); the
+backend validates IDs.
+
+Literal return types become unit structs or fixed numeric types. Records keep string-shaped keys.
+Bytes use the runtime `Bytes` wrapper.
 
 ## Set, clear, or omit a priority
 
-The [task tutorial](../getting-started.md) declares
+The [first-project tutorial](../getting-started.md) declares
 `priority: v.optional(v.nullable(v.union(v.literal("low"), v.literal("high"))))`
-on the `tasks:add` args. Use these values for the generated `AddArgs::priority` field:
+on `tasks:add`. Use these values for the generated `AddArgs::priority` field:
 
 | Intent | Rust value | Convex object |
 | --- | --- | --- |
@@ -81,22 +99,39 @@ on the `tasks:add` args. Use these values for the generated `AddArgs::priority` 
 | Send an explicit empty priority | `Some(None)` | `{ priority: null }` |
 | Assign high priority | `Some(Some(tasks::AddArgsPriority::High))` | `{ priority: "high" }` |
 
-The tutorial sends the third value in a typed mutation and prints the returned task ID.
-All three states also round trip through the runtime codec. For a patch endpoint,
-the handler can give omission and null different meanings, such as retaining a
-stored value versus clearing it. The generator preserves presence; your handler
-decides what each state does.
+The tutorial sends `None` for the rejected empty-text mutation and
+`Some(Some(tasks::AddArgsPriority::High))` for the successful write. All three states round trip
+through the runtime codec. For a patch endpoint, your handler can treat omission and null
+differently; the generator preserves presence on the wire.
 
-## Raw values
+## Raw values when validators are missing
 
-`convex_typegen_runtime::function::RawArgs` is a `BTreeMap<String, RawValue>` and
-is the associated `Args` type when the endpoint has no declared args validator.
-Use `RawArgs::new()` to send an empty argument object. A declared empty args
-validator still produces an empty endpoint-specific args struct.
+Some endpoints do not declare args or returns in the spec. You can still call them:
 
-The associated `Returns` type for an undeclared return validator is
-`convex_typegen_runtime::model::RawValue`. This wrapper also represents `v.any()`
-values and retains bytes, numeric wire kinds, and nested values through the
-runtime codec. A declared `v.null()` return uses `()`. Unsupported TypeScript
-expressions can still produce adapter diagnostics. A committed function-spec can
-supply resolved validators for functions with dynamic composition.
+| Situation | Generated type | What to do |
+| --- | --- | --- |
+| No args validator | `function::RawArgs` (`BTreeMap<String, RawValue>`) | Build a map or use `RawArgs::new()` for `{}` |
+| Empty args object validator | Empty endpoint-specific struct | Pass `MyArgs {}` |
+| No return validator | `model::RawValue` | Decode manually or narrow with `from_value` |
+| `v.any()` | `model::RawValue` | Same as above; wire kinds are preserved |
+
+If TypeScript builds validators dynamically, static generation may not see the full shape. Capture
+a [function spec](https://docs.convex.dev/cli/overview) from a deployed backend and commit it—see
+[generation](../generation.md#use-a-committed-function-spec). The spec carries validators the
+offline parser cannot resolve.
+
+## Reference: literal and variant names
+
+You rarely need these rules day to day. They explain odd variant names in diffs and snapshots.
+
+String-literal enums use PascalCase variant names derived from ASCII letters and digits.
+Punctuation splits words. Leading digits and the name `Self` get a `Type` prefix. Literals with no
+ASCII letters or digits become `_Wire` plus lowercase UTF-8 hex bytes (for example `_Wire21` for
+`"!"`).
+
+When two variants would share a name, each gets a `Wire` suffix plus the original string’s
+lowercase UTF-8 hex bytes. Extra trailing `X` characters avoid colliding with an existing base
+name. Reordering literals in TypeScript does not rename variants.
+
+If two different Convex exports would collide in the same Rust module, the generator reports both
+origins so you can rename the TypeScript export or adjust modules.

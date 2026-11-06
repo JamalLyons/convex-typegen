@@ -1,5 +1,27 @@
 # Macros
 
+Use `ConvexValue` for Rust types you write yourself—application error payloads, patch objects, or
+`v.any()` results you decode by hand. Generated models already derive it; you only need the macro
+when you add your own structs or enums.
+
+Convert between your types and SDK values with the runtime codec:
+
+```rust
+use convex::Value;
+use convex_typegen_runtime::{ConvexValue, value_serde::{from_value, to_value}};
+
+#[derive(ConvexValue)]
+struct Patch {
+    title: String,
+}
+
+let wire: Value = to_value(&Patch { title: "Draft".into() })?;
+let patch: Patch = from_value(wire)?;
+```
+
+The derive implements Serde with Convex wire rules. Pair it with `to_value` / `from_value` rather
+than `serde_json` when talking to `convex::Value`.
+
 ## Include generated bindings
 
 Use the runtime's `include!()` macro to load generated Rust in a module after
@@ -50,8 +72,7 @@ function calls, use the typed references under `bindings::api`.
 
 ## Why generation stays in the build script
 
-The derive sees only the Rust item it annotates. The generator and CLI read
-TypeScript or a committed function spec offline. Keeping those inputs in
-`build.rs` lets Cargo track changes and gives rust-analyzer a generated Rust
-file to navigate. The derive crate only depends on Rust syntax and token
-libraries, so using the runtime does not pull in Oxc.
+The derive sees only the Rust item it annotates. The generator reads TypeScript or a committed
+function spec offline. Keeping those inputs in `build.rs` lets Cargo rebuild when they change and
+gives rust-analyzer a generated Rust file to navigate. Neither macro runs generation or touches the
+network.

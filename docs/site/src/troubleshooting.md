@@ -9,7 +9,7 @@ the package containing `build.rs`. Set the [Convex root or schema override](conf
 
 Make sure the function is public and its module lives under the configured Convex
 root. Declare both `args` and `returns`; `args: {}` explicitly declares no arguments.
-Check the [supported source patterns](docs/guide/support.md#source-resolution-limits).
+Check the [supported source patterns](docs/guide/support.md#typescript-the-offline-parser-understands).
 If you configured a spec, inspect that file for the endpoint and its validators and
 [refresh it](generation.md#use-a-committed-function-spec) if it is stale.
 

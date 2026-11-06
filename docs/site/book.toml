@@ -23,7 +23,7 @@ runnable = false
 
 [output.html.redirect]
 "/api/calls.html" = "../typed-client.html#calls"
-"/api/function-references.html" = "../docs/generated-models.html#function-references-and-model-names"
+"/api/function-references.html" = "../docs/generated-models.html#function-references"
 "/api/subscriptions.html" = "../typed-client.html#subscriptions"
 "/api/typed-errors.html" = "../errors.html"
 "/docs/guide/getting-started.html" = "../../getting-started.html"

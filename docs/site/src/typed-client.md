@@ -1,5 +1,13 @@
 # Typed calls and subscriptions
 
+The runtime wraps the official [Convex Rust client](https://docs.rs/convex/latest/convex/) with
+generated function references. These references constrain
+[queries](https://docs.convex.dev/functions/query-functions),
+[mutations](https://docs.convex.dev/functions/mutation-functions), and
+[actions](https://docs.convex.dev/functions/actions) to the matching argument and return models,
+expose query subscriptions as streams, and can declare a Rust type for
+[application error](https://docs.convex.dev/functions/error-handling/application-errors) payloads.
+
 Use `TypedClient` when the generated Rust types should validate arguments and
 decode results for you. Create the official SDK client first and give the adapter
 a mutable borrow. Use [the first project](getting-started.md#3-generate-and-use-the-bindings)
@@ -17,11 +25,11 @@ Pass the generated function reference as the first argument and its matching arg
 second. The Rust compiler rejects a query reference passed to `mutation`, or args from
 a different endpoint. A declared empty args object still has its own type: pass
 `tasks::ListArgs {}` to `tasks::list`. A declared return validator determines the result
-type. See [generated models](docs/generated-models.md#raw-values) for undeclared validators.
+type. See [generated models](docs/generated-models.md#raw-values-when-validators-are-missing) for undeclared validators.
 
 If you need to call the official SDK directly, the same reference exposes the wire
-name through `tasks::list.path()`. Use `client.client_mut()` to access SDK methods,
-including authentication, while the adapter holds the mutable borrow.
+name through `tasks::list.path()`. Use `client.client_mut()` to reach SDK methods such as
+[`set_auth`](https://docs.rs/convex/latest/convex/) while the adapter holds the mutable borrow.
 
 ## Subscriptions
 

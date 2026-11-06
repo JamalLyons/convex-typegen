@@ -24,11 +24,11 @@ the [semantic versioning policy](../semver-policy.md).
 A public `list` in `convex/admin/users.ts` becomes `api::admin::users::list`, with its arguments
 and return type in the same module. The reference carries the wire path `admin/users:list`, so
 there is no function-name string to keep in sync in your Rust calls. See
-[generated model naming](../generated-models.md#function-references-and-model-names).
+[generated model naming](../generated-models.md#function-references).
 
 ## Choose an input and an output independently
 
-TypeScript function sources work well when validators can be [resolved statically](support.md#source-resolution-limits).
+TypeScript function sources work well when validators can be [resolved statically](support.md#typescript-the-offline-parser-understands).
 Choose a function spec when you need the deployment's resolved validators or want to commit a
 snapshot of that interface. The schema always comes from TypeScript.
 

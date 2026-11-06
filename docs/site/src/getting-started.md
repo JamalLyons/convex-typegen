@@ -3,6 +3,9 @@
 Build a task list that writes a row and observes it through a live query. By the end you will
 have called all three Convex function kinds and handled a typed application error.
 
+The generator reads your [schema](https://docs.convex.dev/database/schemas) and local TypeScript or
+JSON and stays offline during builds. It requires Rust **1.97**; the runtime supports **1.85**.
+
 ## 1. Create the project
 
 Install Rust 1.97 or newer, Node.js 22 or newer with npm, and Docker. Node and Docker are for
@@ -67,8 +70,35 @@ Create `build.rs` next to `Cargo.toml`:
 ```
 
 The build script reads the local validators and writes `convex_api.rs` into Cargo's `OUT_DIR`.
-Add this `src/main.rs`. The runtime macro includes the generated Rust items inside `convex_api`;
-the rest of the file can import them normally.
+Add `src/main.rs` in stages, then use the complete file below.
+
+### Connect and list
+
+Create the [Convex Rust client](https://docs.rs/convex/latest/convex/), wrap it with
+`TypedClient`, and run the `tasks:list`
+[query](https://docs.convex.dev/functions/query-functions):
+
+```rust,ignore
+let mut sdk = ConvexClient::new(&std::env::var("CONVEX_URL")?).await?;
+let mut client = TypedClient::new(&mut sdk);
+let before: Vec<String> = client.query(tasks::list, tasks::ListArgs {}).await?;
+```
+
+### Reject bad input and call an action
+
+Use `with_error` for a typed [application error](https://docs.convex.dev/functions/error-handling/application-errors)
+payload. Send `priority: None` to omit the optional field on the wire. Run a
+[mutation](https://docs.convex.dev/functions/mutation-functions) and an
+[action](https://docs.convex.dev/functions/actions) the same way—pass the generated reference and
+matching args struct.
+
+### Subscribe after a write
+
+Open a subscription on `tasks:list`, insert a row with high priority
+(`Some(Some(tasks::AddArgsPriority::High))`), and wait until the stream reports the new text. See
+[typed calls](typed-client.md#subscriptions).
+
+### Complete `main.rs`
 
 ```rust
 {{#include ../../../examples/readme/src/main.rs}}
@@ -77,8 +107,8 @@ the rest of the file can import them normally.
 Run `cargo check` now. Cargo may fetch Rust dependencies the first time; generation itself
 reads only local files. The function references tell the compiler which kind of call to make
 and which arguments and result to expect. For example, `tasks::add` takes `AddArgs` and returns
-an `Id<tables::Tasks>`. See [typed calls](typed-client.md) for how the stream works and
-[generated models](docs/generated-models.md#presence-unions-and-literals) for the two `Option`s.
+an `Id<tables::Tasks>`. See [generated models](docs/generated-models.md#set-clear-or-omit-a-priority)
+for the three `priority` shapes.
 
 ## 4. Deploy and run locally
 

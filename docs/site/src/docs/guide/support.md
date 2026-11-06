@@ -1,70 +1,92 @@
 # Support matrix
 
-The generator reads `convex/schema.ts` and public function metadata either from statically
-resolvable TypeScript or a committed `convex function-spec` JSON file. Errors for unsupported
-static shapes include the input path and byte range where available.
+This page answers two practical questions: what convex-typegen can generate from your project today,
+and what to do when static analysis is not enough.
 
 ## Rust versions
 
-The generator requires Rust **1.97** because it uses Oxc 0.157. The runtime and derive
-crate support Rust **1.85**. Running generation in `build.rs` therefore requires Rust 1.97;
-consumers of pregenerated bindings can use the runtime on Rust 1.85.
+| Crate | MSRV | When you need it |
+| --- | --- | --- |
+| `convex-typegen` (generator) | **1.97** | Any project that runs generation in `build.rs` |
+| `convex-typegen-runtime` | **1.85** | Every consumer; enough on its own when bindings are pre-generated |
 
-## Convex validators
+CI checks each crate at its declared MSRV.
 
-The offline TypeScript parser accepts these Convex 1.49.0 validators:
+## What you can generate offline
 
-| Validator | Notes |
+The generator reads `convex/schema.ts` for tables and either:
+
+1. **TypeScript under your Convex root** — exported public queries, mutations, and actions whose
+   validators are visible to the offline resolver, or
+2. **A committed function-spec JSON file** — the public function list and resolved validators from a
+   deployment you captured with the [Convex CLI](https://docs.convex.dev/cli/overview).
+
+Start with TypeScript. When a function builds validators at runtime, spreads from unknown sources, or
+uses patterns the resolver skips, generation fails with a file path and span when possible. That is
+your signal to generate and commit a function spec instead of guessing types.
+
+### Supported Convex validators
+
+These match Convex 1.49-style [validator types](https://docs.convex.dev/database/types):
+
+| Validator | Generated shape (typical) |
 | --- | --- |
-| `v.string()`, `v.number()`, `v.float64()`, `v.boolean()`, `v.null()` | `number` and `float64` map to Float64; null maps to `()` |
-| `v.int64()`, `v.bigint()`, `v.commitTs()` | Map to signed `i64` / Int64 |
-| `v.bytes()` | Maps to runtime `value_serde::Bytes` |
-| `v.id("table")` | Maps to table-scoped `model::Id<tables::Table>` |
-| `v.literal(value)` | String, boolean, finite number, or signed 64-bit bigint literal; use `v.null()` for null |
-| `v.optional(validator)` and `v.nullable(validator)` | Optional object fields are omitted when absent. Nullable string-literal enums use `Option<Enum>`; other nullable validators retain a null union branch |
-| `v.array(validator)`, `v.object({...})`, `v.record(key, value)` | Record keys must be strings, IDs, string literals, or unions of these |
-| `v.union(a, b, ...)` | Requires at least one member |
-| `v.any()` | Preserves an arbitrary Convex value through `model::RawValue`; in args it uses the raw argument fallback |
-| `v.function(signature?)` | Function handles; signatures accept `fnType` query/mutation/action and static args/returns |
+| `v.string()`, `v.number()`, `v.float64()`, `v.boolean()`, `v.null()` | `String`, `f64`, `bool`, `()` for null |
+| `v.int64()`, `v.bigint()`, `v.commitTs()` | `i64` / Int64 |
+| `v.bytes()` | `value_serde::Bytes` |
+| `v.id("table")` | `model::Id<tables::Table>` |
+| `v.literal(value)` | Exact literal model; use `v.null()` for null |
+| `v.optional(T)`, `v.nullable(T)` | See [generated models](../generated-models.md#optional-and-null-fields) |
+| `v.array(T)`, `v.object({…})`, `v.record(key, value)` | Vec, struct, `BTreeMap` with string-like keys |
+| `v.union(a, b, …)` | Enum or nested union models |
+| `v.any()` | `model::RawValue` |
+| `v.function(signature?)` | Function handle type |
 
-`number` is Convex's floating-point number validator. The schema parser accepts required object
-tables and unions of required object table shapes, including `.index()`, `.searchIndex()`, and
-`.vectorIndex()` table builder chains. Unsupported validator calls, dynamic computed keys, and
-invalid record key validators fail with diagnostics instead of silently producing guessed types.
+The schema parser accepts required object tables and unions of required object shapes, including
+`.index()`, `.searchIndex()`, and `.vectorIndex()` chains. Unsupported validator calls, dynamic
+record keys, or invalid record key types fail loudly during generation.
 
-## Source resolution limits
+## Raw values and undeclared validators
 
-- Function discovery examines `.ts` files under `convex/` by default. `schema.ts`, `_generated/`,
-  `node_modules/`, `*.d.ts`, `http.ts`, `crons.ts`, and `convex.config.ts` are excluded.
-- A non-empty `Configuration::function_paths` replaces directory discovery for function files.
-  Files outside `convex_dir` do not have a root-relative module identity.
-- Endpoint declarations must be exported `const` bindings that call a recognized named `query`,
-  `mutation`, `action`, `internalQuery`, `internalMutation`, or `internalAction` import from
-  `convex/server` or a generated `/_generated/server` module.
-- Inline validators, earlier top-level same-file `const` initializers, and named imported
-  validators from relative modules are resolved. Imported validators can refer to sibling constants
-  in their source module. Static object spreads work when they resolve to object literals.
-- Resolution is deliberately bounded: validator-reference and object-spread depth are limited to
-  64. Dynamic expressions, runtime-built validators, unsupported exports/import forms, and cyclic
-  references are not evaluated. TypeScript assertions and `satisfies` wrappers around validators
-  are unwrapped.
-- A committed function spec replaces TypeScript function discovery and parsing and supplies the
-  authoritative complete function inventory. Its resolved validators may cover dynamic TypeScript
-  composition. The schema still comes from TypeScript; function-spec does not contain table
-  definitions.
+When an endpoint omits an args or return validator, codegen still emits a reference—you pass or
+receive [`RawArgs` / `RawValue`](../generated-models.md#raw-values-when-validators-are-missing)
+instead of a typed struct. Declared empty args `{}` still get a dedicated empty struct.
 
-## Public surface and raw fallback
+Committing a function spec is the supported way to get typed args and returns for functions whose
+TypeScript cannot be analyzed fully offline.
 
-Only public query, mutation, and action endpoints become references under `api`. Internal
-functions, HTTP actions in `http.ts`, and crons in `crons.ts` are skipped. Root function files appear
-under `api::<module>`; nested folders remain nested modules. See [concepts](concepts.md#path-scoped-names).
+## TypeScript the offline parser understands
 
-An endpoint without a declared args validator gets
-`convex_typegen_runtime::function::RawArgs` (`BTreeMap<String, RawValue>`). A declared empty args
-validator instead gets an endpoint-specific empty args struct. An endpoint with no declared return
-validator gets `convex_typegen_runtime::model::RawValue`; `v.any()` also maps to `RawValue`. These
-fallbacks preserve arbitrary Convex values, including bytes and Int64/Float64 distinctions.
+By default the tool scans `.ts` files under `convex_dir`, skipping the resolved schema file,
+`_generated/`, `node_modules/`, declaration files, `http.ts`, `crons.ts`, and `convex.config.ts`.
+You can replace discovery with an explicit file list in `Configuration::function_paths`.
 
-Unknown return identifiers in source parsing remain undeclared/raw. Unsupported inline validators
-produce diagnostics. A committed function spec is the option when the deployment can resolve those
-validators for you. See [generated models](../generated-models.md#raw-values).
+Supported patterns include:
+
+- Exported `const` endpoints calling `query`, `mutation`, `action`, or their `internal*` variants
+  imported from `convex/server` or `/_generated/server`.
+- Inline validators, same-file `const` aliases, and named validators imported from relative modules
+  (including sibling constants in the imported file).
+- Static object spreads that resolve to object literals.
+- TypeScript `as` / `satisfies` wrappers around validators—they are peeled off.
+
+Not supported: validators built at runtime, cyclic imports, most dynamic spreads, and unsupported
+export or import forms.
+
+Function discovery and generated module names are based on files under the configured Convex root.
+Explicit `function_paths` do not make files outside that root eligible for generated API references.
+
+### Reference: resolver limits
+
+To keep generation predictable, validator following and object-spread inlining stop at depth **64**.
+Beyond that, or when an expression is not one of the supported forms above, use a committed function
+spec captured from a backend that already resolved the validators.
+
+A function spec replaces TypeScript function discovery entirely but does **not** replace
+`schema.ts`—table definitions still come from your schema file.
+
+## What appears under `api`
+
+Only **public** queries, mutations, and actions become `api` references. Internal functions, HTTP
+routes in `http.ts`, and crons in `crons.ts` are skipped. Folder layout mirrors Convex modules.
+See [path-scoped names](concepts.md#path-scoped-names).

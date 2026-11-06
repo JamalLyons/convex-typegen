@@ -10,12 +10,27 @@ build-dir = "book"
 
 [output.html]
 site-url = "/convex-typegen/"
-default-theme = "navy"
+default-theme = "light"
+no-section-label = true
 preferred-dark-theme = "navy"
 git-repository-url = "https://github.com/JamalLyons/convex-typegen"
 edit-url-template = "https://github.com/JamalLyons/convex-typegen/edit/master/docs/site/{path}"
 additional-css = ["theme/custom.css"]
+additional-js = ["theme/accessibility.js"]
 
-[output.html.fold]
-enable = true
-level = 1
+[output.html.playground]
+runnable = false
+
+[output.html.redirect]
+"/api/calls.html" = "../typed-client.html#calls"
+"/api/function-references.html" = "../docs/generated-models.html#function-references-and-model-names"
+"/api/subscriptions.html" = "../typed-client.html#subscriptions"
+"/api/typed-errors.html" = "../errors.html"
+"/docs/guide/getting-started.html" = "../../getting-started.html"
+"/docs/guide/migration-v0.4.html" = "https://github.com/JamalLyons/convex-typegen/blob/master/docs/guide/migration-v0.4.md"
+"/docs/oxc-ast-evaluation.html" = "https://github.com/JamalLyons/convex-typegen/blob/master/docs/oxc-ast-evaluation.md"
+"/docs/typed-client.html" = "../typed-client.html"
+"/guides.html" = "generation.html"
+"/migration.html" = "https://github.com/JamalLyons/convex-typegen/blob/master/docs/guide/migration-v0.4.md"
+"/reference-material.html" = "configuration.html"
+"/supported-features.html" = "docs/guide/support.html"

@@ -1,21 +1,263 @@
+/* Keep mdBook's navigation and controls; style their public HTML and theme tokens. */
 :root {
-  --content-max-width: 900px;
-  --sidebar-width: 270px;
+  --sidebar-target-width: 285px;
+  --content-max-width: 800px;
+  --page-padding: clamp(18px, 4vw, 52px);
+  --menu-bar-height: 58px;
+  --code-font-size: 0.88em;
+  --book-border: var(--table-border-color);
+  --book-panel: var(--quote-bg);
+  --book-muted: var(--sidebar-fg);
 }
 
-.content main {
-  line-height: 1.7;
+.light, html:not(.js) {
+  --bg: #fff;
+  --fg: #17263b;
+  --sidebar-bg: #f1f6fa;
+  --sidebar-fg: #34455c;
+  --sidebar-active: #005d56;
+  --sidebar-header-border-color: #13796e;
+  --links: #006359;
+  --icons: #495d76;
+  --icons-hover: #005d56;
+  --inline-code-color: #234360;
+  --table-header-bg: #e6eef5;
+  --table-border-color: #c5d3e0;
+  --table-alternate-bg: #f5f8fb;
+  --book-border: #d6e1eb;
+  --book-panel: #f3f7fb;
+  --book-accent-bg: #d8eee9;
+  --book-button: #075b53;
+  --book-button-text: #fff;
 }
 
-.content main h1 {
+.navy {
+  --bg: #101a2a;
+  --fg: #e0eaf5;
+  --sidebar-bg: #152238;
+  --sidebar-fg: #bccbe0;
+  --sidebar-active: #99f1e1;
+  --sidebar-header-border-color: #79ddcd;
+  --links: #92ebdb;
+  --icons: #bacbe1;
+  --icons-hover: #e9fff9;
+  --inline-code-color: #c8dfff;
+  --table-header-bg: #223752;
+  --table-border-color: #394c66;
+  --table-alternate-bg: #18253a;
+  --searchresults-header-fg: #bccbe0;
+  --book-border: #344760;
+  --book-panel: #17263c;
+  --book-accent-bg: #224b4b;
+  --book-button: #9cf0e2;
+  --book-button-text: #102925;
+}
+
+html {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+#mdbook-menu-bar {
+  border-block-end-color: var(--book-border);
+}
+
+.menu-title {
+  font-size: clamp(1.45rem, 3vw, 1.85rem);
+  font-weight: 720;
   letter-spacing: -0.025em;
 }
 
-.content main table {
-  display: table;
-  width: 100%;
+.sidebar {
+  border-inline-end: 1px solid var(--book-border);
+}
+
+.sidebar .sidebar-scrollbox {
+  padding: 24px 18px;
+}
+
+.chapter li.part-title {
+  color: var(--book-muted);
+  font-size: 1.1rem;
+  font-weight: 760;
+  letter-spacing: 0.11em;
+  margin-block: 18px 5px;
+  text-transform: uppercase;
+}
+
+.chapter .chapter-link-wrapper a {
+  border-radius: 6px;
+  flex: 1;
+  padding: 5px 8px;
+}
+
+.chapter .chapter-link-wrapper a.active {
+  background: var(--book-accent-bg, var(--theme-hover));
+  box-shadow: inset 3px 0 var(--sidebar-active);
+  font-weight: 700;
+}
+
+.content main {
+  font-size: 1.65rem;
+  line-height: 1.72;
+  padding-block: clamp(22px, 5vw, 48px) 32px;
+}
+
+.content main h1 {
+  font-size: clamp(3rem, 5.5vw, 4.8rem);
+  letter-spacing: -0.045em;
+  line-height: 1.12;
+  margin-block: 0 0.5em;
+  text-wrap: balance;
+}
+
+.content main h2 {
+  border-block-end: 1px solid var(--book-border);
+  font-size: clamp(2rem, 3.7vw, 2.6rem);
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+  margin-block: 1.75em 0.55em;
+  padding-block-end: 0.35em;
+}
+
+.content main :is(h1, h2, h3) {
+  scroll-margin-top: calc(var(--menu-bar-height) + 16px);
+}
+
+.content main a:not(.header):not([class]) {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+/* The built-in toolbar label is clickable; keep its native control tabbable. */
+#mdbook-sidebar-toggle-anchor.hidden {
+  display: block !important;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  clip-path: inset(50%);
+  overflow: hidden;
+}
+
+:focus-visible,
+#mdbook-sidebar-toggle-anchor:focus-visible ~ .page-wrapper #mdbook-sidebar-toggle {
+  outline: 2px solid var(--links);
+  outline-offset: 2px;
 }
 
 .content main pre {
-  border-radius: 8px;
+  background: var(--book-panel);
+  border: 1px solid var(--book-border);
+  border-radius: 10px;
+  margin-block: 1.25em;
+}
+
+.content main pre > code {
+  background: transparent;
+  line-height: 1.6;
+  padding: 16px 18px;
+}
+
+.content main .table-wrapper {
+  margin-block: 1.2em;
+}
+
+.content main table {
+  font-size: 0.94em;
+  width: 100%;
+}
+
+.content main table :is(th, td) {
+  padding: 10px 12px;
+  text-align: start;
+  vertical-align: top;
+}
+
+.intro {
+  background: var(--book-panel);
+  border: 1px solid var(--book-border);
+  border-radius: 14px;
+  padding: clamp(18px, 4vw, 30px);
+}
+
+.intro p {
+  margin-block: 0 0.8em;
+}
+
+.intro p:last-child {
+  margin-block-end: 0;
+}
+
+.eyebrow {
+  color: var(--links);
+  font-size: 1.18rem;
+  font-weight: 760;
+  letter-spacing: 0.12em;
+}
+
+.lead {
+  font-size: clamp(1.75rem, 3vw, 2.1rem);
+  line-height: 1.5;
+}
+
+.content .primary-link:is(:link, :visited) {
+  background: var(--book-button, var(--sidebar-bg));
+  border-radius: 7px;
+  color: var(--book-button-text, var(--links));
+  display: inline-block;
+  font-weight: 700;
+  padding: 8px 14px;
+  text-decoration: none;
+}
+
+.primary-link:hover,
+.doc-grid a:hover strong {
+  text-decoration: underline !important;
+  text-underline-offset: 0.18em;
+}
+
+.doc-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 295px), 1fr));
+  margin-block: 1.5em;
+}
+
+.content main .doc-grid a:not([class]) {
+  background: var(--book-panel);
+  border: 1px solid var(--book-border);
+  border-radius: 9px;
+  padding: 13px 16px;
+  text-decoration: none;
+}
+
+.doc-grid a span {
+  color: var(--fg);
+  display: block;
+  font-size: 0.92em;
+}
+
+.navy .content pre .hljs-attr {
+  color: #c9e3ff;
+}
+
+@media (max-width: 540px) {
+  .content main {
+    padding-block-start: 22px;
+  }
+
+  .content main pre > code {
+    padding: 12px;
+  }
+
+  .content main table {
+    overflow-wrap: anywhere;
+  }
+
+  .content main table :is(th, td) {
+    padding: 8px;
+  }
+
+  #rust-configuration ~ .table-wrapper:first-of-type th:first-child {
+    width: 42%;
+  }
 }

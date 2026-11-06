@@ -1,27 +1,32 @@
 # Summary
 
-[convex-typegen](index.md)
+[Overview](index.md)
 
-- [Getting started](getting-started.md)
-  - [Tutorial](docs/guide/getting-started.md)
-- [Guides](guides.md)
-  - [Concepts](docs/guide/concepts.md)
-  - [Local Convex testing](docs/e2e.md)
+# Start here
+
+- [First project](getting-started.md)
+- [How generation works](docs/guide/concepts.md)
+
+# Guides
+
+- [Typed calls and subscriptions](typed-client.md)
+- [Handle application errors](errors.md)
+- [Work with generated models](docs/generated-models.md)
+- [Write ConvexValue models](docs/macros.md)
+- [Choose generation inputs and output](generation.md)
+- [Deploy and connect](deployment.md)
+
+# Reference
+
+- [Configuration and CLI](configuration.md)
+- [Supported validators and sources](docs/guide/support.md)
+- [Rust API reference](api-reference.md)
+- [Troubleshooting](troubleshooting.md)
+
+# Contributing
+
+- [Develop this project](contributing.md)
+  - [Local end-to-end checks](docs/e2e.md)
     - [Fixture project](e2e/index.md)
-- [Typed client API](typed-client.md)
-  - [Function references](api/function-references.md)
-  - [Calls](api/calls.md)
-  - [Subscriptions](api/subscriptions.md)
-  - [Typed errors](api/typed-errors.md)
-  - [Runtime details](docs/typed-client.md)
-- [Supported features](supported-features.md)
-  - [Support matrix](docs/guide/support.md)
-- [Migration from v0.4](migration.md)
-  - [Migration guide](docs/guide/migration-v0.4.md)
-- [API reference](api-reference.md)
-- [Reference material](reference-material.md)
-  - [Generated models](docs/generated-models.md)
-  - [Macros](docs/macros.md)
   - [Semantic versioning](docs/semver-policy.md)
   - [API stability](docs/api-stability.md)
-  - [Oxc AST evaluation](docs/oxc-ast-evaluation.md)

@@ -4,7 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- Editorial pass on the mdBook site: staged getting-started tutorial, generated-models and support
+- Make the documentation site the home for v1 usage, with a verified first-project
+  tutorial, task guides, a configuration reference, and accessible light and dark themes.
+- Editorial pass on the mdBook site: staged tutorial narrative, generated-models and support
   rewrites, semver policy from 1.0.0 onward, and Convex docs.rs links.
 - Update the derive macro's parser dependency to syn 3.
 - **Breaking generator API.** Construct non-exhaustive `Configuration` with setters and use
@@ -41,14 +43,14 @@ See the [migration guide](docs/guide/migration-v0.4.md) for the breaking changes
 
 - Add the runtime's `ConvexValue` derive and `include!()` helper. Generated models
   use the same derive as handwritten models while preserving their wire behavior.
-  Regenerate bindings against the matching runtime. See [macros](docs/macros.md).
+  Regenerate bindings against the matching runtime. See [macros](https://jamallyons.github.io/convex-typegen/docs/macros.html).
 
 - **Breaking generated output:** Emit nested, typed public function references such as
   `api::admin::users::list`. Declared args and returns now live beside the reference
   (e.g. `api::admin::users::ListArgs`). References and model names omit a redundant leading
   module name, and `path()` replaces `FUNCTION_PATH`.
   Undeclared validators use explicit `RawArgs` and `RawValue` fallbacks. See
-  [generated models](docs/generated-models.md) for migration.
+  [generated models](https://jamallyons.github.io/convex-typegen/docs/generated-models.html) for current naming.
 
 - Add a Criterion harness in the unpublished `convex-typegen-bench` workspace crate. `just bench`
   measures generated-project discovery/parsing, IR lowering, codegen and end-to-end generation;
@@ -56,7 +58,7 @@ See the [migration guide](docs/guide/migration-v0.4.md) for the breaking changes
 
 - Generate Serde args, returns, typed table IDs, and full documents, including union tables.
   Validated literals and unions preserve the Convex wire kinds. See
-  [generated models](docs/generated-models.md).
+  [generated models](https://jamallyons.github.io/convex-typegen/docs/generated-models.html).
 
 - Document pipeline CPU and heap hot spots and add a replayable profiling runner for
   synthetic projects. See [performance profiling](docs/performance.md#pipeline-profiling-findings-64).
@@ -88,7 +90,7 @@ See the [migration guide](docs/guide/migration-v0.4.md) for the breaking changes
 - **Breaking default generated filename:** Rename `convex_types.rs` to `convex_api.rs`; the file contains generated API references and the typed client surface, and is written to `OUT_DIR` by default. There is no compatibility alias or fallback.
 
 - **Breaking runtime API:** Replace `ConvexClientExt::prepare_args` with
-  [`TypedClient`](docs/typed-client.md) for typed queries, mutations, actions,
+  [`TypedClient`](https://jamallyons.github.io/convex-typegen/typed-client.html) for typed queries, mutations, actions,
   and query subscriptions. Function references can declare typed application
   errors, and malformed payloads retain their original Convex value.
 

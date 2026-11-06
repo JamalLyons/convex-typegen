@@ -11,6 +11,7 @@ use crate::function::{Action, FunctionReference, Mutation, Query};
 use crate::value_serde;
 
 /// A failure while calling a Convex function or decoding a subscription item.
+/// See [handling application errors](https://jamallyons.github.io/convex-typegen/errors.html).
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum CallError<E>

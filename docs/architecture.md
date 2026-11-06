@@ -167,7 +167,7 @@ Oxc provides byte spans for schemas, tables, fields, functions, parameters, and 
 
 The emitter walks the IR and builds Rust source in memory. It claims each emitted identifier
 within its scope and reports both origins on a collision. The output file is written after model
-generation succeeds. Naming and wire behavior are documented in [generated models](generated-models.md).
+generation succeeds. Naming and wire behavior are documented in [generated models](https://jamallyons.github.io/convex-typegen/docs/generated-models.html).
 
 Tables supply document shapes with system fields and associated table markers. The emitter
 groups public functions by canonical path under `api` and emits scoped args and returns
@@ -178,12 +178,12 @@ using the runtime codec so branch selection preserves wire kinds.
 
 ## Runtime crate (`runtime/`)
 
-Generated Rust uses runtime model types and the runtime’s [`ConvexValue` derive](macros.md).
+Generated Rust uses runtime model types and the runtime’s [`ConvexValue` derive](https://jamallyons.github.io/convex-typegen/docs/macros.html).
 The derive lives in `macros/` and expands Rust model definitions into Serde implementations
 that use the direct value codec. The macro crate has no dependency on the generator or Oxc. The generator and runtime share a workspace lockfile. The runtime owns the Convex client
 dependency, and its Rust 1.85 check selects only the runtime package.
 
-- **`TypedClient`** borrows the official client, encodes arguments into a Convex object, and decodes call results and subscription updates. See [typed client](typed-client.md).
+- **`TypedClient`** borrows the official client, encodes arguments into a Convex object, and decodes call results and subscription updates. See [typed client](https://jamallyons.github.io/convex-typegen/typed-client.html).
 
 ### Direct Convex value Serde (`runtime/src/value_serde.rs`)
 

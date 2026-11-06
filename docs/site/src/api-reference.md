@@ -1,9 +1,10 @@
-# API reference
+# Rust API reference
 
-The generated Rust documentation is published on docs.rs. It is the canonical reference for
-public items and examples; this site does not copy rustdoc content.
+For individual Rust items, signatures, and trait implementations, see rustdoc:
 
-- [`convex-typegen` generator](https://docs.rs/convex-typegen)
-- [`convex-typegen-runtime`](https://docs.rs/convex-typegen-runtime)
+- [`convex-typegen`](https://docs.rs/convex-typegen) — generator, build helpers, and configuration.
+- [`convex-typegen-runtime`](https://docs.rs/convex-typegen-runtime) — typed client, models, macros, and codecs.
+- [`convex`](https://docs.rs/convex/latest/convex/) — official Convex Rust SDK.
 
-See also: [function reference, call, subscription, and error overview](typed-client.md).
+For tasks and complete examples, start with the [first project](getting-started.md)
+or the [configuration and CLI reference](configuration.md).

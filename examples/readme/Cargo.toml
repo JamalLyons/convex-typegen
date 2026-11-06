@@ -1,15 +1,15 @@
 [package]
 name = "convex-typegen-readme"
 version = "0.0.0"
-edition.workspace = true
-license.workspace = true
+edition = "2024"
+rust-version = "1.97"
 publish = false
 
 [dependencies]
-convex.workspace = true
-convex-typegen-runtime.workspace = true
+convex = "0.10.4"
+convex-typegen-runtime = { path = "../../runtime" }
 futures = "0.3"
-tokio.workspace = true
+tokio = { version = "1.52.3", features = ["macros", "rt-multi-thread", "time"] }
 
 [build-dependencies]
-convex-typegen.workspace = true
+convex-typegen = { path = "../.." }

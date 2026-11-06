@@ -11,8 +11,8 @@ test *ARGS:
     cargo test --workspace --locked --all-features {{ ARGS }}
 
 # Run the typed-client E2E against a local self-hosted Convex backend in Docker.
-e2e:
-    scripts/e2e.sh
+e2e SCENARIO="fixture":
+    scripts/e2e.sh {{ quote(SCENARIO) }}
 
 # Clippy on all targets and features (warnings denied).
 lint:

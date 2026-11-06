@@ -9,27 +9,6 @@
 //! - [`build`] — offline Cargo helpers that also track generation inputs.
 //!
 //! Parsing and codegen live in the private `convex` module; the public API stays small on purpose.
-//!
-//! # Example
-//!
-//! In a consumer's `build.rs`, generate the default `OUT_DIR/convex_api.rs` file:
-//!
-//! ```no_run
-//! fn main()
-//! {
-//!     if let Err(error) = convex_typegen::build::generate_out_dir() {
-//!         panic!("convex-typegen failed: {error}");
-//!     }
-//! }
-//! ```
-//!
-//! For custom paths or a committed function spec, configure the generator directly:
-//!
-//! ```no_run
-//! let config = convex_typegen::config::Configuration::default().with_convex_dir("backend");
-//! convex_typegen::build::generate(config)?;
-//! # Ok::<(), convex_typegen::prelude::ConvexTypeGeneratorError>(())
-//! ```
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -125,6 +104,9 @@ fn lower_project(parsed: ParsedProject) -> Result<LoweredProject, ConvexTypeGene
 ///
 /// Pipeline: validate schema path → parse schema TS → either read the configured spec or parse
 /// discovered TypeScript inputs → structured schema + function model → write generated Rust.
+///
+/// See [generation inputs and output](https://jamallyons.github.io/convex-typegen/generation.html)
+/// for the Cargo helpers, spec input, and checked-in bindings.
 ///
 /// # Errors
 ///

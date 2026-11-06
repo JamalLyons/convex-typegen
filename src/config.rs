@@ -10,6 +10,8 @@ use std::path::PathBuf;
 /// Defaults match the standard Convex project layout and write output to Cargo's `OUT_DIR` when
 /// available.
 ///
+/// See the [configuration reference](https://jamallyons.github.io/convex-typegen/configuration.html#rust-configuration).
+///
 /// # Example
 ///
 /// ```

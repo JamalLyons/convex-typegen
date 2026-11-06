@@ -1,37 +1,25 @@
-# convex-typegen
+# Typed Convex clients for Rust
 
-Generate a fully typed Rust client for your Convex backend. `convex-typegen` reads your
-Convex schema and function metadata during the Rust build, then emits typed function references,
-argument and return models, table IDs, and documents. Its runtime calls the official Convex Rust
-client and delivers live query updates as streams.
-
-## A typed call
+<div class="intro">
+<p class="eyebrow">CONVEX-TYPEGEN · V1 DOCUMENTATION</p>
+<p class="lead">Generate Rust types from your Convex schema and functions. Make typed calls with the official SDK and stream live query results into your app.</p>
+<p><a class="primary-link" href="getting-started.html">Build your first project <span aria-hidden="true">→</span></a></p>
+</div>
 
 ```rust,ignore
-use convex_typegen_runtime::{TypedClient, model::Doc};
-use generated::{api, tables};
-use futures::StreamExt;
-
-let mut client = TypedClient::new(&mut sdk);
-let tasks: Vec<Doc<tables::Tasks>> = client.query(
-    api::tasks::list,
-    api::tasks::ListArgs { done: Some(false) },
-).await?;
-let mut updates = client.subscribe(api::tasks::list, api::tasks::ListArgs::default()).await?;
-let latest = updates.next().await.expect("initial result")?;
+let tasks: Vec<String> = client
+    .query(tasks::list, tasks::ListArgs {})
+    .await?;
 ```
 
-The generated reference supplies the function path, argument type, and return type. See the
-[getting started tutorial](getting-started.md) for setup and the local self-hosted end-to-end flow.
+The generator reads local TypeScript or a committed function spec at build time. The runtime uses the generated references to encode your arguments and decode Convex results, including IDs, documents, and application errors.
 
-## Explore
+<div class="doc-grid">
+<a href="typed-client.html"><strong>Call and subscribe</strong><span>Use queries, mutations, actions, and live updates.</span></a>
+<a href="generation.html"><strong>Set up generation</strong><span>Choose your inputs and where Cargo writes the bindings.</span></a>
+<a href="docs/generated-models.html"><strong>Read the generated types</strong><span>Understand naming, wire values, and nullable fields.</span></a>
+<a href="configuration.html"><strong>Look up a setting</strong><span>Find build options, CLI flags, defaults, and precedence.</span></a>
+</div>
 
-- [Getting started](getting-started.md)
-- [Guides](guides.md): build output, function specs, and local Convex testing
-- [Typed client API](typed-client.md): references, calls, subscriptions, and typed errors
-- [Supported features](supported-features.md)
-- [Migration from v0.4](migration.md)
-- [Rust API reference](api-reference.md)
-
-Convex remains TypeScript on the backend. This project provides a typed Rust client; it does not
-generate or run backend functions.
+**Rust support:** 1.97 for the generator; 1.85 for the runtime with pregenerated bindings.
+See [how generation works](docs/guide/concepts.md) for the crate split.

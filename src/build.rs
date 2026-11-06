@@ -1,4 +1,6 @@
 //! Helpers for offline Cargo build scripts.
+//!
+//! See [Cargo helpers and rerun tracking](https://jamallyons.github.io/convex-typegen/configuration.html#cargo-helpers-and-rerun-tracking).
 
 use crate::{Configuration, ConvexTypeGeneratorError, FunctionSources, generate_parsed, parse_project};
 

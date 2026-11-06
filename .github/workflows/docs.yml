@@ -37,6 +37,7 @@ jobs:
           tool: mdbook
 
       - name: Build mdBook site
+        shell: bash
         run: |
           mdbook build docs/site 2>&1 | tee "$RUNNER_TEMP/mdbook.log"
           if rg -q '\bWARN\b' "$RUNNER_TEMP/mdbook.log"; then

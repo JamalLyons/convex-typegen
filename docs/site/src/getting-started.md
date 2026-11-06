@@ -18,8 +18,7 @@ mkdir convex
 ```
 
 Replace the empty `[dependencies]` section of `Cargo.toml` with the two sections below.
-The two typegen crates must have matching release versions. These instructions target v1; until v1 is published, use path dependencies
-pointing at the repository root and its `runtime/` directory.
+Use matching release versions of the two typegen crates.
 
 ```toml
 [dependencies]

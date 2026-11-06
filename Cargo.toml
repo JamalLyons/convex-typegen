@@ -6,7 +6,16 @@ authors.workspace = true
 license.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-include = ["src/**", "Cargo.toml", "Cargo.lock", "readme.md", "LICENSE"]
+include = [
+    "/src/**",
+    "!/src/**/snapshots/**",
+    "!*.snap",
+    "!.DS_Store",
+    "/Cargo.toml",
+    "/Cargo.lock",
+    "/readme.md",
+    "/LICENSE",
+]
 
 # Documentation and repository links
 documentation = "https://docs.rs/convex-typegen"
@@ -63,7 +72,7 @@ members = ["runtime", "macros", "examples/*", "xtask", "benches", "e2e"]
 resolver = "3"
 
 [workspace.package]
-version = "0.4.0"
+version = "1.0.0"
 authors = ["Jamal Lyons"]
 license = "MIT"
 edition = "2024"

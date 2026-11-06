@@ -18,6 +18,14 @@ Add matching v1 releases of `convex-typegen` as a build dependency and
 `convex-typegen-runtime` as an application dependency. Generating bindings requires Rust 1.97;
 using pregenerated bindings requires Rust 1.85.
 
+```toml
+[dependencies]
+convex-typegen-runtime = "1"
+
+[build-dependencies]
+convex-typegen = "1"
+```
+
 With `convex/schema.ts` next to your Rust project, add this `build.rs`:
 
 ```rust,ignore

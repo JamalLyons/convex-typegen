@@ -26,7 +26,7 @@ These items are semver-stable from 1.0.0:
 - `convex_typegen::ConvexTypeGeneratorError`
 - `convex_typegen::prelude` re-exports
 - Generator Cargo feature `verbose`
-- Runtime `TypedClient`, `CallError`, `InvalidApplicationData`, `function`, `model`, `value_serde`, and `prelude`
+- Runtime `TypedClient`, `CallError`, `TransportError`, `InvalidApplicationData`, `function`, `model`, `value_serde`, and `prelude`
 - Runtime macros `ConvexValue` and `include!`, and crate-root `serde` / `serde_json` re-exports
 
 The runtime wraps the official SDK directly. An incompatible update of a publicly exposed

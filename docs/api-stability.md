@@ -11,7 +11,7 @@ Quick reference for what is **stable** vs **unstable** in convex-typegen. Full r
 | `config::Configuration` | Stable | Non-exhaustive. Construct with `Default` and chainable setters |
 | `build::generate(config)` | Stable | Offline Cargo generation with input tracking |
 | `build::generate_out_dir()` | Stable | Standard Convex layout and `$OUT_DIR/convex_api.rs` |
-| `ConvexTypeGeneratorError` | Stable | Crate-root error export with a non-exhaustive variant set |
+| `ConvexTypeGeneratorError` | Stable | Crate-root error export with a non-exhaustive variant set and fields |
 | `prelude::*` | Stable | See below |
 | Feature `verbose` | Stable | Default off |
 
@@ -23,14 +23,14 @@ The generator prelude exports `Configuration`, `generate`, `check`, and `ConvexT
 | --- | --- |
 | `ConvexValue`, `include!` | Derive for Convex wire models and helper for including generated bindings |
 | `serde`, `serde_json` | Re-exports used by generated bindings |
-| `TypedClient`, `CallError`, `InvalidApplicationData` | Typed calls, subscriptions, and errors over the official SDK |
+| `TypedClient`, `CallError`, `TransportError`, `InvalidApplicationData` | Typed calls, subscriptions, and errors over the official SDK |
 | `function` | Typed endpoint references, kind markers, raw args, and the sealed `FunctionReference` trait |
 | `model::{Doc, Id, RawValue, Table}` | Document models, typed IDs, raw wire values, and table markers |
 | `value_serde::{to_value, from_value, Bytes, Error}` | Direct Serde conversion to and from `convex::Value` |
 | `prelude::*` | Serde derives, typed client, codecs, and `ConvexJsonValue`, `ConvexBytes`, and `ConvexValueSerdeError` aliases |
 
 Runtime errors are non-exhaustive. Match `CallError` with a fallback and include `..`
-when matching `CallError::Application` or destructuring `InvalidApplicationData`.
+when matching any variant or destructuring `InvalidApplicationData`.
 The runtime exposes official SDK types directly. An incompatible update to a publicly
 exposed `convex` 0.x type requires a runtime major release.
 

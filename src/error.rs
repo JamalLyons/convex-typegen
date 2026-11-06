@@ -9,11 +9,15 @@ use std::path::PathBuf;
 use thiserror::Error;
 
 /// Unified error type for the whole codegen pipeline.
+///
+/// Include a fallback arm when matching this enum and `..` when matching a variant
+/// with fields.
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum ConvexTypeGeneratorError
 {
     /// The schema file could not be found at the specified path
+    #[non_exhaustive]
     #[error("Schema file not found: {path}")]
     MissingSchemaFile
     {
@@ -22,6 +26,7 @@ pub enum ConvexTypeGeneratorError
     },
 
     /// Failed to parse a source file
+    #[non_exhaustive]
     #[error("Failed to parse file '{file}': {details}")]
     ParsingFailed
     {
@@ -32,6 +37,7 @@ pub enum ConvexTypeGeneratorError
     },
 
     /// The schema file exists but is empty
+    #[non_exhaustive]
     #[error("Schema file '{file}' is empty")]
     EmptySchemaFile
     {
@@ -40,18 +46,22 @@ pub enum ConvexTypeGeneratorError
     },
 
     /// The provided path doesn't have a valid file name component
+    #[non_exhaustive]
     #[error("Invalid path: {0}")]
     InvalidPath(String),
 
     /// The file name contains invalid Unicode characters
+    #[non_exhaustive]
     #[error("Path contains invalid Unicode: {0}")]
     InvalidUnicode(String),
 
     /// Failed to parse ESTree JSON produced from the parser AST
+    #[non_exhaustive]
     #[error("Failed to parse AST as JSON: {0}")]
     SerializationFailed(#[from] serde_json::Error),
 
     /// An IO error occurred while reading or writing files
+    #[non_exhaustive]
     #[error("I/O error accessing '{file}': {error}")]
     Io
     {
@@ -63,6 +73,7 @@ pub enum ConvexTypeGeneratorError
     },
 
     /// The schema file has invalid structure or content
+    #[non_exhaustive]
     #[error("Invalid schema at {context}: {details}")]
     InvalidSchema
     {

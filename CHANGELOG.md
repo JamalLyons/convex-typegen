@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- **Breaking error API.** Every variant of `ConvexTypeGeneratorError` and `CallError`
+  is non-exhaustive. `CallError::Transport` wraps a runtime-owned `TransportError`
+  that preserves the original message and error source chain.
 - Ship a smaller generator crate archive and add package metadata and READMEs for
   the runtime and derive crates.
 - Document the public Rust API and show how to use the full Convex SDK alongside

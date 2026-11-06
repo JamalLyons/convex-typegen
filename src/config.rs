@@ -72,6 +72,7 @@ impl Default for Configuration
 impl Configuration
 {
     /// Override the schema path, resolved relative to the consumer package.
+    #[must_use]
     pub fn with_schema_path(mut self, path: impl Into<PathBuf>) -> Self
     {
         self.schema_path = Some(path.into());
@@ -79,6 +80,7 @@ impl Configuration
     }
 
     /// Set the generated Rust output path.
+    #[must_use]
     pub fn with_out_file(mut self, path: impl Into<PathBuf>) -> Self
     {
         self.out_file = path.into();
@@ -86,6 +88,7 @@ impl Configuration
     }
 
     /// Set the Convex root for discovery, module names, and the default schema path.
+    #[must_use]
     pub fn with_convex_dir(mut self, path: impl Into<PathBuf>) -> Self
     {
         self.convex_dir = path.into();
@@ -93,6 +96,7 @@ impl Configuration
     }
 
     /// Set the explicit function source list. An empty list enables discovery.
+    #[must_use]
     pub fn with_function_paths(mut self, paths: Vec<PathBuf>) -> Self
     {
         self.function_paths = paths;
@@ -100,6 +104,7 @@ impl Configuration
     }
 
     /// Use a committed function spec as the authoritative function inventory.
+    #[must_use]
     pub fn with_function_spec_path(mut self, path: impl Into<PathBuf>) -> Self
     {
         self.function_spec_path = Some(path.into());

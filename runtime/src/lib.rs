@@ -31,6 +31,8 @@ pub mod model;
 pub mod value_serde;
 
 pub use client::{CallError, InvalidApplicationData, TransportError, TypedClient};
+/// The Convex SDK used by this runtime.
+pub use convex;
 /// Derive the Convex wire representation for Rust models.
 /// See [handwritten models](https://jamallyons.github.io/convex-typegen/docs/macros.html#derive-a-convex-model).
 pub use convex_typegen_macros::ConvexValue;

@@ -55,8 +55,8 @@ encoding, decoding, and transport failures.
 generated calls and `client_mut()` whenever you need the SDK directly. Set up
 the connection and make any SDK clones before borrowing it.
 
-Apps that call the SDK directly need a `convex` dependency whose version is
-compatible with the runtime's, so both crates use the same SDK types. See the
+Import the SDK with `use convex_typegen_runtime::convex;` to use the exact
+version and types the runtime uses. See the
 [semver policy](docs/semver-policy.md#library-api) and the
 [Convex Rust SDK docs](https://docs.rs/convex/0.10.4/convex/).
 

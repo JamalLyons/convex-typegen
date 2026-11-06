@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Derive `PartialEq` on generated models and `Eq` where their payloads support it.
+  Generated string-literal enums also derive `Copy` and `Hash`.
+- Mark consuming configuration builders, error context, and function error-type
+  adapters as `#[must_use]`.
+- Re-export the Convex SDK from `convex-typegen-runtime`.
+
 - **Breaking error API.** Every variant of `ConvexTypeGeneratorError` and `CallError`
   is non-exhaustive. `CallError::Transport` wraps a runtime-owned `TransportError`
   that preserves the original message and error source chain.

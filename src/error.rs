@@ -98,6 +98,7 @@ impl From<std::io::Error> for ConvexTypeGeneratorError
 impl ConvexTypeGeneratorError
 {
     /// Attaches `file` to [`ConvexTypeGeneratorError::Io`]; leaves other variants unchanged.
+    #[must_use]
     pub fn with_file_context(self, file: impl Into<PathBuf>) -> Self
     {
         match self {

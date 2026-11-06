@@ -21,7 +21,6 @@ use ::convex_typegen_runtime::{
 };
 
 "#;
-const DERIVE: &str = "#[derive(Debug, Clone, ConvexValue)]";
 
 pub(crate) fn generate_code(ir: &GenerationIr) -> Result<String>
 {
@@ -303,7 +302,9 @@ impl Emitter
         claim(&mut self.names, name, context)?;
         let mut names = BTreeMap::new();
         let mut body = String::new();
+        let mut supports_eq = true;
         for (wire, validator) in fields {
+            supports_eq &= supports_rust_eq(validator);
             let ident = field_ident(wire);
             let field_context = format!("{context} field {wire:?}");
             claim(&mut names, &ident, &field_context)?;
@@ -316,7 +317,12 @@ impl Emitter
             writeln!(body, "    #[convex(rename = {wire:?}{optional})]").unwrap();
             writeln!(body, "    pub {ident}: {ty},").unwrap();
         }
-        writeln!(self.code, "{DERIVE}\npub struct {name} {{\n{body}}}\n").unwrap();
+        let eq = if supports_eq { ", Eq" } else { "" };
+        writeln!(
+            self.code,
+            "#[derive(Debug, Clone, ConvexValue, PartialEq{eq})]\npub struct {name} {{\n{body}}}\n"
+        )
+        .unwrap();
         Ok(())
     }
 
@@ -366,8 +372,10 @@ impl Emitter
         let mut variants = String::new();
         let tag = discriminator(&leaves);
         // Only unions used as record keys need Ord. Such unions contain only string-shaped validators.
-        let order = if leaves.iter().all(|branch| branch.is_record_key()) {
-            ", PartialEq, Eq, PartialOrd, Ord"
+        let comparison = if leaves.iter().all(|branch| branch.is_record_key()) {
+            ", Eq, PartialOrd, Ord"
+        } else if leaves.iter().all(|branch| supports_rust_eq(branch)) {
+            ", Eq"
         } else {
             ""
         };
@@ -383,7 +391,7 @@ impl Emitter
         let discriminator = tag.map_or_else(String::new, |tag| format!("#[convex(discriminator = {tag:?})]\n"));
         writeln!(
             self.code,
-            "#[derive(Debug, Clone, ConvexValue{order})]\n{discriminator}pub enum {name} {{\n{variants}}}\n"
+            "#[derive(Debug, Clone, ConvexValue, PartialEq{comparison})]\n{discriminator}pub enum {name} {{\n{variants}}}\n"
         )
         .unwrap();
         Ok(name.into())
@@ -411,7 +419,7 @@ impl Emitter
 
         writeln!(
             self.code,
-            "#[derive(Debug, Clone, ConvexValue, PartialEq, Eq, PartialOrd, Ord)]\npub enum {name} {{"
+            "#[derive(Debug, Clone, Copy, ConvexValue, PartialEq, Eq, PartialOrd, Ord, Hash)]\npub enum {name} {{"
         )
         .unwrap();
         for (wire, mut ident) in literals.iter().zip(names.iter().cloned()) {
@@ -426,6 +434,29 @@ impl Emitter
             writeln!(self.code, "    #[convex(literal = {wire:?})]\n    {ident},").unwrap();
         }
         writeln!(self.code, "}}\n").unwrap();
+    }
+}
+
+// Check the emitted Rust payloads. Known literals are unit structs, and IDs and
+// function handles carry no data from the validators they reference.
+fn supports_rust_eq(validator: &Validator) -> bool
+{
+    match validator {
+        Validator::Number | Validator::Any | Validator::Id(None) | Validator::Literal(None) => false,
+        Validator::Object { properties } => properties
+            .as_ref()
+            .is_some_and(|fields| fields.values().all(supports_rust_eq)),
+        Validator::Optional(inner) | Validator::Array(inner) => supports_rust_eq(inner),
+        Validator::Record { key_type, value_type } => supports_rust_eq(key_type) && supports_rust_eq(value_type),
+        Validator::Union(branches) => branches.iter().all(supports_rust_eq),
+        Validator::String
+        | Validator::Boolean
+        | Validator::Null
+        | Validator::Int64
+        | Validator::Bytes
+        | Validator::Id(Some(_))
+        | Validator::Literal(Some(_))
+        | Validator::FunctionHandle(_) => true,
     }
 }
 

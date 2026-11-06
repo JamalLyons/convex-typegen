@@ -45,6 +45,10 @@ fn generated_models_compile_and_preserve_wire_semantics()
                 v.literal("read-only"), v.literal("read_only"), v.literal("🦀"), v.null()),
             handler: () => "",
         });
+        export const measurements = query({
+            args: { readings: v.optional(v.array(v.record(v.string(), v.object({ value: v.float64() })))) },
+            handler: () => null,
+        });
         export const roundTrip = query({
             args: v.object({
                 userId: v.id("users"),

@@ -4,6 +4,7 @@ version = "0.0.0"
 edition = "2024"
 rust-version = "1.97"
 publish = false
+license.workspace = true
 
 [dependencies]
 convex = "0.10.4"

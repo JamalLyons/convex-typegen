@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Fix `cargo deny` license check for the readme example crate (`license.workspace = true`).
+
 - Make the documentation site the home for v1 usage, with a verified first-project
   tutorial, task guides, a configuration reference, and accessible light and dark themes.
 

@@ -22,7 +22,7 @@ for alternate Cargo output filenames, or a normal module declaration for committ
 ## Compilation succeeds but calls fail
 
 Verify that the app's URL points to the deployment containing these functions.
-Check the endpoint's authentication requirements. A `CallError::Decode` can mean the
+Check the endpoint's authentication requirements. A `CallError::Decode { .. }` can mean the
 deployed return validator and generated bindings are out of sync.
 See [application errors](errors.md#choose-a-response) to identify the failure.
 

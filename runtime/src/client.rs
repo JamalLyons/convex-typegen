@@ -1,6 +1,7 @@
 //! Typed calls over the official Convex client.
 
 use std::collections::BTreeMap;
+use std::fmt;
 
 use convex::{ConvexClient, FunctionResult, Value};
 use futures::{Stream, StreamExt};
@@ -11,6 +12,19 @@ use crate::function::{Action, FunctionReference, Mutation, Query};
 use crate::value_serde;
 
 /// A failure while calling a Convex function or decoding a subscription item.
+///
+/// Include a fallback arm when matching this enum. Use a struct pattern with `..`
+/// for any variant, including tuple variants.
+///
+/// ```
+/// use convex_typegen_runtime::CallError;
+///
+/// fn is_transport<E>(error: &CallError<E>) -> bool
+/// {
+///     matches!(error, CallError::Transport { .. })
+/// }
+/// ```
+///
 /// See [handling application errors](https://jamallyons.github.io/convex-typegen/errors.html).
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
@@ -18,15 +32,19 @@ pub enum CallError<E>
 {
     /// Arguments could not be encoded as a Convex object.
     #[error("could not encode Convex arguments: {0}")]
+    #[non_exhaustive]
     Encode(#[source] value_serde::Error),
     /// A successful function result did not match the return type.
     #[error("could not decode Convex return value: {0}")]
+    #[non_exhaustive]
     Decode(#[source] value_serde::Error),
     /// The SDK could not complete the request or establish the subscription.
     #[error("Convex client request failed: {0}")]
-    Transport(#[source] anyhow::Error),
+    #[non_exhaustive]
+    Transport(#[source] TransportError),
     /// Convex returned a function error message without application data.
     #[error("{0}")]
+    #[non_exhaustive]
     Server(String),
     /// The function threw a ConvexError with application data.
     #[error("{message}")]
@@ -38,6 +56,26 @@ pub enum CallError<E>
         /// The decoded payload or the original value and its decoding error.
         data: Result<E, InvalidApplicationData>,
     },
+}
+
+/// A failure from the SDK client or its query subscription.
+#[derive(Debug)]
+pub struct TransportError(anyhow::Error);
+
+impl fmt::Display for TransportError
+{
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result
+    {
+        fmt::Display::fmt(&self.0, formatter)
+    }
+}
+
+impl std::error::Error for TransportError
+{
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)>
+    {
+        Some(self.0.as_ref())
+    }
 }
 
 /// A ConvexError payload that did not match the declared Rust type.
@@ -95,9 +133,9 @@ impl<'a> TypedClient<'a>
     {
         let mut subscription = self.subscribe(function, args).await?;
         subscription.next().await.unwrap_or_else(|| {
-            Err(CallError::Transport(anyhow::anyhow!(
+            Err(CallError::Transport(TransportError(anyhow::anyhow!(
                 "Convex query subscription closed before its first result"
-            )))
+            ))))
         })
     }
 
@@ -148,7 +186,7 @@ impl<'a> TypedClient<'a>
             .client
             .subscribe(function.path(), encode_args(args).map_err(CallError::Encode)?)
             .await
-            .map_err(CallError::Transport)?;
+            .map_err(|error| CallError::Transport(TransportError(error)))?;
         Ok(subscription.map(move |result| decode_result(&function, Ok(result))))
     }
 }
@@ -166,7 +204,7 @@ where
     F: FunctionReference,
     F::Returns: DeserializeOwned,
 {
-    match result.map_err(CallError::Transport)? {
+    match result.map_err(|error| CallError::Transport(TransportError(error)))? {
         FunctionResult::Value(value) => value_serde::from_value(value).map_err(CallError::Decode),
         FunctionResult::ErrorMessage(message) => Err(CallError::Server(message)),
         FunctionResult::ConvexError(error) => Err(CallError::Application {
@@ -246,16 +284,36 @@ mod tests
         );
         assert!(matches!(
             decode_result(&QUERY, Ok(FunctionResult::Value(Value::Float64(42.0)))),
-            Err(CallError::Decode(error)) if error.path() == "$"
+            Err(CallError::Decode { 0: error, .. }) if error.path() == "$"
         ));
         assert!(matches!(
             decode_result(&QUERY, Ok(FunctionResult::ErrorMessage("server failure".into()))),
-            Err(CallError::Server(message)) if message == "server failure"
+            Err(CallError::Server { 0: message, .. }) if message == "server failure"
         ));
         assert!(matches!(
             decode_result(&QUERY, Err(anyhow::anyhow!("connection closed"))),
-            Err(CallError::Transport(error)) if error.to_string() == "connection closed"
+            Err(CallError::Transport { 0: error, .. }) if error.to_string() == "connection closed"
         ));
+    }
+
+    #[test]
+    fn transport_error_preserves_display_and_source_chain()
+    {
+        use std::error::Error;
+        use std::io;
+
+        let sdk_error = anyhow::Error::new(io::Error::from(io::ErrorKind::ConnectionReset)).context("connection closed");
+        let expected_message = sdk_error.to_string();
+        let error = decode_result(&QUERY, Err(sdk_error)).unwrap_err();
+
+        assert_eq!(error.to_string(), "Convex client request failed: connection closed");
+        let transport = error.source().unwrap().downcast_ref::<TransportError>().unwrap();
+        assert_eq!(transport.to_string(), expected_message);
+        let sdk_context = transport.source().unwrap();
+        assert_eq!(sdk_context.to_string(), expected_message);
+        let cause = sdk_context.source().unwrap().downcast_ref::<io::Error>().unwrap();
+        assert_eq!(cause.kind(), io::ErrorKind::ConnectionReset);
+        assert!(cause.source().is_none());
     }
 
     #[test]

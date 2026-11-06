@@ -23,11 +23,14 @@ when debugging an endpoint with multiple payload shapes.
 | --- | --- |
 | `Application { data: Ok(payload), .. }` | The server threw `ConvexError` and its payload decoded. Use the payload to decide what the app should do. |
 | `Application { data: Err(invalid), .. }` | The payload did not match the Rust type. Inspect `invalid.raw` and the path-aware `invalid.source`; the original failure is still an application error. |
-| `Encode` | Arguments could not be encoded. Check your arguments and wire types. |
-| `Decode` | A successful response did not match the expected return type. Check that your bindings and deployment agree. |
-| `Transport` | The SDK could not complete the request or establish the subscription. Check the deployment URL and connection. |
-| `Server` | Convex returned a plain error message without an application payload. Check the backend logs. |
+| `Encode { .. }` | Arguments could not be encoded. Check your arguments and wire types. |
+| `Decode { .. }` | A successful response did not match the expected return type. Check that your bindings and deployment agree. |
+| `Transport { .. }` | The SDK could not complete the request or establish the subscription. Check the deployment URL and connection. |
+| `Server { .. }` | Convex returned a plain error message without an application payload. Check the backend logs. |
 
-`CallError` is non-exhaustive. Use a fallback arm when matching it and `..`
-when destructuring application errors. Avoid logging raw payloads that may contain
-user data.
+`CallError` is non-exhaustive. Use a fallback arm when matching it and a struct
+pattern with `..` for each variant. To bind a tuple variant’s payload, use a
+numeric field, as in `CallError::Transport { 0: error, .. }`. The transport
+payload is a `TransportError`. Use its `std::error::Error::source()` to inspect
+the underlying error chain. Avoid logging raw payloads that may contain user
+data.

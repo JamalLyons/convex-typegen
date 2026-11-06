@@ -131,7 +131,7 @@ convex-typegen = {{ path = {:?} }}
         .with_out_file(out.join("custom.rs"));
     let missing = config.clone().with_schema_path("missing.ts");
     match convex_typegen::generate(missing) {
-        Err(ConvexTypeGeneratorError::MissingSchemaFile { path }) => {
+        Err(ConvexTypeGeneratorError::MissingSchemaFile { path, .. }) => {
             assert_eq!(path, std::path::Path::new("missing.ts"));
         }
         other => panic!("expected missing schema, got {other:?}"),

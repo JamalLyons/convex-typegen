@@ -2,7 +2,8 @@
 
 From **1.0.0** onward, [convex-typegen](https://github.com/JamalLyons/convex-typegen) follows
 [SemVer 2.0](https://semver.org/) on the crate version. Earlier 0.x releases shipped breaking
-changes in minor versions; that history lives in the [CHANGELOG](../CHANGELOG.md).
+changes in minor versions; that history lives in the
+[CHANGELOG](https://github.com/JamalLyons/convex-typegen/blob/master/CHANGELOG.md).
 
 ## Two surfaces, two semver stories
 

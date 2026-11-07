@@ -1,20 +1,25 @@
 # v1 roadmap
 
-Where convex-typegen is going. Crate version today: **0.4.0**. This is the lasting picture for contributors and coding agents. Open decisions stay open until they are settled in issues.
+Where convex-typegen is going. Crate version today: **1.0.0**. This is the lasting picture for contributors and coding agents. Open decisions stay open until they are settled in issues.
 
 ## Why the library exists
 
+**Mission:** convex-typegen gives Rust the end-to-end type safety TypeScript gets from Convex.
+Schema and function validators become Rust types at build time; wrong tables, fields, arguments,
+or return types fail compilation, and schema changes break the Rust build until call sites match.
+
 [Convex](https://www.convex.dev/) is a reactive database: queries, mutations, and actions are TypeScript running in the database, and subscribed clients receive new results when the data they read changes ([understanding Convex](https://docs.convex.dev/understanding/)). The product’s core pitch is end-to-end type safety. `npx convex dev` writes `convex/_generated/` so a TypeScript app calls `useQuery(api.tasks.get, args)` with inferred argument and return types, `Id<"tasks">`, `Doc<"tasks">`, and live subscriptions ([generated API](https://docs.convex.dev/generated-api/)).
 
-Rust is a client language. Backend functions stay TypeScript. The official [`convex` crate](https://docs.rs/convex/latest/convex/struct.ConvexClient.html) is stringly typed: `client.query("tasks:get", BTreeMap::new())` takes a function-name string and a `BTreeMap<String, Value>`, and returns an untyped [`FunctionResult`](https://docs.rs/convex/latest/convex/enum.FunctionResult.html) ([Rust quickstart](https://docs.convex.dev/quickstart/rust.md)). `Value` has no `Id` type and no generated document layer.
+Rust is a client language. Backend functions stay TypeScript. The official [`convex` crate](https://docs.rs/convex/latest/convex/struct.ConvexClient.html) is stringly typed: `client.query("tasks:list", BTreeMap::new())` takes a function-name string and a `BTreeMap<String, Value>`, and returns an untyped [`FunctionResult`](https://docs.rs/convex/latest/convex/enum.FunctionResult.html) ([Rust quickstart](https://docs.convex.dev/quickstart/rust.md)). `Value` has no `Id` type and no generated document layer.
 
 convex-typegen runs in `build.rs` and emits argument structs, table structs, and typed
-public function references. The reference's `path()` works with the official client.
-The [typed client](https://jamallyons.github.io/convex-typegen/typed-client.html) provides calls and subscriptions over those references.
+public function references—the Rust analogue of Convex's generated `api` and `Doc` types.
+The [typed client](https://jamallyons.github.io/convex-typegen/typed-client.html) provides
+calls and subscriptions over those references. See [what's guaranteed](https://jamallyons.github.io/convex-typegen/docs/type-safety.html) for compile-time limits.
 
 ## v1 headline
 
-**A generated, fully typed function client — the Rust equivalent of `api.*`.** This is decided.
+**End-to-end type safety for Convex in Rust — a generated, fully typed function client, the Rust equivalent of `api.*`.** This is decided.
 
 The adapter borrows the official client mutably for SDK operations. Auth and the SDK builder remain available.
 
@@ -54,7 +59,7 @@ These are what make the headline trustworthy. A workable order: value layer and 
 
 ## Known gaps today
 
-Checked against this tree (0.4.0). Items marked unverified have not been re-run on a live backend.
+Checked against this tree (1.0.0). Items marked unverified have not been re-run on a live backend.
 
 - [x] The offline parser normalizes Convex 1.49.0 validator factories and accepts object and union table documents, including indexed definitions and earlier same-file validator consts.
 - [x] Function discovery accepts recognized Convex server builder imports and distinguishes public and internal visibility. Relative imports and static spreads are resolved through a bounded offline source graph with file/span diagnostics.

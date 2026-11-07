@@ -1,17 +1,19 @@
 #[test]
 fn readme_build_script_matches_tutorial()
 {
-    assert_eq!(
-        include_str!("../../../readme.md")
-            .split_once("```rust,ignore\n")
-            .unwrap()
-            .1
-            .split_once("```")
-            .unwrap()
-            .0
-            .trim(),
-        include_str!("../build.rs").trim()
-    );
+    let quick_start = include_str!("../../../readme.md")
+        .split("## Quick start")
+        .nth(1)
+        .expect("quick start section");
+    let build_script = quick_start
+        .split_once("```rust,ignore\n")
+        .unwrap()
+        .1
+        .split_once("```")
+        .unwrap()
+        .0
+        .trim();
+    assert_eq!(build_script, include_str!("../build.rs").trim());
 }
 
 #[allow(dead_code)]

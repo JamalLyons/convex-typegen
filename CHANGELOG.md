@@ -10,6 +10,9 @@ See the [migration guide](docs/guide/migration-v0.4.md) for the breaking changes
 
 ### Added
 
+- Lead the README, docs landing page, crate docs, v1 roadmap, and agent notes with end-to-end type
+  safety messaging; add [what's guaranteed and what isn't](https://jamallyons.github.io/convex-typegen/docs/type-safety.html).
+
 - Re-export the Convex SDK from `convex-typegen-runtime`.
 
 - Polish the launch README with a compiled typed query/subscription example, project badges,

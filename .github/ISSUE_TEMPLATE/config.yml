@@ -1,7 +1,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: Usage questions and documentation
-    url: https://jamallyons.github.io/convex-typegen/
+    url: https://ctg.jamallyons.com/
     about: Start with the tutorial, typed client guide, and support matrix.
   - name: Security reports
     url: https://github.com/JamalLyons/convex-typegen/blob/master/SECURITY.md

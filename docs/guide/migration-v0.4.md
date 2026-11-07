@@ -1,6 +1,6 @@
 # Migrate from v0.4
 
-Historical release notes. For current usage, see the [v1 documentation](https://jamallyons.github.io/convex-typegen/).
+Historical release notes. For current usage, see the [v1 documentation](https://ctg.jamallyons.com/).
 
 v1 is a clean break from v0.4. There are **no aliases, re-export shims, compatibility features, or
 legacy output paths**. Regenerate your bindings with the matching v1 generator and update imports
@@ -32,7 +32,7 @@ and calls using this map.
 2. Replace the old handwritten `build.rs` with `convex_typegen::build::generate_out_dir()` when
    using default paths. This writes to `OUT_DIR` and tracks the schema, Convex directory, and
    discovered function inputs. For a committed function spec or custom paths, use
-   `build::generate(Configuration::default().with_convex_dir(...))` as shown in [getting started](https://jamallyons.github.io/convex-typegen/generation.html#use-a-custom-layout-or-monorepo).
+   `build::generate(Configuration::default().with_convex_dir(...))` as shown in [getting started](https://ctg.jamallyons.com/generation.html#use-a-custom-layout-or-monorepo).
 3. Replace the old `mod convex_types;` declaration with the runtime `include!` macro, then
    regenerate bindings. Update flat names, paths, changed field types, and imports from compiler
    diagnostics. v1 generated names are scoped to the Convex module path.

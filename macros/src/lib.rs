@@ -16,7 +16,7 @@ use syn::{
 ///
 /// Import this derive from `convex_typegen_runtime::ConvexValue`. Use the runtime's
 /// `value_serde::to_value` and `value_serde::from_value` to encode and decode the model.
-/// The [derive guide](https://jamallyons.github.io/convex-typegen/docs/macros.html)
+/// The [derive guide](https://ctg.jamallyons.com/docs/macros.html)
 /// shows how to customize wire names, optional fields, and literal values.
 #[proc_macro_derive(ConvexValue, attributes(convex))]
 pub fn derive_convex_value(input: TokenStream) -> TokenStream

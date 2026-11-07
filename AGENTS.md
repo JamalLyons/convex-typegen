@@ -1,5 +1,13 @@
 # Agent notes
 
+## Mission
+
+convex-typegen gives Rust the end-to-end type safety TypeScript gets from Convex: schema and
+function signatures become Rust types at build time, so wrong tables, fields, arguments, and
+return types are compile errors. Escapes (`client_mut()`, the re-exported `convex` crate) and
+runtime-only checks (auth, live validators, document existence) are documented on the
+[type-safety page](https://ctg.jamallyons.com/docs/type-safety.html).
+
 ## Task isolation
 
 - For task work that changes files, use a dedicated Git worktree and branch by default. Do not make changes in a checkout another agent may be using; this keeps concurrent tasks from interrupting or overwriting each other.

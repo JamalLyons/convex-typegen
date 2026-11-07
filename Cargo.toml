@@ -1,7 +1,7 @@
 [package]
 name = "convex-typegen"
 version.workspace = true
-description = "Type safe bindings for ConvexDB in Rust"
+description = "Build-time bindings for Convex schema and functions — end-to-end type safety in Rust"
 authors.workspace = true
 license.workspace = true
 edition.workspace = true
@@ -78,7 +78,7 @@ license = "MIT"
 edition = "2024"
 rust-version = "1.97"
 repository = "https://github.com/JamalLyons/convex-typegen"
-homepage = "https://github.com/JamalLyons/convex-typegen"
+homepage = "https://ctg.jamallyons.com/"
 
 [workspace.dependencies]
 convex = "0.10.4"

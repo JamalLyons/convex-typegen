@@ -1,7 +1,7 @@
 [package]
 name = "convex-typegen-runtime"
 version.workspace = true
-description = "Typed Convex client runtime — generated api, Doc, and Id types for Rust"
+description = "Typed Convex client runtime for convex-typegen bindings"
 authors.workspace = true
 license.workspace = true
 edition.workspace = true

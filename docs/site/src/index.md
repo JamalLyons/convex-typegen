@@ -49,6 +49,7 @@ The generator reads local TypeScript or a committed function spec at build time.
 <a href="typed-client.html"><strong>Call and subscribe</strong><span>Use queries, mutations, actions, and live updates.</span></a>
 <a href="generation.html"><strong>Set up generation</strong><span>Choose your inputs and where Cargo writes the bindings.</span></a>
 <a href="docs/generated-models.html"><strong>Read the generated types</strong><span>Understand naming, wire values, and nullable fields.</span></a>
+<a href="configuration.html"><strong>Look up a setting</strong><span>Find build options, CLI flags, defaults, and precedence.</span></a>
 <a href="docs/type-safety.html"><strong>Compile-time guarantees</strong><span>What the types enforce—and what still runs on the server.</span></a>
 </div>
 

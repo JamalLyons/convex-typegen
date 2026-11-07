@@ -68,12 +68,11 @@ version and types the runtime uses. See the
 | Follow one query with `subscribe` | Typed method | `client.subscribe(tasks::list, tasks::ListArgs {}).await?` |
 | Set or clear a user token | `client_mut()` | `client.client_mut().set_auth(Some(token)).await;` Pass `None` to sign out. |
 | Fetch fresh tokens with `set_auth_callback` | `client_mut()` | `client.client_mut().set_auth_callback(Some(fetch_token)).await;` See the callback type below. |
-| Authenticate as a deployment admin | `client_mut()` | `client.client_mut().set_admin_auth(admin_key, None).await;` |
 | Watch all active queries with `watch_all` | `client_mut()` | `let mut all = client.client_mut().watch_all();` This gives you the SDK's `QuerySetSubscription`. Use `all.next().await` with `futures::StreamExt`. |
 | Make untyped calls | `client_mut()` | `client.client_mut().query(tasks::list.path(), raw_args).await?` See how to encode `raw_args` below. |
 | Connect with default options | Before wrapping | `let mut sdk = convex::ConvexClient::new(url).await?;` |
 | Configure client ID or connection-state notifications | Before wrapping | `convex::ConvexClientBuilder::new(url).with_client_id("tasks").with_on_state_change(state_tx)` |
-| Connect with a builder | Before wrapping | `let mut sdk = convex::ConvexClient::new_from_builder(builder).await?;` You can also call `builder.build().await?`. |
+| Connect with a builder | Before wrapping | `let mut sdk = builder.build().await?;` |
 | Share a connection across SDK handles | Before wrapping | `let mut other_sdk = sdk.clone();` Give each adapter its own mutable borrow. |
 
 The SDK calls an auth callback with `force_refresh = true` on reconnect. Pass
@@ -114,14 +113,13 @@ A builder accepts a Tokio channel sender for connection-state updates.
 Keep the receiver wherever your app handles connection status.
 
 ```rust,ignore
-use convex::{ConvexClient, ConvexClientBuilder};
-use convex_typegen_runtime::TypedClient;
+use convex_typegen_runtime::{TypedClient, convex::ConvexClientBuilder};
 
 let (state_tx, mut state_rx) = tokio::sync::mpsc::channel(8);
 let builder = ConvexClientBuilder::new(url)
     .with_client_id("tasks")
     .with_on_state_change(state_tx);
-let mut sdk = ConvexClient::new_from_builder(builder).await?;
+let mut sdk = builder.build().await?;
 let mut other_sdk = sdk.clone();
 let mut client = TypedClient::new(&mut sdk);
 let mut other_client = TypedClient::new(&mut other_sdk);

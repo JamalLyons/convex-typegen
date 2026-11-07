@@ -25,7 +25,7 @@ use crate::value_serde;
 /// }
 /// ```
 ///
-/// See [handling application errors](https://jamallyons.github.io/convex-typegen/errors.html).
+/// See [handling application errors](https://ctg.jamallyons.com/errors.html).
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum CallError<E>

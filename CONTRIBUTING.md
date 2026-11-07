@@ -40,6 +40,6 @@ old-worktree cleanup with `just clean-worktrees-dry`; see
 [the cleanup script](scripts/clean-worktrees.sh) and [AGENTS.md](AGENTS.md#worktrees-and-disk-space)
 before applying it.
 
-For usage questions, start with the [documentation](https://jamallyons.github.io/convex-typegen/).
+For usage questions, start with the [documentation](https://ctg.jamallyons.com/).
 Report vulnerabilities privately using [SECURITY.md](SECURITY.md), and follow the
 [code of conduct](CODE_OF_CONDUCT.md).

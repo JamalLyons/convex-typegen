@@ -6,7 +6,7 @@ convex-typegen gives Rust the end-to-end type safety TypeScript gets from Convex
 function signatures become Rust types at build time, so wrong tables, fields, arguments, and
 return types are compile errors. Escapes (`client_mut()`, the re-exported `convex` crate) and
 runtime-only checks (auth, live validators, document existence) are documented on the
-[type-safety page](https://jamallyons.github.io/convex-typegen/docs/type-safety.html).
+[type-safety page](https://ctg.jamallyons.com/docs/type-safety.html).
 
 ## Task isolation
 

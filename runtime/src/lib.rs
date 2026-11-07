@@ -9,8 +9,8 @@
 //! Use this crate as a normal dependency and the matching generator release as a
 //! build dependency. The runtime supports Rust 1.85.
 //!
-//! Follow the [first project](https://jamallyons.github.io/convex-typegen/getting-started.html)
-//! for setup, or see [typed calls and subscriptions](https://jamallyons.github.io/convex-typegen/typed-client.html).
+//! Follow the [first project](https://ctg.jamallyons.com/getting-started.html)
+//! for setup, or see [typed calls and subscriptions](https://ctg.jamallyons.com/typed-client.html).
 //!
 //! # Typed calls
 //!
@@ -39,7 +39,7 @@ pub use client::{CallError, InvalidApplicationData, TransportError, TypedClient}
 /// The Convex SDK used by this runtime.
 pub use convex;
 /// Derive the Convex wire representation for Rust models.
-/// See [handwritten models](https://jamallyons.github.io/convex-typegen/docs/macros.html#derive-a-convex-model).
+/// See [handwritten models](https://ctg.jamallyons.com/docs/macros.html#derive-a-convex-model).
 pub use convex_typegen_macros::ConvexValue;
 /// Serde derives in generated Rust resolve through this re-export.
 pub use serde;
@@ -60,7 +60,7 @@ pub mod prelude
 ///
 /// Defaults to `convex_api.rs`. Pass a string literal relative to `OUT_DIR`
 /// when the build script uses a custom output filename.
-/// See [including bindings](https://jamallyons.github.io/convex-typegen/generation.html#include-bindings-from-cargo-output).
+/// See [including bindings](https://ctg.jamallyons.com/generation.html#include-bindings-from-cargo-output).
 #[macro_export]
 macro_rules! include {
     () => {

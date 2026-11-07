@@ -77,7 +77,9 @@ Default branch is **`master`**.
 
 1. Update `CHANGELOG.md` and `workspace.package.version` in `Cargo.toml`.
 2. Add `docs/release-vX.Y.Z.md`, merge to `master`, tag `vX.Y.Z`, and create a GitHub Release.
-3. Publish to crates.io with `cargo publish --locked` (or `just publish`). Publish the macro crate before the runtime and keep its exact version requirement in
-   `runtime/Cargo.toml` in sync with the workspace version. There is no automated publish workflow.
+3. Keep the exact macro dependency version in `runtime/Cargo.toml` in sync with the workspace
+   version. Run `just publish-test` to dry-run the macro publish and list all three packages.
+4. Run `just publish` to publish the macro crate, runtime, and generator in that order. The recipe
+   uses `curl` and `jq` to confirm each dependency version is indexed on crates.io before continuing.
 
 Contributors: add user-visible changes under `[Unreleased]` in `CHANGELOG.md`.

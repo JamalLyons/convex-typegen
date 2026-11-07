@@ -31,7 +31,7 @@ let texts: Vec<String> = match result {
 };
 ```
 
-With convex-typegen, the same call is checked at compile time (from the [first-project tutorial](https://jamallyons.github.io/convex-typegen/getting-started.html)):
+With convex-typegen, the same call is checked at compile time (from the [first-project tutorial](https://ctg.jamallyons.com/getting-started.html)):
 
 ```rust,ignore
 use convex::ConvexClient;
@@ -43,17 +43,25 @@ let mut client = TypedClient::new(&mut sdk);
 let texts: Vec<String> = client.query(tasks::list, tasks::ListArgs {}).await?;
 ```
 
-[Documentation](https://jamallyons.github.io/convex-typegen/) ·
-[What's guaranteed at compile time](https://jamallyons.github.io/convex-typegen/docs/type-safety.html) ·
-[First project](https://jamallyons.github.io/convex-typegen/getting-started.html) ·
-[Configuration](https://jamallyons.github.io/convex-typegen/configuration.html) ·
-[Rust API](https://jamallyons.github.io/convex-typegen/api-reference.html)
+[Documentation](https://ctg.jamallyons.com/) ·
+[What's guaranteed at compile time](https://ctg.jamallyons.com/docs/type-safety.html) ·
+[First project](https://ctg.jamallyons.com/getting-started.html) ·
+[Configuration](https://ctg.jamallyons.com/configuration.html) ·
+[Rust API](https://ctg.jamallyons.com/api-reference.html)
 
 ## Quick start
 
 Add matching v1 releases of `convex-typegen` as a build dependency and
 `convex-typegen-runtime` as an application dependency. Generating bindings requires Rust 1.97;
 using pregenerated bindings requires Rust 1.85.
+
+```toml
+[dependencies]
+convex-typegen-runtime = "1"
+
+[build-dependencies]
+convex-typegen = "1"
+```
 
 With `convex/schema.ts` next to your Rust project, add this `build.rs`:
 
@@ -65,9 +73,9 @@ fn main()
 ```
 
 Load the result inside a Rust module with `convex_typegen_runtime::include!()`.
-Follow the [first project](https://jamallyons.github.io/convex-typegen/getting-started.html)
+Follow the [first project](https://ctg.jamallyons.com/getting-started.html)
 for the complete Cargo manifest, TypeScript validators, and typed Rust calls.
 
-[Contributing](https://jamallyons.github.io/convex-typegen/contributing.html) ·
+[Contributing](https://ctg.jamallyons.com/contributing.html) ·
 [Security](https://github.com/JamalLyons/convex-typegen/blob/master/SECURITY.md) ·
 [MIT license](https://github.com/JamalLyons/convex-typegen/blob/master/LICENSE)

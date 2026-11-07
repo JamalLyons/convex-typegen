@@ -323,7 +323,7 @@ dependencies = [
 
 [[package]]
 name = "convex-typegen"
-version = "0.4.0"
+version = "1.0.0"
 dependencies = [
  "base64 0.23.1",
  "convex",
@@ -351,7 +351,7 @@ dependencies = [
 
 [[package]]
 name = "convex-typegen-e2e"
-version = "0.4.0"
+version = "1.0.0"
 dependencies = [
  "convex",
  "convex-typegen",
@@ -362,7 +362,7 @@ dependencies = [
 
 [[package]]
 name = "convex-typegen-macros"
-version = "0.4.0"
+version = "1.0.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -382,7 +382,7 @@ dependencies = [
 
 [[package]]
 name = "convex-typegen-runtime"
-version = "0.4.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "convex",

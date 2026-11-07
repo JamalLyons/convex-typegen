@@ -62,10 +62,34 @@ docs:
     mdbook serve docs/site
 
 publish:
-    cargo publish
+    cargo publish --locked -p convex-typegen-macros
+    just wait-for-crate convex-typegen-macros
+    cargo publish --locked -p convex-typegen-runtime
+    just wait-for-crate convex-typegen-runtime
+    cargo publish --locked -p convex-typegen
 
 publish-test:
-    cargo publish --dry-run --allow-dirty
+    cargo publish --dry-run -p convex-typegen-macros
+    cargo package --list -p convex-typegen-macros
+    cargo package --list -p convex-typegen-runtime
+    cargo package --list -p convex-typegen
+
+[private]
+wait-for-crate crate:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    crate={{ quote(crate) }}
+    package_id="$(cargo pkgid -p "$crate")"
+    version="${package_id##*[@#]}"
+    for attempt in {1..12}; do
+        if curl -fsS --max-time 10 "https://index.crates.io/co/nv/$crate" | \
+            jq -e -s --arg version "$version" 'any(.[]; .vers == $version and .yanked == false)' >/dev/null; then
+            exit 0
+        fi
+        sleep 5
+    done
+    echo "$crate $version is not available in the crates.io index" >&2
+    exit 1
 
 # Generate a synthetic Convex project. Pass a seed to replay a run.
 gen-project TIER SEED="":

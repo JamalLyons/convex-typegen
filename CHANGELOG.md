@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Lead the README, docs landing page, crate docs, v1 roadmap, and agent notes with end-to-end type
+  safety messaging; add [what's guaranteed and what isn't](https://jamallyons.github.io/convex-typegen/docs/type-safety.html).
+
 - Derive `PartialEq` on generated models and `Eq` where their payloads support it.
   Generated string-literal enums also derive `Copy` and `Hash`.
 - Mark consuming configuration builders, error context, and function error-type

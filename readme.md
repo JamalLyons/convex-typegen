@@ -1,13 +1,50 @@
 # convex-typegen
 
+**End-to-end type safety for Convex in Rust.**
+
+convex-typegen is the bridge that gives Rust the end-to-end type safety TypeScript developers get naturally from Convex's generated `api` and `Doc` types. Your schema and function signatures become Rust types at build time, so a wrong table, field, argument, or return type is a compile error, not a runtime bug. If your schema changes, your Rust code stops compiling until it matches.
+
 [![CI](https://github.com/JamalLyons/convex-typegen/actions/workflows/rust.yml/badge.svg)](https://github.com/JamalLyons/convex-typegen/actions/workflows/rust.yml)
 [![crates.io](https://img.shields.io/crates/v/convex-typegen.svg)](https://crates.io/crates/convex-typegen)
 [![docs.rs](https://docs.rs/convex-typegen/badge.svg)](https://docs.rs/convex-typegen)
 
-Generate typed Rust bindings for your Convex schema and functions. Call queries, mutations,
-and actions through the official Convex SDK, and receive live query updates as typed streams.
+## Without and with generated types
+
+Calling Convex with only the official Rust SDK means string paths, untyped argument maps, and manual decoding of every result:
+
+```rust,ignore
+use std::collections::BTreeMap;
+
+use convex::{ConvexClient, FunctionResult, Value};
+
+let mut client = ConvexClient::new(&url).await?;
+let result = client.query("tasks:list", BTreeMap::new()).await?;
+let texts: Vec<String> = match result {
+    FunctionResult::Value(Value::Array(items)) => items
+        .into_iter()
+        .filter_map(|item| match item {
+            Value::String(text) => Some(text),
+            _ => None,
+        })
+        .collect(),
+    _ => return Err("unexpected query result".into()),
+};
+```
+
+With convex-typegen, the same call is checked at compile time (from the [first-project tutorial](https://jamallyons.github.io/convex-typegen/getting-started.html)):
+
+```rust,ignore
+use convex::ConvexClient;
+use convex_api::api::tasks;
+use convex_typegen_runtime::TypedClient;
+
+let mut sdk = ConvexClient::new(&url).await?;
+let mut client = TypedClient::new(&mut sdk);
+let texts: Vec<String> = client.query(tasks::list, tasks::ListArgs {}).await?;
+```
 
 [Documentation](https://jamallyons.github.io/convex-typegen/) ·
+[What's guaranteed at compile time](https://jamallyons.github.io/convex-typegen/docs/type-safety.html) ·
 [First project](https://jamallyons.github.io/convex-typegen/getting-started.html) ·
 [Configuration](https://jamallyons.github.io/convex-typegen/configuration.html) ·
 [Rust API](https://jamallyons.github.io/convex-typegen/api-reference.html)

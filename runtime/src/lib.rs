@@ -1,5 +1,10 @@
 #![warn(missing_docs)]
-//! Runtime support for Rust bindings emitted by `convex-typegen`.
+//! End-to-end type safety for Convex in Rust.
+//!
+//! `convex-typegen-runtime` is the typed client layer on top of the official Convex SDK.
+//! Generated function references, argument structs, table models, and `Id<T>` / document types
+//! come from `convex-typegen` at build time, so mismatched tables, fields, arguments, and return
+//! types are compile errors—not runtime surprises after deploy.
 //!
 //! Use this crate as a normal dependency and the matching generator release as a
 //! build dependency. The runtime supports Rust 1.85.

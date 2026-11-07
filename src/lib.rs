@@ -106,7 +106,7 @@ fn lower_project(parsed: ParsedProject) -> Result<LoweredProject, ConvexTypeGene
 /// Pipeline: validate schema path → parse schema TS → either read the configured spec or parse
 /// discovered TypeScript inputs → structured schema + function model → write generated Rust.
 ///
-/// See [generation inputs and output](https://jamallyons.github.io/convex-typegen/generation.html)
+/// See [generation inputs and output](https://ctg.jamallyons.com/generation.html)
 /// for the Cargo helpers, spec input, and checked-in bindings.
 ///
 /// # Errors

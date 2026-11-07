@@ -4,55 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- Lead the README, docs landing page, crate docs, v1 roadmap, and agent notes with end-to-end type
-  safety messaging; add [what's guaranteed and what isn't](https://jamallyons.github.io/convex-typegen/docs/type-safety.html).
+## [1.0.0] - 2026-11-07
 
-- Derive `PartialEq` on generated models and `Eq` where their payloads support it.
-  Generated string-literal enums also derive `Copy` and `Hash`.
-- Mark consuming configuration builders, error context, and function error-type
-  adapters as `#[must_use]`.
-- Re-export the Convex SDK from `convex-typegen-runtime`.
-
-- **Breaking error API.** Every variant of `ConvexTypeGeneratorError` and `CallError`
-  is non-exhaustive. `CallError::Transport` wraps a runtime-owned `TransportError`
-  that preserves the original message and error source chain.
-- Ship a smaller generator crate archive and add package metadata and READMEs for
-  the runtime and derive crates.
-- Document the public Rust API and show how to use the full Convex SDK alongside
-  the typed client.
-
-- Fix `cargo deny` license check for the readme example crate (`license.workspace = true`).
-
-- Make the documentation site the home for v1 usage, with a verified first-project
-  tutorial, task guides, a configuration reference, and accessible light and dark themes.
-- Editorial pass on the mdBook site: staged tutorial narrative, generated-models and support
-  rewrites, semver policy from 1.0.0 onward, and Convex docs.rs links.
-- Update the derive macro's parser dependency to syn 3.
-- **Breaking generator API.** Construct non-exhaustive `Configuration` with setters and use
-  `build::generate(config)` for Cargo input tracking. The default schema follows `convex_dir`.
-  Match the crate-root `ConvexTypeGeneratorError` with a fallback arm. Missing schemas report
-  the attempted path and I/O errors use the `Io` variant with a path.
-- **Breaking runtime API.** Match extensible call errors with a fallback arm and `..` for
-  extensible fields. Use `FunctionRef` constructors for handwritten endpoints.
-- **Breaking generated output.** Distinct string-literal unions now use semantic unit variants
-  and preserve their exact wire strings. Punctuation-only and empty literals use a separate
-  deterministic naming fallback. See the [migration guide](docs/guide/migration-v0.4.md).
-- **Breaking generated output.** Unions of distinct string literals plus null generate
-  `Option<Enum>`. Optional fields use `Option<Option<Enum>>` to preserve omitted keys
-  and explicit null. Top-level nullable enum returns expose variants on `*ReturnValue`.
-  See the [migration guide](docs/guide/migration-v0.4.md).
-
-## [1.0.0] - Unreleased
-
-Release notes prepared for v1.0.0; tagging and publishing are separate release steps.
 See the [migration guide](docs/guide/migration-v0.4.md) for the breaking changes.
 
 ### Added
 
+- Lead the README, docs landing page, crate docs, v1 roadmap, and agent notes with end-to-end type
+  safety messaging; add [what's guaranteed and what isn't](https://ctg.jamallyons.com/docs/type-safety.html).
+
+- Re-export the Convex SDK from `convex-typegen-runtime`.
+
 - Polish the launch README with a compiled typed query/subscription example, project badges,
   and documentation links. Add issue forms, a PR checklist, and contributor label conventions.
 
-- Add an mdBook documentation website with a docs.rs API reference and GitHub Pages deployment.
+- Add an mdBook site with a verified first-project tutorial, task guides, a configuration reference,
+  accessible light and dark themes, a docs.rs API reference, and GitHub Pages deployment.
 - Add the local self-hosted Convex typed-client E2E gate (`just e2e`) and user guides for getting
   started, supported validators and source limits, v1 concepts, and migration from v0.4.
 - Generate bindings in Cargo's `OUT_DIR` by default, with atomic writes and a non-writing CLI
@@ -62,14 +29,14 @@ See the [migration guide](docs/guide/migration-v0.4.md) for the breaking changes
 
 - Add the runtime's `ConvexValue` derive and `include!()` helper. Generated models
   use the same derive as handwritten models while preserving their wire behavior.
-  Regenerate bindings against the matching runtime. See [macros](https://jamallyons.github.io/convex-typegen/docs/macros.html).
+  Regenerate bindings against the matching runtime. See [macros](https://ctg.jamallyons.com/docs/macros.html).
 
 - **Breaking generated output:** Emit nested, typed public function references such as
   `api::admin::users::list`. Declared args and returns now live beside the reference
   (e.g. `api::admin::users::ListArgs`). References and model names omit a redundant leading
   module name, and `path()` replaces `FUNCTION_PATH`.
   Undeclared validators use explicit `RawArgs` and `RawValue` fallbacks. See
-  [generated models](https://jamallyons.github.io/convex-typegen/docs/generated-models.html) for current naming.
+  [generated models](https://ctg.jamallyons.com/docs/generated-models.html) for current naming.
 
 - Add a Criterion harness in the unpublished `convex-typegen-bench` workspace crate. `just bench`
   measures generated-project discovery/parsing, IR lowering, codegen and end-to-end generation;
@@ -77,7 +44,7 @@ See the [migration guide](docs/guide/migration-v0.4.md) for the breaking changes
 
 - Generate Serde args, returns, typed table IDs, and full documents, including union tables.
   Validated literals and unions preserve the Convex wire kinds. See
-  [generated models](https://jamallyons.github.io/convex-typegen/docs/generated-models.html).
+  [generated models](https://ctg.jamallyons.com/docs/generated-models.html).
 
 - Document pipeline CPU and heap hot spots and add a replayable profiling runner for
   synthetic projects. See [performance profiling](docs/performance.md#pipeline-profiling-findings-64).
@@ -103,13 +70,49 @@ See the [migration guide](docs/guide/migration-v0.4.md) for the breaking changes
 
 ### Changed
 
+- Derive `PartialEq` on generated models and `Eq` where their payloads support it.
+  Generated string-literal enums also derive `Copy` and `Hash`.
+
+- Mark consuming configuration builders, error context, and function error-type
+  adapters as `#[must_use]`.
+
+- **Breaking error API.** Every variant of `ConvexTypeGeneratorError` and `CallError`
+  is non-exhaustive. `CallError::Transport` wraps a runtime-owned `TransportError`
+  that preserves the original message and error source chain.
+
+- Ship a smaller generator crate archive and add package metadata and READMEs for
+  the runtime and derive crates.
+
+- Refine the documentation site’s tutorial, generated-models and support guides,
+  and links to the Convex SDK. Document the v1 semver policy and public Rust API,
+  including use of the SDK alongside the typed client.
+
+- Update the derive macro's parser dependency to syn 3.
+
+- **Breaking generator API.** Construct non-exhaustive `Configuration` with setters and use
+  `build::generate(config)` for Cargo input tracking. The default schema follows `convex_dir`.
+  Match the crate-root `ConvexTypeGeneratorError` with a fallback arm. Missing schemas report
+  the attempted path and I/O errors use the `Io` variant with a path.
+
+- **Breaking runtime API.** Match extensible call errors with a fallback arm and `..` for
+  extensible fields. Use `FunctionRef` constructors for handwritten endpoints.
+
+- **Breaking generated output.** Distinct string-literal unions now use semantic unit variants
+  and preserve their exact wire strings. Punctuation-only and empty literals use a separate
+  deterministic naming fallback. See the [migration guide](docs/guide/migration-v0.4.md).
+
+- **Breaking generated output.** Unions of distinct string literals plus null generate
+  `Option<Enum>`. Optional fields use `Option<Option<Enum>>` to preserve omitted keys
+  and explicit null. Top-level nullable enum returns expose variants on `*ReturnValue`.
+  See the [migration guide](docs/guide/migration-v0.4.md).
+
 - **Breaking generator MSRV:** Raise the generator and Oxc-dependent build tooling from Rust
   1.95 to **1.97**, required by Oxc 0.157. Runtime and derive MSRV remain **1.85**.
 
 - **Breaking default generated filename:** Rename `convex_types.rs` to `convex_api.rs`; the file contains generated API references and the typed client surface, and is written to `OUT_DIR` by default. There is no compatibility alias or fallback.
 
 - **Breaking runtime API:** Replace `ConvexClientExt::prepare_args` with
-  [`TypedClient`](https://jamallyons.github.io/convex-typegen/typed-client.html) for typed queries, mutations, actions,
+  [`TypedClient`](https://ctg.jamallyons.com/typed-client.html) for typed queries, mutations, actions,
   and query subscriptions. Function references can declare typed application
   errors, and malformed payloads retain their original Convex value.
 
@@ -131,6 +134,8 @@ See the [migration guide](docs/guide/migration-v0.4.md) for the breaking changes
   fail with a file, byte span and validator name. This includes unsupported inline return validators.
 
 ### Fixed
+
+- Fix `cargo deny` license check for the readme example crate (`license.workspace = true`).
 
 - Docs: The [0.3.0] supply-chain bullet incorrectly claimed a GitHub Actions release workflow for tagged publishes. Git history shows only `.github/workflows/rust.yml` (CI quality checks) was ever added; `release.yml` was referenced in early `CONTRIBUTING.md` text but never committed. Crates.io publishing has always been manual (`cargo publish` / `just publish`), as documented in `CONTRIBUTING.md` and [semver-policy.md](docs/semver-policy.md).
 
@@ -239,4 +244,3 @@ Version 0.3.0 improves stability, supply-chain hygiene, and generated-code corre
 ### Added
 
 - Initial release of the project.
-

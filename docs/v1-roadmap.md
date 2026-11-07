@@ -1,6 +1,6 @@
 # v1 roadmap
 
-Where convex-typegen is going. Crate version today: **0.4.0**. This is the lasting picture for contributors and coding agents. Open decisions stay open until they are settled in issues.
+Where convex-typegen is going. Crate version today: **1.0.0**. This is the lasting picture for contributors and coding agents. Open decisions stay open until they are settled in issues.
 
 ## Why the library exists
 
@@ -14,8 +14,8 @@ Rust is a client language. Backend functions stay TypeScript. The official [`con
 
 convex-typegen runs in `build.rs` and emits argument structs, table structs, and typed
 public function references—the Rust analogue of Convex's generated `api` and `Doc` types.
-The [typed client](https://jamallyons.github.io/convex-typegen/typed-client.html) provides
-calls and subscriptions over those references. See [what's guaranteed](https://jamallyons.github.io/convex-typegen/docs/type-safety.html) for compile-time limits.
+The [typed client](https://ctg.jamallyons.com/typed-client.html) provides
+calls and subscriptions over those references. See [what's guaranteed](https://ctg.jamallyons.com/docs/type-safety.html) for compile-time limits.
 
 ## v1 headline
 
@@ -59,12 +59,12 @@ These are what make the headline trustworthy. A workable order: value layer and 
 
 ## Known gaps today
 
-Checked against this tree (0.4.0). Items marked unverified have not been re-run on a live backend.
+Checked against this tree (1.0.0). Items marked unverified have not been re-run on a live backend.
 
 - [x] The offline parser normalizes Convex 1.49.0 validator factories and accepts object and union table documents, including indexed definitions and earlier same-file validator consts.
 - [x] Function discovery accepts recognized Convex server builder imports and distinguishes public and internal visibility. Relative imports and static spreads are resolved through a bounded offline source graph with file/span diagnostics.
 - [x] The function IR records canonical root-relative module identity and declared args/returns metadata. Generated model names and function paths use that identity.
-- [x] Generated args and returns, typed table IDs and documents, literal and union models, and explicit field presence are available. See [generated models](https://jamallyons.github.io/convex-typegen/docs/generated-models.html).
+- [x] Generated args and returns, typed table IDs and documents, literal and union models, and explicit field presence are available. See [generated models](https://ctg.jamallyons.com/docs/generated-models.html).
 - [x] Typed function references, client methods, query subscriptions, and application error decoding are available.
 - [x] Direct Serde conversion against `convex::Value` is available under `value_serde::{to_value, from_value}` and used by `TypedClient`. It preserves int64/float64 wire kinds, non-finite floats, signed zero, bytes (`ConvexBytes`), and recursive values, with path-aware errors for unsupported values and overflow. The lossy JSON bridge was removed.
 - [x] `convex-typegen` is build-only and has no Convex client or TLS dependency. `convex-typegen-runtime` owns the codecs, Serde re-exports, and extension over the official client.

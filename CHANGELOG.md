@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [1.0.0] - 2026-11-06
+## [1.0.0] - 2026-11-07
 
 See the [migration guide](docs/guide/migration-v0.4.md) for the breaking changes.
 
@@ -241,4 +241,3 @@ Version 0.3.0 improves stability, supply-chain hygiene, and generated-code corre
 ### Added
 
 - Initial release of the project.
-

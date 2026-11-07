@@ -5,6 +5,7 @@
 # Start here
 
 - [First project](getting-started.md)
+- [What's guaranteed and what isn't](docs/type-safety.md)
 - [How generation works](docs/guide/concepts.md)
 
 # Guides

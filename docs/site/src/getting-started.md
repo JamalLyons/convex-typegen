@@ -3,6 +3,11 @@
 Build a task list that writes a row and observes it through a live query. By the end you will
 have called all three Convex function kinds and handled a typed application error.
 
+This tutorial is the shortest path to **end-to-end type safety**: after generation, `tasks::list`
+expects `ListArgs`, returns `Vec<String>`, and `tasks::add` returns `Id<tables::Tasks>`—the
+compiler rejects the wrong reference, args, or result type before you deploy. See
+[what's guaranteed and what isn't](docs/type-safety.md) for compile-time limits and runtime checks.
+
 The generator reads your [schema](https://docs.convex.dev/database/schemas) and local TypeScript or
 JSON and stays offline during builds. It requires Rust **1.97**; the runtime supports **1.85**.
 

@@ -7,5 +7,5 @@ Apps use this crate as a normal dependency and use `convex-typegen` as a build
 dependency. The runtime re-exports the `ConvexValue` derive from
 `convex-typegen-macros`.
 
-Follow the [convex-typegen website](https://jamallyons.github.io/convex-typegen/)
+Follow the [convex-typegen website](https://ctg.jamallyons.com/)
 to set up your first project.

@@ -78,7 +78,7 @@ license = "MIT"
 edition = "2024"
 rust-version = "1.97"
 repository = "https://github.com/JamalLyons/convex-typegen"
-homepage = "https://github.com/JamalLyons/convex-typegen"
+homepage = "https://ctg.jamallyons.com/"
 
 [workspace.dependencies]
 convex = "0.10.4"

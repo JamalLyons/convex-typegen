@@ -7,5 +7,5 @@ runtime's Convex value codec.
 Apps depend on `convex-typegen-runtime`, which re-exports the derive as
 `convex_typegen_runtime::ConvexValue`.
 
-See the [convex-typegen website](https://jamallyons.github.io/convex-typegen/)
+See the [convex-typegen website](https://ctg.jamallyons.com/)
 for setup and examples.

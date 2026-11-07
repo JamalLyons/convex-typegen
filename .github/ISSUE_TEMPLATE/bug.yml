@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Check the [support matrix](https://jamallyons.github.io/convex-typegen/docs/guide/support.html) first.
+        Check the [support matrix](https://ctg.jamallyons.com/docs/guide/support.html) first.
         Report vulnerabilities privately via [SECURITY.md](https://github.com/JamalLyons/convex-typegen/blob/master/SECURITY.md).
         Remove credentials and private data from reproductions and logs.
   - type: input

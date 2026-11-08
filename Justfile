@@ -41,10 +41,10 @@ runtime-msrv:
     bash scripts/runtime-msrv-consumer.sh
 
 install-example-deps:
-    cd examples/basic && bun install
-    cd examples/advanced && pnpm install
+    cd examples/basic && npm ci
+    cd examples/advanced && npm ci
 
-# Build and run the `basic` example (Convex URL / keys typically come from `.env` via dotenvy).
+# Run the `basic` notes CLI, e.g. `just example list` (needs a local backend; see `examples/basic/readme.md`).
 example *ARGS:
     cargo run -p basic {{ ARGS }}
 

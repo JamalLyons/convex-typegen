@@ -1,4 +1,4 @@
-//! CLI demo: reads/writes game stats through generated arg structs and the typed client.
+//! A tiny notes CLI: typed args go in, typed structs come out.
 
 #[allow(dead_code)]
 mod convex_api
@@ -6,112 +6,74 @@ mod convex_api
     convex_typegen_runtime::include!();
 }
 
-use std::io::{self, Write};
 use std::path::Path;
 
-use convex::{ConvexClient, Value as ConvexValue};
-use convex_api::api::games;
-use convex_typegen_runtime::function::RawArgs;
-use convex_typegen_runtime::model::RawValue;
+use convex::ConvexClient;
+use convex_api::api::notes::{self, AddArgsPriority};
+use convex_api::{tables, NotesDoc};
+use convex_typegen_runtime::model::Id;
 use convex_typegen_runtime::TypedClient;
-use rand::Rng;
+use futures::StreamExt;
+
+const USAGE: &str = "usage: basic <add TEXT [low|normal|high] [TAG] | list | done ID | rm ID | summary | watch>";
+
+fn print_notes(all: &[NotesDoc])
+{
+    for n in all {
+        let mark = if n.done { 'x' } else { ' ' };
+        let priority = n.priority.map_or("-".to_string(), |p| format!("{p:?}").to_lowercase());
+        let tag = n.tag.as_deref().unwrap_or("(no tag)");
+        println!("[{mark}] {}  {}  priority={priority}  tag={tag}", n._id.as_str(), n.text);
+    }
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>>
 {
-    dotenvy::from_filename(Path::new(env!("CARGO_MANIFEST_DIR")).join(".env.local"))?;
+    // Optional `.env.local` next to Cargo.toml; `CONVEX_URL` in the environment also works.
+    dotenvy::from_filename(Path::new(env!("CARGO_MANIFEST_DIR")).join(".env.local")).ok();
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let arg = |i: usize| args.get(i).cloned().ok_or(USAGE);
+    let id = |i: usize| arg(i).map(Id::<tables::Notes>::from);
 
     let mut sdk = ConvexClient::new(&std::env::var("CONVEX_URL")?).await?;
     let mut client = TypedClient::new(&mut sdk);
 
-    // Get current game stats using the typed client
-    let game_stats = client.query(games::get_game, games::GetGameArgs { log_data: None }).await?;
-
-    println!("Initial game stats response: {:?}", game_stats);
-
-    let (wins, losses) = match game_stats.0 {
-        ConvexValue::Object(obj) => {
-            let win_count = obj.get("win_count").map(extract_float_value).unwrap_or(0.0);
-            let loss_count = obj.get("loss_count").map(extract_float_value).unwrap_or(0.0);
-            (win_count as i32, loss_count as i32)
+    match args.first().map(String::as_str) {
+        Some("add") => {
+            let priority = match args.get(2).map(String::as_str) {
+                None => None,
+                Some("low") => Some(AddArgsPriority::Low),
+                Some("normal") => Some(AddArgsPriority::Normal),
+                Some("high") => Some(AddArgsPriority::High),
+                Some(_) => return Err(USAGE.into()),
+            };
+            let tag = args.get(3).cloned();
+            let new_id = client
+                .mutation(
+                    notes::add,
+                    notes::AddArgs {
+                        text: arg(1)?,
+                        priority,
+                        tag,
+                    },
+                )
+                .await?;
+            println!("added {}", new_id.as_str());
         }
-        _ => (0, 0),
-    };
-
-    println!("Welcome to the Number Guessing Game!");
-    println!("Current record - Wins: {}, Losses: {}", wins, losses);
-    println!("I'm thinking of a number between 1 and 100.");
-
-    let secret_number = rand::thread_rng().gen_range(1..=100);
-    let mut attempts = 0;
-    const MAX_ATTEMPTS: i32 = 10;
-
-    loop {
-        print!("Enter your guess (1-100): ");
-        io::stdout().flush()?;
-
-        let mut guess = String::new();
-        io::stdin().read_line(&mut guess)?;
-
-        let guess: i32 = match guess.trim().parse() {
-            Ok(num) => num,
-            Err(_) => {
-                println!("Please enter a valid number!");
-                continue;
-            }
-        };
-
-        attempts += 1;
-
-        match guess.cmp(&secret_number) {
-            std::cmp::Ordering::Less => println!("Too low!"),
-            std::cmp::Ordering::Greater => println!("Too high!"),
-            std::cmp::Ordering::Equal => {
-                println!("Congratulations! You won in {} attempts!", attempts);
-                // Save win to Convex using winGame mutation
-                match client.mutation(games::win_game, RawArgs::new()).await {
-                    Ok(result) => println!("Save win result: {:?}", result),
-                    Err(e) => println!("Error saving win: {:?}", e),
-                }
-                break;
+        Some("list") => print_notes(&client.query(notes::list, notes::ListArgs {}).await?),
+        Some("done") => client.mutation(notes::done, notes::DoneArgs { id: id(1)? }).await?,
+        Some("rm") => client.mutation(notes::remove, notes::RemoveArgs { id: id(1)? }).await?,
+        Some("summary") => println!("{}", client.action(notes::summary, notes::SummaryArgs {}).await?),
+        Some("watch") => {
+            // Prints the current list, then again whenever any note changes.
+            let mut updates = client.subscribe(notes::list, notes::ListArgs {}).await?;
+            while let Some(all) = updates.next().await {
+                println!("--- {} notes ---", all.as_ref().map_or(0, Vec::len));
+                print_notes(&all?);
             }
         }
-
-        if attempts >= MAX_ATTEMPTS {
-            println!("Sorry, you've run out of attempts! The number was {}", secret_number);
-            // Save loss to Convex using lossGame mutation
-            match client.mutation(games::loss_game, RawArgs::new()).await {
-                Ok(_) => (),
-                Err(e) => println!("Error saving loss: {:?}", e),
-            }
-            break;
-        }
-
-        println!("You have {} attempts remaining.", MAX_ATTEMPTS - attempts);
+        _ => return Err(USAGE.into()),
     }
-
-    // Wait a moment for the mutation to complete
-    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-
-    // Get and display updated stats
-    match client.query(games::get_game, games::GetGameArgs { log_data: None }).await {
-        Ok(RawValue(ConvexValue::Object(obj))) => {
-            let win_count = obj.get("win_count").map(extract_float_value).unwrap_or(0.0);
-            let loss_count = obj.get("loss_count").map(extract_float_value).unwrap_or(0.0);
-            println!("\nUpdated record - Wins: {}, Losses: {}", win_count as i32, loss_count as i32);
-        }
-        Ok(_) => {}
-        Err(e) => println!("Error getting updated stats: {:?}", e),
-    }
-
     Ok(())
-}
-
-fn extract_float_value(value: &ConvexValue) -> f64
-{
-    if let ConvexValue::Float64(f) = value {
-        *f
-    } else {
-        0.0
-    }
 }

@@ -16,15 +16,15 @@ This example is a **richer Convex backend** than `examples/basic/`: multiple tab
 ## Prerequisites
 
 - Rust (`cargo`)
-- pnpm (or another package manager) for the Convex CLI
+- Node.js 22+ with npm for the Convex CLI
 
 ## 1. Convex backend
 
 From **`examples/advanced/`**:
 
 ```bash
-pnpm install
-pnpm exec convex dev --tail-logs
+npm install
+npx convex dev --tail-logs
 ```
 
 Create **`.env.local`** next to this example’s `Cargo.toml` with your deployment URL if needed:

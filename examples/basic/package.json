@@ -1,18 +1,13 @@
 {
-  "name": "basic",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "convex-typegen-basic",
+  "private": true,
   "scripts": {
     "dev": "convex dev --tail-logs"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
-    "convex": "^1.38.0"
+    "convex": "1.49.0"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "typescript": "5.9.3"
   }
 }

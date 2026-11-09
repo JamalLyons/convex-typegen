@@ -48,7 +48,7 @@ install-example-deps:
 example *ARGS:
     cargo run -p basic {{ ARGS }}
 
-# Richer Convex surface + Rust smoke test (`examples/advanced/readme.md`).
+# Run the `advanced` Axum bookmark server (needs a local backend; see `examples/advanced/readme.md`).
 example-advanced *ARGS:
     cargo run -p advanced {{ ARGS }}
 

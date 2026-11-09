@@ -1,0 +1,48 @@
+# Local stack for the bookmark example: a self-hosted Convex backend plus a local LLM.
+#
+#   docker compose up -d            # backend + Ollama (pulls the model on first run)
+#   docker compose up -d backend    # backend only, for the offline fallback summarizer
+#
+# Ports bind to loopback only. Nothing here talks to Convex cloud or needs an API key.
+name: convex-bookmarks
+
+services:
+  backend:
+    # The same image `just e2e` pins.
+    image: ghcr.io/convex/convex-backend@sha256:e9c084e8bd6c1f249012c672193f0988c748824f55a24cdad45f6185a8462f9a
+    ports:
+      - "127.0.0.1:3210:3210"
+      - "127.0.0.1:3211:3211"
+    environment:
+      CONVEX_CLOUD_ORIGIN: http://127.0.0.1:3210
+      CONVEX_SITE_ORIGIN: http://127.0.0.1:3211
+      DISABLE_BEACON: "true"
+    volumes:
+      - convex-data:/convex/data
+
+  # Serves an OpenAI-compatible API at http://ollama:11434/v1 on the Compose network, where the
+  # backend's actions reach it. No host port, so it doesn't clash with an Ollama you already run.
+  ollama:
+    image: ollama/ollama:0.32.5
+    volumes:
+      - ollama-models:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  # One-shot: downloads the model into the shared volume, then exits. Later runs are instant.
+  ollama-pull:
+    image: ollama/ollama:0.32.5
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["ollama", "pull", "${LLM_MODEL:-qwen2.5:1.5b}"]
+    restart: "no"
+
+volumes:
+  convex-data:
+  ollama-models:

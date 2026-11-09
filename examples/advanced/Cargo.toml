@@ -8,10 +8,13 @@ repository.workspace = true
 publish = false
 
 [dependencies]
+axum = "0.8.9"
 convex.workspace = true
-dotenvy.workspace = true
-tokio.workspace = true
 convex-typegen-runtime.workspace = true
+dotenvy.workspace = true
+futures = "0.3"
+serde.workspace = true
+tokio.workspace = true
 
 [build-dependencies]
 convex-typegen.workspace = true

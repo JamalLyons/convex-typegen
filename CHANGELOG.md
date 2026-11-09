@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-08
+
 ### Changed
 
 - **Breaking (generated output):** A nullable validator with exactly one non-null branch now

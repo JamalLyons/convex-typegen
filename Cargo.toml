@@ -39,7 +39,7 @@ bench-internals = []
 
 [dependencies]
 base64 = "0.23"
-oxc = { version = "0.157.0", features = ["semantic", "serialize"], default-features = false }
+oxc = { version = "0.158.0", features = ["semantic", "serialize"], default-features = false }
 serde.workspace = true
 serde_json = { workspace = true, features = ["float_roundtrip"] }
 thiserror.workspace = true

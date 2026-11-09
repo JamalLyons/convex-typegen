@@ -15,7 +15,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use crate::config::Configuration;
-use crate::convex::codegen::generate_code;
+use crate::convex::codegen::{CodegenOptions, generate_code};
 use crate::convex::create_function_asts;
 use crate::convex::ir::GenerationIr;
 use crate::convex::parser::{parse_function_ast, parse_schema_ast_with_modules};
@@ -127,14 +127,21 @@ fn lower_project(parsed: ParsedProject) -> Result<LoweredProject, ConvexTypeGene
 pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError>
 {
     let parsed = parse_project(&config)?;
-    generate_parsed(&config.out_file, parsed)
+    generate_parsed(&config, parsed)
 }
 
-fn generate_parsed(path: &Path, parsed: ParsedProject) -> Result<(), ConvexTypeGeneratorError>
+fn codegen_options(config: &Configuration) -> CodegenOptions
+{
+    CodegenOptions {
+        nullable_as_option: config.nullable_as_option,
+    }
+}
+
+fn generate_parsed(config: &Configuration, parsed: ParsedProject) -> Result<(), ConvexTypeGeneratorError>
 {
     let lowered = lower_project(parsed)?;
-    let output = generate_code(&lowered.0)?;
-    write_atomic(path, output.as_bytes())
+    let output = generate_code(&lowered.0, codegen_options(config))?;
+    write_atomic(&config.out_file, output.as_bytes())
 }
 
 /// Check whether generated output matches the configured artifact without writing files.
@@ -148,7 +155,7 @@ pub fn check(config: Configuration) -> Result<bool, ConvexTypeGeneratorError>
 {
     let parsed = parse_project(&config)?;
     let lowered = lower_project(parsed)?;
-    let generated = generate_code(&lowered.0)?;
+    let generated = generate_code(&lowered.0, codegen_options(&config))?;
     let existing = match std::fs::read_to_string(&config.out_file) {
         Ok(existing) => existing,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
@@ -245,7 +252,7 @@ pub mod bench_support
 
     pub fn codegen(path: &Path, project: &LoweredProject) -> Result<(), ConvexTypeGeneratorError>
     {
-        super::write_atomic(path, super::generate_code(&project.0.0)?.as_bytes())
+        super::write_atomic(path, super::generate_code(&project.0.0, Default::default())?.as_bytes())
     }
 }
 

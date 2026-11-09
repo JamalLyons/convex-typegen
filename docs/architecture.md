@@ -115,7 +115,8 @@ The parser does **not** use a typed ESTree crate. It uses **ad hoc `serde_json::
 
 The adapter lowers the Convex 1.49.0 validator factories into `ConvexValidator`. The numeric aliases
 share their respective float64 and int64 nodes. Commit timestamps use the int64 value kind and
-`v.nullable(x)` uses a required union of `x` and null. Function handles carry optional kind,
+`v.nullable(x)` uses a required union of `x` and null; codegen emits `Option<x>` for such a union
+unless `nullable_as_option` is off. Function handles carry optional kind,
 argument and return metadata. Record keys accept string validators, IDs, and unions of those
 validators. Static string keys and literal values retain their wire spelling and kind. Malformed
 or unsupported validator expressions report a file and byte span. The bounded offline resolver

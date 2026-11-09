@@ -114,7 +114,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
             count: i64::MAX,
             nested: api::admin::users::EchoArgsDataNested {
                 note: None,
-                nullable: api::admin::users::EchoArgsDataNestedNullable::Branch2(()),
+                nullable: None,
             },
             number: f64::from_bits(0x3fb9_9999_9999_999a),
             record: BTreeMap::from([("first".to_owned(), i64::MIN), ("last".to_owned(), i64::MAX)]),
@@ -134,10 +134,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>
     assert_eq!(echoed.record["first"], i64::MIN);
     assert_eq!(echoed.record["last"], i64::MAX);
     assert!(echoed.nested.note.is_none());
-    assert!(matches!(
-        echoed.nested.nullable,
-        api::admin::users::EchoReturnNestedNullable::Branch2(())
-    ));
+    assert_eq!(echoed.nested.nullable, None);
 
     let table_union = EventsDoc::Branch2(EventsDocBranch2 {
         _creation_time: 0.0,

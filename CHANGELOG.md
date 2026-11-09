@@ -6,6 +6,20 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **Breaking (generated output):** A nullable validator with exactly one non-null branch now
+  generates `Option<T>` instead of a positional enum. This covers `v.nullable(T)` and
+  `v.union(T, v.null())` for any `T`: strings, numbers, IDs, objects, arrays, and table documents
+  such as `ctx.db.get` returns. For example, `title: v.nullable(v.string())` was
+  `NotesDocTitle { Branch1(String), Branch2(()) }` and is now `Option<String>`. Optional nullable
+  fields become `Option<Option<T>>`. `returns: v.nullable(doc)` becomes
+  `pub type GetReturn = Option<Doc<tables::Notes>>`. The wire encoding is unchanged. Nullable
+  string-literal unions and unions with two or more non-null branches keep their existing shape.
+  To migrate, replace `X::Branch1(value)` with `Some(value)` and `X::Branch2(())` with `None`, or
+  keep the 1.0 shape with `Configuration::with_nullable_as_option(false)` or the CLI's
+  `--nullable-branches` flag. The maintainer chose to ship this in a minor release as a small,
+  mechanical break with an opt-out; [docs/semver-policy.md](docs/semver-policy.md) would
+  otherwise call for a major. (#132)
+
 - Rewrite `examples/basic` as a minimal, fully typed notes CLI that uses generated args and
   returns types, a typed `Id`, an enum, optional and nullable fields, and a live `watch`
   subscription. Its readme uses the local self-hosted Convex backend. Standardize the examples on

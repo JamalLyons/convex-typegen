@@ -30,7 +30,7 @@ mod convex_api;
 #[test]
 fn generated_enums_round_trip_on_runtime_msrv() {
     use convex_api::api::admin::users::{
-        EchoArgsData, EchoArgsDataChoice, EchoArgsDataNested, EchoArgsDataNestedNullable,
+        EchoArgsData, EchoArgsDataChoice, EchoArgsDataNested,
         EchoReturn, EchoReturnChoice,
     };
     use convex_typegen_runtime::function::RawArgs;
@@ -51,7 +51,7 @@ fn generated_enums_round_trip_on_runtime_msrv() {
             count: 42,
             nested: EchoArgsDataNested {
                 note: None,
-                nullable: EchoArgsDataNestedNullable::Branch2(()),
+                nullable: None,
             },
             number: 1.0,
             record: Default::default(),

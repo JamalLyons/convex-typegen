@@ -49,6 +49,14 @@ fn generated_models_compile_and_preserve_wire_semantics()
             args: { readings: v.optional(v.array(v.record(v.string(), v.object({ value: v.float64() })))) },
             handler: () => null,
         });
+        export const maybe = query({
+            args: {
+                parent: v.union(v.null(), v.id("users")),
+                meta: v.optional(v.nullable(v.object({ words: v.int64() }))),
+            },
+            returns: v.nullable(v.object({ title: v.nullable(v.string()) })),
+            handler: () => null,
+        });
         export const roundTrip = query({
             args: v.object({
                 userId: v.id("users"),

@@ -60,5 +60,5 @@ pub fn generate(config: Configuration) -> Result<(), ConvexTypeGeneratorError>
     for path in inputs {
         println!("cargo:rerun-if-changed={}", path.display());
     }
-    generate_parsed(&config.out_file, parsed)
+    generate_parsed(&config, parsed)
 }

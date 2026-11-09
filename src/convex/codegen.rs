@@ -22,9 +22,30 @@ use ::convex_typegen_runtime::{
 
 "#;
 
-pub(crate) fn generate_code(ir: &GenerationIr) -> Result<String>
+/// Generator switches that change the shape of the emitted Rust.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct CodegenOptions
 {
-    let mut emitter = Emitter::default();
+    /// Emit `Option<T>` for unions of exactly one non-null branch and `null`.
+    pub nullable_as_option: bool,
+}
+
+impl Default for CodegenOptions
+{
+    fn default() -> Self
+    {
+        Self {
+            nullable_as_option: true,
+        }
+    }
+}
+
+pub(crate) fn generate_code(ir: &GenerationIr, options: CodegenOptions) -> Result<String>
+{
+    let mut emitter = Emitter {
+        options,
+        ..Emitter::default()
+    };
     for table in &ir.schema.tables {
         emitter.table(table)?;
     }
@@ -88,6 +109,7 @@ struct Emitter
     marker_origins: BTreeMap<String, String>,
     documents: Vec<(String, Validator)>,
     root_path: String,
+    options: CodegenOptions,
 }
 
 fn claim(names: &mut BTreeMap<String, String>, name: &str, origin: &str) -> Result<()>
@@ -367,6 +389,18 @@ impl Emitter
             } else {
                 name.into()
             });
+        }
+        if self.options.nullable_as_option
+            && nullable
+            && let [inner] = leaves
+                .iter()
+                .copied()
+                .filter(|branch| !matches!(branch, Validator::Null))
+                .collect::<Vec<_>>()[..]
+        {
+            // `null` maps to `None`; the inner model takes the name the enum would have had.
+            let inner = self.validator(inner, nullable_name, context)?;
+            return Ok(format!("Option<{inner}>"));
         }
         claim(&mut self.names, name, context)?;
         let mut variants = String::new();

@@ -16,14 +16,14 @@ This example is a **richer Convex backend** than `examples/basic/`: multiple tab
 ## Prerequisites
 
 - Rust (`cargo`)
-- Node.js 22+ with npm for the Convex CLI
+- Node.js 22+ with pnpm for the Convex CLI
 
 ## 1. Convex backend
 
 From **`examples/advanced/`**:
 
 ```bash
-npm install
+pnpm install
 npx convex dev --tail-logs
 ```
 

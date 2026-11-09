@@ -9,7 +9,7 @@ All notable changes to this project will be documented in this file.
 - Rewrite `examples/basic` as a minimal, fully typed notes CLI that uses generated args and
   returns types, a typed `Id`, an enum, optional and nullable fields, and a live `watch`
   subscription. Its readme uses the local self-hosted Convex backend. Standardize the examples on
-  npm and remove the old debug dumps and extra lockfiles.
+  pnpm and remove the old debug dumps and extra lockfiles.
 
 ## [1.0.0] - 2026-11-07
 

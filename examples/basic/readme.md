@@ -16,7 +16,7 @@ tutorial.
 
 ## Prerequisites
 
-Rust 1.97+, Node.js 22+ with npm, and Docker. Everything runs on your machine; no Convex cloud
+Rust 1.97+, Node.js 22+ with pnpm, and Docker. Everything runs on your machine; no Convex cloud
 account is needed.
 
 ## 1. Start a local Convex backend
@@ -33,14 +33,16 @@ docker run --detach --name convex-notes \
   ghcr.io/convex/convex-backend@sha256:e9c084e8bd6c1f249012c672193f0988c748824f55a24cdad45f6185a8462f9a
 ```
 
-Wait until `curl http://127.0.0.1:3210/version` answers, then create an admin key and deploy:
+Wait for the backend, then create an admin key and deploy:
 
 ```bash
+curl --fail --silent --retry 60 --retry-delay 1 --retry-connrefused --retry-all-errors \
+  --max-time 3 http://127.0.0.1:3210/version
 cd examples/basic
 export CONVEX_SELF_HOSTED_URL=http://127.0.0.1:3210
 export CONVEX_SELF_HOSTED_ADMIN_KEY="$(docker exec convex-notes ./generate_admin_key.sh | tail -n 1)"
-npm ci
-npx convex dev --once
+pnpm install --frozen-lockfile
+pnpm exec convex dev --once
 ```
 
 ## 2. Run the CLI
@@ -60,7 +62,8 @@ cargo run -- watch          # prints the list again whenever it changes
 
 `add TEXT [low|normal|high] [TAG]`. Leaving out the priority stores `null`; leaving out the tag
 omits the field. Run `watch` in one terminal and `add` in another to see it update live.
-You can put `CONVEX_URL=...` in `.env.local` instead of exporting it.
+`pnpm exec convex dev --once` already writes `CONVEX_URL` to `.env.local`, which the CLI reads, so
+exporting it is optional. `watch` keeps running (and reconnects) if the backend restarts; stop it with Ctrl-C.
 
 ## Clean up
 

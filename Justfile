@@ -41,8 +41,8 @@ runtime-msrv:
     bash scripts/runtime-msrv-consumer.sh
 
 install-example-deps:
-    cd examples/basic && npm ci
-    cd examples/advanced && npm ci
+    cd examples/basic && pnpm install --frozen-lockfile
+    cd examples/advanced && pnpm install --frozen-lockfile
 
 # Run the `basic` notes CLI, e.g. `just example list` (needs a local backend; see `examples/basic/readme.md`).
 example *ARGS:

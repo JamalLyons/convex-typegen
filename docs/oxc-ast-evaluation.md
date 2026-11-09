@@ -23,10 +23,10 @@ Bottleneck: serialize entire `Program` to a string, allocate a second tree as `s
 
 | Approach | What we measured | Observation |
 | --- | --- | --- |
-| JSON path | `generate_javascript_ast` on `examples/advanced/convex/schema.ts` | Full fidelity today; higher alloc + parse cost |
+| JSON path | `generate_javascript_ast` on `tests/fixtures/validator-coverage/convex/schema.ts` | Full fidelity today; higher alloc + parse cost |
 | Direct walk | `extract_program_facts` (export/call counts) | No JSON alloc; needs full port of `parser.rs` logic to Oxc nodes |
 
-The `benchmark_json_vs_direct_on_advanced_schema` test in `ast.rs` prints wall times for 50 iterations (stderr). Direct walk is cheaper for **structural** queries but does not yet produce `ConvexSchema` / `ConvexFunctions`.
+The `benchmark_json_vs_direct_on_fixture_schema` test in `ast.rs` prints wall times for 50 iterations (stderr). Direct walk is cheaper for **structural** queries but does not yet produce `ConvexSchema` / `ConvexFunctions`.
 
 ## Risk register
 

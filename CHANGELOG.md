@@ -10,6 +10,13 @@ All notable changes to this project will be documented in this file.
   returns types, a typed `Id`, an enum, optional and nullable fields, and a live `watch`
   subscription. Its readme uses the local self-hosted Convex backend. Standardize the examples on
   pnpm and remove the old debug dumps and extra lockfiles.
+- Replace `examples/advanced` with an Axum AI bookmark server that uses Convex as its database
+  through `TypedClient`: typed args and returns on every public function, string-literal enums,
+  nullable and optional fields, typed `Id`s, indexes, a scheduled internal action, and a live SSE
+  stream backed by a subscription. Summaries use any OpenAI-compatible LLM, or an offline
+  deterministic fallback when none is configured. The old example's validator coverage
+  (`v.record`, `v.bytes`, `v.int64`, `v.any`, nested object args, functions without args, several
+  modules) moves to the `tests/fixtures/validator-coverage` golden test.
 
 ## [1.0.0] - 2026-11-07
 

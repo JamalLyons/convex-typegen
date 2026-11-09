@@ -161,9 +161,9 @@ export default defineSchema({
 
     /// Wall-time comparison for maintainers (not a hard CI perf gate).
     #[test]
-    fn benchmark_json_vs_direct_on_advanced_schema()
+    fn benchmark_json_vs_direct_on_fixture_schema()
     {
-        let schema = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples/advanced/convex/schema.ts");
+        let schema = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/validator-coverage/convex/schema.ts");
         if !schema.exists() {
             return;
         }
@@ -178,7 +178,7 @@ export default defineSchema({
             let _ = extract_program_facts(&schema).unwrap();
         }
         let direct_elapsed = t1.elapsed();
-        eprintln!("ast spike ({iterations}x advanced/schema.ts): json={json_elapsed:?} direct={direct_elapsed:?}");
+        eprintln!("ast spike ({iterations}x validator-coverage/schema.ts): json={json_elapsed:?} direct={direct_elapsed:?}");
         assert!(json_elapsed.as_secs() < 60);
         assert!(direct_elapsed.as_secs() < 60);
     }

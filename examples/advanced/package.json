@@ -1,19 +1,14 @@
 {
-  "name": "advanced",
-  "version": "1.0.0",
+  "name": "convex-typegen-advanced",
   "private": true,
   "scripts": {
     "dev": "convex dev --tail-logs"
   },
   "dependencies": {
-    "convex": "^1.38.0"
-  },
-  "module": "index.ts",
-  "type": "module",
-  "peerDependencies": {
-    "typescript": "^5"
+    "convex": "1.49.0"
   },
   "devDependencies": {
-    "@types/bun": "1.4.4"
+    "@types/node": "22.20.5",
+    "typescript": "5.9.3"
   }
 }

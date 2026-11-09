@@ -168,6 +168,36 @@ fn golden_v1_review_sources_and_spec()
     }
 }
 
+/// Validators the examples no longer exercise: `v.record`, `v.bytes`, `v.int64`, `v.any`,
+/// cross-table `v.id`s, nested `v.object` args, functions without `args`, and several modules.
+#[test]
+fn golden_validator_coverage_fixture()
+{
+    let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/validator-coverage/convex");
+    let tmp = tempdir().unwrap();
+    let out = tmp.path().join("models.rs");
+    generate(
+        Configuration::default()
+            .with_schema_path(fixture.join("schema.ts"))
+            .with_convex_dir(fixture)
+            .with_out_file(out.clone()),
+    )
+    .unwrap();
+    let body = fs::read_to_string(out).unwrap();
+    for expected in [
+        "pub metadata: ::std::collections::BTreeMap<String, String>",
+        "pub avatar_bytes: Option<Bytes>",
+        "pub score: Option<i64>",
+        "pub payload: RawValue",
+        "pub owner_user_id: Id<tables::Users>",
+        "pub filter: SearchArgsFilter",
+        "pub struct ProjectsDocSettings",
+    ] {
+        assert!(body.contains(expected), "missing `{expected}`");
+    }
+    insta::assert_snapshot!("validator_coverage", body);
+}
+
 #[test]
 fn reports_identifier_collisions_with_both_wire_names()
 {

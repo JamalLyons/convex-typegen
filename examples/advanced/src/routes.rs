@@ -11,7 +11,7 @@ use convex_typegen_runtime::model::Id;
 use convex_typegen_runtime::TypedClient;
 use futures::{Stream, StreamExt};
 
-use crate::convex_api::api::bookmarks::{self, GetReturn};
+use crate::convex_api::api::bookmarks;
 use crate::convex_api::tables;
 use crate::error::ApiError;
 use crate::model::{Bookmark, CreateBookmark, CreateFailure, ListFilter};
@@ -109,10 +109,8 @@ async fn stream(
 
 async fn find(client: &mut TypedClient<'_>, id: BookmarkId) -> Result<Option<Bookmark>, ApiError>
 {
-    Ok(match client.query(bookmarks::get, bookmarks::GetArgs { id }).await? {
-        GetReturn::Branch1(doc) => Some(doc.into()),
-        GetReturn::Branch2(()) => None,
-    })
+    let doc = client.query(bookmarks::get, bookmarks::GetArgs { id }).await?;
+    Ok(doc.map(Bookmark::from))
 }
 
 fn list_args(filter: ListFilter) -> bookmarks::ListArgs

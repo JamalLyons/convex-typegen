@@ -81,9 +81,32 @@ sent:
 - `Some(None)` — key present with JSON `null`.
 - `Some(Some(AddArgsPriority::High))` — key present with a string literal.
 
-For other nullable validators, `v.nullable(T)` becomes a union of `T` and `()` for Convex null.
-Optional fields use `None` for absence and `Some(...)` when the key is present, wrapping the inner
-null branch when the value is explicitly null.
+Any other validator with exactly one non-null branch, such as `v.nullable(T)` or
+`v.union(T, v.null())`, generates `Option<T>` the same way:
+
+| Validator | Generated Rust |
+| --- | --- |
+| `title: v.nullable(v.string())` | `pub title: Option<String>` |
+| `pinnedAt: v.optional(v.nullable(v.int64()))` | `pub pinned_at: Option<Option<i64>>` |
+| `parent: v.union(v.null(), v.id("notes"))` | `pub parent: Option<Id<tables::Notes>>` |
+| `meta: v.nullable(v.object({ words: v.int64() }))` | `pub meta: Option<NotesDocMeta>` with a `NotesDocMeta` struct |
+| `tags: v.array(v.nullable(v.string()))` | `pub tags: Vec<Option<String>>` |
+| `returns: v.nullable(noteDoc)` (a table document) | `pub type GetReturn = Option<Doc<tables::Notes>>;` |
+| `returns: v.nullable(v.object({ count: v.int64() }))` | `pub type SummaryReturn = Option<SummaryReturnValue>;` with a `SummaryReturnValue` struct |
+
+`ctx.db.get` results read like Rust: `client.query(notes::get, args).await?.ok_or(NotFound)?`.
+For `v.nullable(v.any())`, wire `null` decodes as `None`, never as `Some(RawValue)`.
+
+A union with two or more non-null branches and `null`, such as
+`v.union(v.string(), v.int64(), v.null())`, still generates an enum. `null` gets its own
+`BranchN(())` variant there.
+
+### Keep the 1.0 shape
+
+In 1.0, single-branch nullable validators generated a positional enum, such as
+`NotesDocTitle { Branch1(String), Branch2(()) }`. To keep that shape while you migrate, call
+`Configuration::with_nullable_as_option(false)` or pass `--nullable-branches` to the CLI.
+To migrate, replace `X::Branch1(value)` with `Some(value)` and `X::Branch2(())` with `None`.
 
 Other union enums carry each branch’s model. When every branch shares a required field with a
 distinct literal tag, decoding picks the branch from that field. Otherwise branches are tried in

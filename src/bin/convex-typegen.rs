@@ -20,10 +20,11 @@ fn main()
             }
             "--function-spec" => config.function_spec_path = Some(value(&mut args, "--function-spec")),
             "--function" => config.function_paths.push(value(&mut args, "--function")),
+            "--nullable-branches" => config.nullable_as_option = false,
             "--help" | "-h" => {
                 println!(
                     "convex-typegen [--check] [--schema PATH] [--convex-dir PATH] [--output PATH] [--function-spec PATH] \
-                     [--function PATH]"
+                     [--function PATH] [--nullable-branches]"
                 );
                 return;
             }

@@ -49,10 +49,13 @@ fn presence()
 
     let Value::Object(ref mut fields) = wire else { unreachable!() };
     fields.insert("some-key".into(), Value::Null);
-    assert!(matches!(
+    assert_eq!(round_trip::<RoundTripArgsCamelCase>(wire.clone()).some_key, Some(None));
+    let Value::Object(ref mut fields) = wire else { unreachable!() };
+    fields.insert("some-key".into(), Value::String("set".into()));
+    assert_eq!(
         round_trip::<RoundTripArgsCamelCase>(wire).some_key,
-        Some(RoundTripArgsCamelCaseSomeKey::Branch2(()))
-    ));
+        Some(Some("set".to_owned()))
+    );
     assert!(from_value::<EchoArgsDataNested>(object([])).is_err());
     round_trip::<EchoArgsDataNested>(object([("nullable", Value::Null)]));
 }
@@ -458,9 +461,39 @@ fn handwritten_models()
     round_trip::<MinInt>(Value::Int64(i64::MIN));
 }
 
+fn nullable_options()
+{
+    let _: fn(Option<Id<tables::Users>>, Option<Option<MaybeArgsMeta>>) -> MaybeArgs =
+        |parent, meta| MaybeArgs { parent, meta };
+    let _: Option<MaybeReturnValue> = None::<MaybeReturn>.flatten();
+
+    let id = Value::String("local:user".into());
+    let args = round_trip::<MaybeArgs>(object([("parent", Value::Null)]));
+    assert!(args.parent.is_none() && args.meta.is_none());
+    let args = round_trip::<MaybeArgs>(object([("parent", id.clone()), ("meta", Value::Null)]));
+    assert_eq!(args.parent, Some(Id::from("local:user".to_owned())));
+    assert_eq!(args.meta, Some(None));
+    let args = round_trip::<MaybeArgs>(object([
+        ("parent", id),
+        ("meta", object([("words", Value::Int64(3))])),
+    ]));
+    assert_eq!(args.meta, Some(Some(MaybeArgsMeta { words: 3 })));
+    // Required nullable fields still need the key.
+    assert!(from_value::<MaybeArgs>(object([])).is_err());
+    assert!(from_value::<MaybeArgs>(object([("parent", Value::Int64(1))])).is_err());
+
+    assert_eq!(round_trip::<MaybeReturn>(Value::Null), None);
+    let value = round_trip::<MaybeReturn>(object([("title", Value::Null)])).unwrap();
+    assert_eq!(value.title, None);
+    let value = round_trip::<MaybeReturn>(object([("title", Value::String("t".into()))])).unwrap();
+    assert_eq!(value.title.as_deref(), Some("t"));
+    assert!(from_value::<MaybeReturn>(Value::String("t".into())).is_err());
+}
+
 fn main()
 {
     presence();
+    nullable_options();
     documents();
     literals();
     kinds_and_records();

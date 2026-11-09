@@ -50,6 +50,14 @@ pub struct Configuration
     /// over [`function_paths`](Self::function_paths) and is the complete authoritative function
     /// inventory; TypeScript is still parsed for the schema.
     pub function_spec_path: Option<PathBuf>,
+
+    /// Generate `Option<T>` for a nullable validator with exactly one non-null branch, such as
+    /// `v.nullable(v.string())` or `v.union(v.object({ ... }), v.null())` (default: `true`).
+    ///
+    /// Set it to `false` to keep the 1.0 shape: a positional `Branch1(T)` / `Branch2(())` enum.
+    /// Nullable string-literal unions generate `Option<Enum>` either way. See
+    /// [optional and null fields](https://ctg.jamallyons.com/docs/generated-models.html#optional-and-null-fields).
+    pub nullable_as_option: bool,
 }
 
 impl Default for Configuration
@@ -65,6 +73,7 @@ impl Default for Configuration
             convex_dir: PathBuf::from("convex"),
             function_paths: Vec::new(),
             function_spec_path: None,
+            nullable_as_option: true,
         }
     }
 }
@@ -111,6 +120,21 @@ impl Configuration
         self
     }
 
+    /// Choose `Option<T>` (the default) or the 1.0 two-branch enum for single-branch nullable
+    /// validators.
+    ///
+    /// ```
+    /// // Keep the 1.0 `Branch1(T)` / `Branch2(())` enums while migrating.
+    /// let config = convex_typegen::config::Configuration::default().with_nullable_as_option(false);
+    /// assert!(!config.nullable_as_option);
+    /// ```
+    #[must_use]
+    pub fn with_nullable_as_option(mut self, enabled: bool) -> Self
+    {
+        self.nullable_as_option = enabled;
+        self
+    }
+
     /// Return the configured schema override or `<convex_dir>/schema.ts`.
     pub fn resolved_schema_path(&self) -> PathBuf
     {
@@ -129,6 +153,7 @@ mod tests
         let config = Configuration::default();
         assert_eq!(config.resolved_schema_path(), PathBuf::from("convex/schema.ts"));
         assert!(config.out_file.ends_with("convex_api.rs"));
+        assert!(config.nullable_as_option);
         let config = config.with_convex_dir("backend");
         assert_eq!(config.resolved_schema_path(), PathBuf::from("backend/schema.ts"));
         let config = config.with_schema_path("models/schema.ts").with_convex_dir("other");

@@ -86,6 +86,11 @@ export const update = mutation({
 
 fn run_generate(schema: &str, extra_files: &[(&str, &str)]) -> String
 {
+    run_generate_with(schema, extra_files, true)
+}
+
+fn run_generate_with(schema: &str, extra_files: &[(&str, &str)], nullable_as_option: bool) -> String
+{
     let tmp = tempdir().unwrap();
     let convex = tmp.path().join("convex");
     fs::create_dir_all(&convex).unwrap();
@@ -100,7 +105,8 @@ fn run_generate(schema: &str, extra_files: &[(&str, &str)]) -> String
     let cfg = Configuration::default()
         .with_schema_path(schema_path)
         .with_out_file(out.clone())
-        .with_convex_dir(convex);
+        .with_convex_dir(convex)
+        .with_nullable_as_option(nullable_as_option);
     generate(cfg).unwrap();
     fs::read_to_string(&out).unwrap()
 }
@@ -164,7 +170,9 @@ fn golden_v1_review_sources_and_spec()
             config = config.with_function_spec_path(spec);
         }
         generate(config).unwrap();
-        insta::assert_snapshot!(name, fs::read_to_string(out).unwrap());
+        let generated = fs::read_to_string(out).unwrap();
+        assert!(!generated.contains("Branch2(())"), "{name} kept a null branch:\n{generated}");
+        insta::assert_snapshot!(name, generated);
     }
 }
 
@@ -387,4 +395,99 @@ fn nullable_enum_names_survive_reordering_and_duplicate_literals_keep_union_bran
         assert!(generated.contains("pub mixed: ItemsDocMixed"));
         assert!(generated.contains("pub null_only: ItemsDocNullOnly"));
     }
+}
+
+const NULLABLE_SCHEMA: &str = r#"
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+export default defineSchema({
+    notes: defineTable({
+        title: v.nullable(v.string()),
+        pinnedAt: v.optional(v.nullable(v.int64())),
+        parent: v.union(v.null(), v.id("notes")),
+        meta: v.nullable(v.object({ words: v.int64() })),
+        tags: v.array(v.nullable(v.string())),
+        scores: v.record(v.string(), v.nullable(v.float64())),
+        doubled: v.union(v.string(), v.null(), v.null()),
+        nested: v.nullable(v.union(v.boolean(), v.null())),
+        role: v.nullable(v.union(v.literal("owner"), v.literal("viewer"))),
+        mixed: v.union(v.string(), v.int64(), v.null()),
+        nullOnly: v.union(v.null(), v.null()),
+    }),
+});
+"#;
+
+const NULLABLE_FN: &str = r#"
+import { query } from "./_generated/server";
+import { v } from "convex/values";
+const note = v.object({
+    _id: v.id("notes"),
+    _creationTime: v.number(),
+    title: v.nullable(v.string()),
+    pinnedAt: v.optional(v.nullable(v.int64())),
+    parent: v.union(v.null(), v.id("notes")),
+    meta: v.nullable(v.object({ words: v.int64() })),
+    tags: v.array(v.nullable(v.string())),
+    scores: v.record(v.string(), v.nullable(v.float64())),
+    doubled: v.union(v.string(), v.null(), v.null()),
+    nested: v.nullable(v.union(v.boolean(), v.null())),
+    role: v.nullable(v.union(v.literal("owner"), v.literal("viewer"))),
+    mixed: v.union(v.string(), v.int64(), v.null()),
+    nullOnly: v.union(v.null(), v.null()),
+});
+export const get = query({
+    args: { id: v.id("notes"), cursor: v.optional(v.nullable(v.string())) },
+    returns: v.nullable(note),
+    handler: () => null,
+});
+export const summary = query({
+    args: {},
+    returns: v.nullable(v.object({ count: v.int64() })),
+    handler: () => null,
+});
+export const lastTitle = query({ args: {}, returns: v.nullable(v.string()), handler: () => null });
+"#;
+
+#[test]
+fn golden_nullable_as_option()
+{
+    let generated = run_generate(NULLABLE_SCHEMA, &[("notes.ts", NULLABLE_FN)]);
+    for expected in [
+        "pub title: Option<String>",
+        "#[convex(rename = \"pinnedAt\", optional)]\n    pub pinned_at: Option<Option<i64>>",
+        "pub parent: Option<Id<tables::Notes>>",
+        "pub meta: Option<NotesDocMeta>",
+        "pub struct NotesDocMeta {",
+        "pub tags: Vec<Option<String>>",
+        "pub scores: ::std::collections::BTreeMap<String, Option<f64>>",
+        "pub doubled: Option<String>",
+        "pub nested: Option<bool>",
+        "pub role: Option<NotesDocRole>",
+        "pub mixed: NotesDocMixed",
+        "pub null_only: NotesDocNullOnly",
+        "pub cursor: Option<Option<String>>",
+        "pub type GetReturn = Option<::convex_typegen_runtime::model::Doc<super::super::tables::Notes>>;",
+        "pub struct SummaryReturnValue {",
+        "pub type SummaryReturn = Option<SummaryReturnValue>;",
+        "pub type LastTitleReturn = Option<String>;",
+    ] {
+        assert!(generated.contains(expected), "missing {expected:?} in:\n{generated}");
+    }
+    for removed in [
+        "NotesDocTitle",
+        "NotesDocMetaBranch1",
+        "GetReturnValue",
+        "LastTitleReturnValue",
+    ] {
+        assert!(!generated.contains(removed), "unexpected {removed:?} in:\n{generated}");
+    }
+    insta::assert_snapshot!("nullable_as_option", generated);
+
+    // Opting out keeps the 1.0 shape.
+    let legacy = run_generate_with(NULLABLE_SCHEMA, &[("notes.ts", NULLABLE_FN)], false);
+    assert!(legacy.contains("pub title: NotesDocTitle"));
+    assert!(legacy.contains("pub enum GetReturn {"));
+    assert!(legacy.contains("Branch2(())"));
+    assert!(legacy.contains("pub role: Option<NotesDocRole>"));
+    insta::assert_snapshot!("nullable_branches_legacy", legacy);
 }

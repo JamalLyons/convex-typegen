@@ -82,3 +82,28 @@ fn diagnostics_include_source_context()
         assert!(!output.exists(), "failed generation must not create output");
     }
 }
+
+#[test]
+fn nullable_branches_flag_restores_the_1_0_shape()
+{
+    let (dir, schema, output) = fixture();
+    fs::write(&schema, r#"import { defineSchema, defineTable } from "convex/server"; import { v } from "convex/values"; export default defineSchema({ tasks: defineTable({ note: v.nullable(v.string()) }) });"#).unwrap();
+    for (flag, expected) in [
+        (None, "pub note: Option<String>"),
+        (Some("--nullable-branches"), "pub note: TasksDocNote"),
+    ] {
+        let mut command = cli();
+        command.args([
+            "--schema",
+            schema.to_str().unwrap(),
+            "--convex-dir",
+            dir.path().to_str().unwrap(),
+            "--output",
+            output.to_str().unwrap(),
+        ]);
+        command.args(flag);
+        assert!(command.status().unwrap().success());
+        let generated = fs::read_to_string(&output).unwrap();
+        assert!(generated.contains(expected), "{flag:?}:\n{generated}");
+    }
+}

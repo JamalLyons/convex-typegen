@@ -7,7 +7,7 @@ use convex_typegen_runtime::ConvexValue;
 use serde::{Deserialize, Serialize};
 
 use crate::convex_api::api::bookmarks::ListArgsStatus;
-use crate::convex_api::{BookmarksDoc, BookmarksDocStatus, BookmarksDocSummarizer, BookmarksDocSummary, BookmarksDocTitle};
+use crate::convex_api::{BookmarksDoc, BookmarksDocStatus, BookmarksDocSummarizer};
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -87,15 +87,9 @@ impl From<BookmarksDoc> for Bookmark
                 BookmarksDocStatus::Ready => Status::Ready,
                 BookmarksDocStatus::Failed => Status::Failed,
             },
-            // `v.nullable(v.string())` generates a two-branch enum: the string, or Convex `null`.
-            title: match doc.title {
-                BookmarksDocTitle::Branch1(title) => Some(title),
-                BookmarksDocTitle::Branch2(()) => None,
-            },
-            summary: match doc.summary {
-                BookmarksDocSummary::Branch1(summary) => Some(summary),
-                BookmarksDocSummary::Branch2(()) => None,
-            },
+            // `v.nullable(v.string())` generates `Option<String>`.
+            title: doc.title,
+            summary: doc.summary,
             tags: doc.tags,
             summarizer: doc.summarizer.map(|s| match s {
                 BookmarksDocSummarizer::Llm => Summarizer::Llm,

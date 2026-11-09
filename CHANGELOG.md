@@ -14,7 +14,8 @@ All notable changes to this project will be documented in this file.
   through `TypedClient`: typed args and returns on every public function, string-literal enums,
   nullable and optional fields, typed `Id`s, indexes, a scheduled internal action, and a live SSE
   stream backed by a subscription. Summaries use any OpenAI-compatible LLM, or an offline
-  deterministic fallback when none is configured. The old example's validator coverage
+  deterministic fallback when none is configured. A Docker Compose file runs the local Convex
+  backend and an Ollama model together. The old example's validator coverage
   (`v.record`, `v.bytes`, `v.int64`, `v.any`, nested object args, functions without args, several
   modules) moves to the `tests/fixtures/validator-coverage` golden test.
 

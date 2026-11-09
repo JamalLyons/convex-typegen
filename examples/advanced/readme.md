@@ -45,32 +45,32 @@ bindings, so Rust can't call them.
 ## Prerequisites
 
 Rust 1.97+, Node.js 22+ with pnpm, and Docker. Everything runs on your machine; no Convex cloud
-account is needed.
+account or API key is needed.
 
-## 1. Start a local Convex backend
+## 1. Start the backend and the local model
 
-Start the open-source backend in Docker (the image is the one `just e2e` pins). Ports bind to
-loopback only. `--add-host` lets the backend reach a local LLM on your machine (Docker Desktop
-already provides it; Linux needs the flag).
+[`compose.yaml`](compose.yaml) runs the open-source Convex backend (the image `just e2e` pins) and
+[Ollama](https://ollama.com) with a small model, all in Docker:
 
 ```bash
-docker run --detach --name convex-bookmarks \
-  --publish 127.0.0.1:3210:3210 --publish 127.0.0.1:3211:3211 \
-  --add-host host.docker.internal:host-gateway \
-  --env CONVEX_CLOUD_ORIGIN=http://127.0.0.1:3210 \
-  --env CONVEX_SITE_ORIGIN=http://127.0.0.1:3211 \
-  --env DISABLE_BEACON=true \
-  ghcr.io/convex/convex-backend@sha256:e9c084e8bd6c1f249012c672193f0988c748824f55a24cdad45f6185a8462f9a
+cd examples/advanced
+docker compose up -d                 # first run downloads the model (~1 GB) into a volume
+docker compose wait ollama-pull      # returns once the model is ready
 ```
+
+The backend listens on `127.0.0.1:3210`. Ollama has no host port: only the backend's actions
+reach it, at `http://ollama:11434/v1` on the Compose network, so it doesn't clash with an Ollama
+you already run. To skip the model and use only the offline summarizer, start just the backend
+with `docker compose up -d backend`. To pull a different model, set `LLM_MODEL` when you run
+`docker compose up` (and use the same name in step 2).
 
 Wait for the backend, then create an admin key and deploy the functions:
 
 ```bash
 curl --fail --silent --retry 60 --retry-delay 1 --retry-connrefused --retry-all-errors \
   --max-time 3 http://127.0.0.1:3210/version
-cd examples/advanced
 export CONVEX_SELF_HOSTED_URL=http://127.0.0.1:3210
-export CONVEX_SELF_HOSTED_ADMIN_KEY="$(docker exec convex-bookmarks ./generate_admin_key.sh | tail -n 1)"
+export CONVEX_SELF_HOSTED_ADMIN_KEY="$(docker compose exec backend ./generate_admin_key.sh | tail -n 1)"
 pnpm install --frozen-lockfile
 pnpm exec convex dev --once
 ```
@@ -78,28 +78,28 @@ pnpm exec convex dev --once
 `convex dev --once` writes `CONVEX_URL` to `.env.local`, which the server reads. Use
 `pnpm exec convex dev` instead to keep redeploying as you edit `convex/`.
 
-## 2. Choose a summarizer (optional)
+## 2. Choose a summarizer
 
 The summary runs inside the Convex action, so its settings are **Convex environment variables**,
 not variables of the Rust process.
 
-**Without an LLM (default).** Leave `LLM_BASE_URL` and `LLM_MODEL` unset. The summary is the
-page's meta description (or its first real paragraph), and the tags are its most frequent
-keywords. Stored bookmarks show `"summarizer": "fallback"`.
-
-**With an LLM.** Point it at any OpenAI-compatible `/chat/completions` endpoint. For a free local
-model with [Ollama](https://ollama.com):
+**With the local model.** Point the backend at the Ollama container:
 
 ```bash
-ollama pull qwen2.5:1.5b
-pnpm exec convex env set LLM_BASE_URL http://host.docker.internal:11434/v1
+pnpm exec convex env set LLM_BASE_URL http://ollama:11434/v1
 pnpm exec convex env set LLM_MODEL qwen2.5:1.5b
 ```
 
-For a hosted provider, set its base URL (for example `https://api.openai.com/v1`), a model, and
-`LLM_API_KEY`, which is sent as a bearer token. Stored bookmarks show `"summarizer": "llm"`. If
-the endpoint fails or replies in the wrong shape, the bookmark becomes `failed` with the reason in
-`error`. Run `pnpm exec convex env remove LLM_MODEL` to go back to the fallback.
+Stored bookmarks show `"summarizer": "llm"`. Any other OpenAI-compatible `/chat/completions`
+endpoint works the same way: for a hosted provider, set its base URL (for example
+`https://api.openai.com/v1`), a model, and `LLM_API_KEY`, which is sent as a bearer token. If the
+endpoint fails or replies in the wrong shape, the bookmark becomes `failed` with the reason in
+`error`.
+
+**Without an LLM (the default).** Leave `LLM_BASE_URL` and `LLM_MODEL` unset, or remove them
+with `pnpm exec convex env remove LLM_MODEL`. The summary is the page's meta description (or its
+first real paragraph), and the tags are its most frequent keywords. Stored bookmarks show
+`"summarizer": "fallback"`.
 
 ## 3. Run the server
 
@@ -155,7 +155,8 @@ Errors come back as `{"error": "..."}`:
 ## Clean up
 
 ```bash
-docker rm --force convex-bookmarks
+docker compose down        # keeps the data and model volumes
+docker compose down -v     # also deletes them
 ```
 
 See the [docs site](https://ctg.jamallyons.com/) for

@@ -9,12 +9,12 @@ importers:
   .:
     dependencies:
       convex:
-        specifier: ^1.38.0
+        specifier: 1.49.0
         version: 1.49.0
     devDependencies:
-      '@types/bun':
-        specifier: latest
-        version: 1.4.4
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
 
 packages:
 
@@ -174,15 +174,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@types/bun@1.4.4':
-    resolution: {integrity: sha512-9wkRDXUXK124pEnAutE6n/l18j+i9GC5IAHK8TmX/2nlySETmky0OU6yL5U8pW1AoKh++AN9auDCr647BfurjQ==}
-
-  '@types/node@26.6.6':
-    resolution: {integrity: sha512-MzQj+8Kx3XI40OmUAE6Qoh58ZMNstNNMwn2nfd3qWsfe7nDNSqJNzes4njhz6AHwrSHOffSLwXU6yb474Q4aog==}
-
-  bun-types@1.4.4:
-    resolution: {integrity: sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ==}
-
   convex@1.49.0:
     resolution: {integrity: sha512-mkr9oXF8/arkCI1kvYyGytWd62oVXNABh4uwLeI4UQVN6Zuudm4DlmSzNUJKF63djk6f/uUXC+6ffuVSkPLvzA==}
     engines: {node: '>=22.0.0', npm: '>=7.0.0'}
@@ -207,16 +198,15 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
-  prettier@3.2.5:
-    resolution: {integrity: sha512-3/GWa9aOC0YeD7LUfvOG2NiDyhOWRvt1k+rcKhOuYnMY24iiCphgneUfJDyFXd6rZCAnuLBv6UeAULtrhT/F4A==}
+  prettier@3.9.10:
+    resolution: {integrity: sha512-skGHTH1Yb9QvaTC4hWnRTzEYtCpApF0UMBPz+t/0ZPzP8ihefo/btKd+QA7pUE0fEwA1SbS/NmhyEcstdXOIdA==}
     engines: {node: '>=14'}
     hasBin: true
 
-  undici-types@8.12.3:
-    resolution: {integrity: sha512-EXE4ydL3S76dFb27UFjNVZHTyv/TLdATj/KUe29ptdcg6qXL48J2tZ3126E5kICj5jn781OR+XlVH1N6Mz8jbA==}
-
-  undici-types@8.9.0:
-    resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
+  typescript@5.9.3:
+    resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
+    engines: {node: '>=14.17'}
+    hasBin: true
 
   ws@8.21.0:
     resolution: {integrity: sha512-Vsp28b7DRcimFQvrqu2Wek3z1iYxDCWqHYB8Qsnk/S4RfaCQzPGPyBNuVjJV3cd6UiKtUtp6sNM77gWvzcCH+g==}
@@ -310,23 +300,10 @@ snapshots:
   '@esbuild/win32-x64@0.27.0':
     optional: true
 
-  '@types/bun@1.4.4':
-    dependencies:
-      bun-types: 1.4.4
-
-  '@types/node@26.6.6':
-    dependencies:
-      undici-types: 8.9.0
-
-  bun-types@1.4.4:
-    dependencies:
-      '@types/node': 26.6.6
-      undici-types: 8.12.3
-
   convex@1.49.0:
     dependencies:
       esbuild: 0.27.0
-      prettier: 3.2.5
+      prettier: 3.9.10
       ws: 8.21.0
     transitivePeerDependencies:
       - bufferutil
@@ -361,10 +338,8 @@ snapshots:
       '@esbuild/win32-ia32': 0.27.0
       '@esbuild/win32-x64': 0.27.0
 
-  prettier@3.2.5: {}
+  prettier@3.9.10: {}
 
-  undici-types@8.12.3: {}
-
-  undici-types@8.9.0: {}
+  typescript@5.9.3: {}
 
   ws@8.21.0: {}

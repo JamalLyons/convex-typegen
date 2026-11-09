@@ -87,16 +87,15 @@ fn diagnostics_include_source_context()
 fn committed_example_bindings_match_the_generator()
 {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
-    for example in ["basic", "advanced"] {
-        let result = cli()
-            .current_dir(root.join("examples").join(example))
-            .args(["--check", "--output", "src/convex_api.rs"])
-            .output()
-            .unwrap();
-        assert!(
-            result.status.success(),
-            "{example}: {}",
-            String::from_utf8_lossy(&result.stderr)
-        );
-    }
+    // `basic` generates into OUT_DIR from build.rs; only `advanced` commits its bindings.
+    let result = cli()
+        .current_dir(root.join("examples").join("advanced"))
+        .args(["--check", "--output", "src/convex_api.rs"])
+        .output()
+        .unwrap();
+    assert!(
+        result.status.success(),
+        "advanced: {}",
+        String::from_utf8_lossy(&result.stderr)
+    );
 }

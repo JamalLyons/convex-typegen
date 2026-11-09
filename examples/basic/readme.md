@@ -1,52 +1,75 @@
-# basic — convex-typegen example
+# basic: a typed notes CLI
 
-Small Rust CLI that talks to a Convex backend using types generated from this folder’s `convex/` sources.
+The smallest complete tour of convex-typegen. `convex/` declares one table, an index, and
+queries, mutations, and an action that all have `args` **and** `returns` validators.
+[`src/main.rs`](src/main.rs) passes generated args structs in and gets generated types back,
+with no manual value parsing. It is a companion to the [docs site](https://ctg.jamallyons.com/)
+tutorial.
+
+| Concept | Where |
+| --- | --- |
+| Table and index | `notes` and `by_done` in `convex/schema.ts` |
+| String-literal union becomes a Rust enum | `priority` becomes `AddArgsPriority` |
+| Optional vs nullable | `tag` can be missing (`Option<String>`); `priority` is `null` when unset |
+| Typed `Id<tables::Notes>` | `done` and `rm` |
+| Live subscription | `watch` |
 
 ## Prerequisites
 
-- Rust toolchain (`cargo`)
-- Bun.js (for the Convex CLI and `convex dev`)
+Rust 1.97+, Node.js 22+ with pnpm, and Docker. Everything runs on your machine; no Convex cloud
+account is needed.
 
-## 1. Convex backend
+## 1. Start a local Convex backend
 
-From **this directory** (`examples/basic/`):
-
-```bash
-bun install
-```
-
-Start a dev deployment (creates/updates `.env.local` with `CONVEX_URL` in many setups):
+From the repository root, start the open-source backend in Docker (the image is the one
+`just e2e` pins). Ports bind to loopback only.
 
 ```bash
-bunx convex dev --tail-logs
+docker run --detach --name convex-notes \
+  --publish 127.0.0.1:3210:3210 --publish 127.0.0.1:3211:3211 \
+  --env CONVEX_CLOUD_ORIGIN=http://127.0.0.1:3210 \
+  --env CONVEX_SITE_ORIGIN=http://127.0.0.1:3211 \
+  --env DISABLE_BEACON=true \
+  ghcr.io/convex/convex-backend@sha256:e9c084e8bd6c1f249012c672193f0988c748824f55a24cdad45f6185a8462f9a
 ```
 
-If you do not use Convex’s auto env file, create **`.env.local`** next to `Cargo.toml` with:
+Wait for the backend, then create an admin key and deploy:
 
 ```bash
-CONVEX_URL=https://<your-deployment>.convex.cloud
+curl --fail --silent --retry 60 --retry-delay 1 --retry-connrefused --retry-all-errors \
+  --max-time 3 http://127.0.0.1:3210/version
+cd examples/basic
+export CONVEX_SELF_HOSTED_URL=http://127.0.0.1:3210
+export CONVEX_SELF_HOSTED_ADMIN_KEY="$(docker exec convex-notes ./generate_admin_key.sh | tail -n 1)"
+pnpm install --frozen-lockfile
+pnpm exec convex dev --once
 ```
 
-Use the deployment URL from the Convex dashboard or the `convex dev` output.
+## 2. Run the CLI
 
-## 2. Rust app
-
-Still in `examples/basic/`:
+`build.rs` generates the bindings offline into `OUT_DIR`; only running the CLI talks to the backend.
 
 ```bash
-cargo build   # runs build.rs → generates OUT_DIR/convex_api.rs
-cargo run     # number-guessing demo; reads .env.local via CARGO_MANIFEST_DIR
+export CONVEX_URL=http://127.0.0.1:3210
+cargo run -- add "Write the docs" high docs
+cargo run -- add "Water the plants"
+cargo run -- list
+cargo run -- done <id>      # id printed by `add` or `list`
+cargo run -- rm <id>
+cargo run -- summary        # runs the Convex action
+cargo run -- watch          # prints the list again whenever it changes
 ```
 
-From the **repo root** you can run:
+`add TEXT [low|normal|high] [TAG]`. Leaving out the priority stores `null`; leaving out the tag
+omits the field. Run `watch` in one terminal and `add` in another to see it update live.
+`pnpm exec convex dev --once` already writes `CONVEX_URL` to `.env.local`, which the CLI reads, so
+exporting it is optional. `watch` keeps running (and reconnects) if the backend restarts; stop it with Ctrl-C.
+
+## Clean up
 
 ```bash
-cargo run --manifest-path examples/basic/Cargo.toml
+docker rm --force convex-notes
 ```
 
-`build.rs` uses the OUT_DIR helper (`convex/schema.ts`, `convex/` discovery). `convex_typegen_runtime::include!()` loads the generated bindings from Cargo's `OUT_DIR`, so builds leave the source tree untouched.
-
-## What to change
-
-- **Schema / functions:** edit `convex/schema.ts` and the `*.ts` files under `convex/` (except `_generated/`). Rebuild the Rust crate to refresh types.
-- **Game logic:** see `convex/games.ts` and the queries/mutations the CLI calls via generated `convex_api`.
+See the docs for [typed calls and subscriptions](https://ctg.jamallyons.com/typed-client.html)
+and [what's guaranteed](https://ctg.jamallyons.com/docs/type-safety.html).

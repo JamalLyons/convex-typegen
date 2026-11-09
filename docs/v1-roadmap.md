@@ -1,6 +1,6 @@
 # v1 roadmap
 
-Where convex-typegen is going. Crate version today: **1.0.0**. This is the lasting picture for contributors and coding agents. Open decisions stay open until they are settled in issues.
+Where convex-typegen is going. Crate version today: **1.1.0**. This is the lasting picture for contributors and coding agents. Open decisions stay open until they are settled in issues.
 
 ## Why the library exists
 
@@ -59,7 +59,7 @@ These are what make the headline trustworthy. A workable order: value layer and 
 
 ## Known gaps today
 
-Checked against this tree (1.0.0). Items marked unverified have not been re-run on a live backend.
+Checked against this tree (1.1.0). Items marked unverified have not been re-run on a live backend.
 
 - [x] The offline parser normalizes Convex 1.49.0 validator factories and accepts object and union table documents, including indexed definitions and earlier same-file validator consts.
 - [x] Function discovery accepts recognized Convex server builder imports and distinguishes public and internal visibility. Relative imports and static spreads are resolved through a bounded offline source graph with file/span diagnostics.

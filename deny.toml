@@ -25,8 +25,4 @@ unknown-git = "deny"
 
 # Transitive advisories via `convex` → tokio-tungstenite / native-tls until upstream bumps.
 [advisories]
-ignore = [
-  "RUSTSEC-2026-0007", # bytes 1.9.0 via convex
-  "RUSTSEC-2025-0004", # openssl via native-tls
-  "RUSTSEC-2025-0022", # openssl via native-tls
-]
+ignore = []
